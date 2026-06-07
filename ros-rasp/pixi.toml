@@ -1,0 +1,52 @@
+[workspace]
+authors = ["Convolutio <79534557+Convolutio@users.noreply.github.com>"]
+channels = ["conda-forge", "https://prefix.dev/conda-forge"]
+name = "ros-rasp"
+platforms = ["linux-64", "win-64", "osx-64", "osx-arm64", "linux-aarch64"]
+version = "0.1.0"
+
+[tasks]
+
+# This will automatically activate the ros workspace on activation
+[target.win.activation]
+scripts = ["install/setup.bat"]
+
+[target.unix.activation]
+# For activation scripts, we use bash for Unix-like systems
+scripts = ["install/setup.bash"]
+
+# To build you can use - `pixi run -e <ros distro> build <Any other temporary args>`
+[feature.build.target.win-64.tasks]
+build = "colcon build --merge-install --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DPython_FIND_VIRTUALENV=ONLY -DPython3_FIND_VIRTUALENV=ONLY"
+
+[feature.build.target.unix.tasks]
+build = "colcon build --symlink-install --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DPython_FIND_VIRTUALENV=ONLY -DPython3_FIND_VIRTUALENV=ONLY"
+
+# Dependencies used by all environments
+[dependencies]
+python = "*"
+# Build tools
+compilers = "*"
+cmake = "*"
+pkg-config = "*"
+make = "*"
+ninja = "*"
+# ROS specific tools
+rosdep = "*"
+colcon-common-extensions = "*"
+
+[target.linux.dependencies]
+libgl-devel = "*"
+
+# Define all the different ROS environments
+# Each environment corresponds to a different ROS distribution
+# and can be activated using the `pixi run/shell -e <environment>` command.
+[environments]
+jazzy = { features = ["jazzy", "build"] }
+
+### ROS Jazzy ####
+[feature.jazzy]
+channels = ["https://prefix.dev/robostack-jazzy"]
+
+[feature.jazzy.dependencies]
+ros-jazzy-desktop = "*"
