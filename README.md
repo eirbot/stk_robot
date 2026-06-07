@@ -89,13 +89,13 @@ robot_3a_2026/
 │   ├── utils/                 # Gestion Audio, LEDs, Caméra
 │   └── main_robot.py          # Point d'entrée principal
 │
-├── ⚡ src/                    # --- BAS NIVEAU (C++ / PlatformIO) ---
+├── ⚡ embedded/src/           # --- BAS NIVEAU (C++ / PlatformIO) ---
 │   ├── ClassMotors.cpp        # Asservissement PID vitesse/position
 │   ├── ClassActionneur.cpp    # Gestion des pinces et servos
 │   └── main_motor.cpp         # Boucle principale du microcontrôleur
 │
 ├── 📄 docu/                   # Documentation, règles et datasheets
-└── ⚙️ platformio.ini          # Configuration de compilation C++
+└── ⚙️ embedded/platformio.ini # Configuration de compilation C++
 ```
 
 ---

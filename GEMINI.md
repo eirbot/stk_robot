@@ -19,17 +19,17 @@ Développement d'un robot pour la **Coupe de France de Robotique 2026**.
 
 ## 📁 Structure du Projet
 - `/Rasp` : Code principal Python (Threads : Hardware, Strat, IHM, Buttons, Timer).
-- `/src` : Code source C++ pour les ESP32 (Environnements : `Motor`, `Actionneur`).
+- `/embedded/src` : Code source C++ pour les ESP32 (Environnements : `Motor`, `Actionneur`).
 - `/docu` : Documentation technique, protocole LiDAR et règles Eurobot.
 
 ## 📜 Règles de Développement (Mandates)
 1. **Sécurité Matérielle :** Toujours vérifier les limites logicielles des ascenseurs et les timeouts de communication.
 2. **Communication Pi-ESP32 :** Utilise principalement le format JSON via Liaison Série.
-3. **Localisation :** Le LiDAR est critique ; toute modification du code `hardware_thread.py` ou `LiDAR/` doit préserver la détection des balises.
+3. **Localisation :** Le LiDAR est critique ; toute modification du code `Rasp/hardware_thread.py` ou `Rasp/LiDAR/` doit préserver la détection des balises.
 4. **Actionneurs :** Le vérin est géré comme un Servo (PWM) sur l'ESP Actionneur.
-5. **Validation :** Avant de suggérer une modification bas niveau, vérifier l'impact sur les environnements `platformio.ini`.
+5. **Validation :** Avant de suggérer une modification bas niveau, vérifier l'impact sur les environnements `embedded/platformio.ini`.
 
 ## 💡 Conseils de Travail
-- Pour le **déplacement**, réfère-toi à `interface_deplacement.py` et `bezier.py`.
-- L'état global du robot est centralisé dans `ihm/shared.py`.
-- En cas de bug de communication, vérifie les ports dans `config.json` (ex: `/dev/lidar`).
+- Pour le **déplacement**, réfère-toi à `Rasp/interface_deplacement.py` et `Rasp/bezier.py`.
+- L'état global du robot est centralisé dans `Rasp/ihm/shared.py`.
+- En cas de bug de communication, vérifie les ports dans `Rasp/config.json` (ex: `/dev/lidar`).
