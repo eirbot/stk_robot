@@ -26,11 +26,11 @@
 
   # https://devenv.sh/scripts/
   scripts.ros-install.exec = ''
-    pixi install -e jazzy
+    pixi install
   '';
 
   scripts.init-ros-shell.exec = ''
-    pixi shell -e jazzy
+    pixi shell
   '';
 
   # https://devenv.sh/basics/

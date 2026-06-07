@@ -31,3 +31,23 @@ ros-install
 ## Run some ROS scripts
 
 TODO: use the scripts sourced by the `devenv` environment.
+
+## Add some ROS packages
+
+In the virtual super-environment, search the available packages on the
+`robostack-jazzy` package channel [(referenced here)](https://robostack.github.io/jazzy.html) or with the `pixi` cli:
+
+```sh
+pixi search 'ros-jazzy-*'
+```
+
+To add a package
+
+```sh
+pixi add 'ros-jazzy-easynav' # not sure this package exists on the forge 
+```
+
+## Documentation
+
+- [Pixi's up to date documentation about ROS integration](http://pixi.prefix.dev/latest/tutorials/ros2/)
+- []
