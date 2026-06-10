@@ -1,4 +1,5 @@
 #include "ActionneurVTask.hpp"
+#include "Arduino.h"
 #include <cstdint>
 
 #define TASK_QUEUE_SIZE 25
@@ -74,14 +75,16 @@ void ActVTaskRunner(void *pvParameter) {
 
         // temporary shit polling
         // TODO: enable INCLUDE_vTaskSuspend to enable blocking call on time portMAX_DELAY
-        auto ret = xQueueReceive(myObject->_queue, (void *) &params, 0);
-        if (ret == pdTRUE) {
+        int to_wait_ms = 10;  // the maximal blocking waiting time of millisecond
+        const TickType_t xTicksToWait = pdMS_TO_TICKS(to_wait_ms);
+
+        if (xQueueReceive(myObject->_queue, (void *) &params, 0) == pdTRUE) {
             if (params._cmd == '~') {
                 Serial.println("Warning: invalid value parsed from queue");
             }
             myObject->processCommand(params);
         } else {
-            vTaskDelay(0);
+            vTaskDelay(xTicksToWait);
             idlog(myObject, "Queue empty, yield...");
         }
 

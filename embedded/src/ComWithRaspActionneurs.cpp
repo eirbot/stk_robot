@@ -4,6 +4,7 @@
 #include "Arduino.h"
 #include <cstdint>
 
+// TODO: check if the cpu assignment without affinity is an issue the CPU core
 ComWithRasp::ComWithRasp() { Serial.begin(115200); }
 
 void ComWithRasp::StartWorkers() {
@@ -12,16 +13,16 @@ void ComWithRasp::StartWorkers() {
   act3.initialiser();
   act4.initialiser();
 
-  xTaskCreate(ActVTaskRunner, "TaskWorkerAct1", 4000, &actVTask1, 1, NULL);
-  xTaskCreate(ActVTaskRunner, "TaskWorkerAct2", 4000, &actVTask2, 1, NULL);
-  xTaskCreate(ActVTaskRunner, "TaskWorkerAct3", 4000, &actVTask3, 1, NULL);
-  xTaskCreate(ActVTaskRunner, "TaskWorkerAct4", 4000, &actVTask4, 1, NULL);
+  xTaskCreatePinnedToCore(ActVTaskRunner, "TaskWorkerAct1", 4000, &actVTask1, 1, NULL, tskNO_AFFINITY);
+  xTaskCreatePinnedToCore(ActVTaskRunner, "TaskWorkerAct2", 4000, &actVTask2, 1, NULL, tskNO_AFFINITY);
+  xTaskCreatePinnedToCore(ActVTaskRunner, "TaskWorkerAct3", 4000, &actVTask3, 1, NULL, tskNO_AFFINITY);
+  xTaskCreatePinnedToCore(ActVTaskRunner, "TaskWorkerAct4", 4000, &actVTask4, 1, NULL, tskNO_AFFINITY);
 }
 
 void ComWithRasp::StartCom() {
   // Crée une tâche FreeRTOS qui appelle this->Receive()
-  xTaskCreate([](void *obj) { static_cast<ComWithRasp *>(obj)->Receive(); },
-              "ComWithRasp", 4000, this, 1, NULL);
+  xTaskCreatePinnedToCore([](void *obj) { static_cast<ComWithRasp *>(obj)->Receive(); },
+              "ComWithRasp", 4000, this, 1, NULL, tskNO_AFFINITY);
 }
 
 void ComWithRasp::Receive() {

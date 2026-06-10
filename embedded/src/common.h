@@ -20,10 +20,7 @@ extern float X_POS_INIT;
 extern float Y_POS_INIT;
 extern float ANGLE_INIT;
 
-#include "ClassMotors.hpp"
 #include "FastAccelStepper.h"
-#include "GoToPosition.hpp"
-#include "esp_task_wdt.h"
 
 typedef struct {
   int distance;
