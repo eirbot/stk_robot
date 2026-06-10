@@ -68,6 +68,8 @@ void ComWithRasp::Receive() {
     // On rend la main à FreeRTOS
     vTaskDelay(10 / portTICK_PERIOD_MS);
   }
+
+  vTaskDelete(NULL);
 }
 
 void ComWithRasp::Send() {
