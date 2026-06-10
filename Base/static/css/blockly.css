@@ -1,0 +1,85 @@
+/* Rasp/ihm/static/blockly_style.css */
+
+html, body { 
+    height: 100%; 
+    margin: 0; 
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Le bandeau du haut */
+#controls { 
+    background: #333; 
+    color: white; 
+    padding: 0 20px; 
+    height: 60px; 
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
+/* Le conteneur principal qui contient Editor + Simu */
+#main-container {
+    display: flex;
+    flex-grow: 1;
+    height: calc(100% - 60px); /* Le reste de la hauteur */
+    overflow: hidden;
+}
+
+/* Partie Gauche : Blockly */
+#blocklyArea {
+    flex: 60%; /* Prend 60% de la largeur */
+    height: 100%;
+    position: relative;
+    border-right: 2px solid #ccc;
+}
+#blocklyDiv {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+}
+
+/* Partie Droite : Simulation */
+#simuArea {
+    flex: 40%; /* Prend 40% de la largeur */
+    background-color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+canvas {
+    background: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    border-radius: 4px;
+    max-width: 100%;
+    /* On garde le ratio de la table */
+}
+
+/* Styles Communs */
+input, select { padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-right: 10px; }
+button { 
+    padding: 8px 16px; 
+    border: none; 
+    cursor: pointer; 
+    font-weight: bold;
+    border-radius: 4px;
+    transition: 0.2s;
+    margin-right: 10px;
+}
+
+/* Couleurs Boutons */
+#saveBtn { background: #28a745; color: white; }
+#saveBtn:hover { background: #218838; }
+
+#loadBtn { background: #17a2b8; color: white; }
+#loadBtn:hover { background: #138496; }
+
+#simuBtn { background: #ffc107; color: #333; } /* Bouton Jaune pour Simu */
+#simuBtn:hover { background: #e0a800; }

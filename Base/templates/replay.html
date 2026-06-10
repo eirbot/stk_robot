@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>EIRBOT Replay</title>
+    <link rel="stylesheet" href="/static/css/common.css">
+    <style>
+        body {
+            background: #222;
+            color: #fff;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .toolbar {
+            padding: 10px;
+            background: #333;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .charts-container {
+            width: 400px;
+            background: #1a1a1a;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        canvas {
+            max-width: 100%;
+        }
+
+        select,
+        button {
+            padding: 8px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+
+        button {
+            background: #009688;
+            color: white;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #00796B;
+        }
+
+        input[type=range] {
+            flex: 1;
+        }
+
+        .time-display {
+            font-family: monospace;
+            font-size: 1.2em;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .stats-box {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+    </style>
+    <script src="/static/js/vendor/chart.js"></script>
+</head>
+
+<body>
+    <div class="toolbar">
+        <a href="/" style="color:white; text-decoration:none; font-weight:bold; margin-right:20px;">🏠 ACCUEIL</a>
+        <select id="log-select">
+            <option>Chargement...</option>
+        </select>
+        <button onclick="loadLog()">CHARGER</button>
+        <div style="width: 20px;"></div>
+        <button onclick="togglePlay()" id="btn-play">▶ PLAY</button>
+        <input type="range" id="time-slider" min="0" max="100" value="0" step="1">
+        <span class="time-display" id="time-display">00.00s</span>
+        <select id="speed-select">
+            <option value="1">x1</option>
+            <option value="2">x2</option>
+            <option value="5" selected>x5</option>
+            <option value="10">x10</option>
+        </select>
+    </div>
+
+    <div class="main-content">
+        <div class="map-container">
+            <canvas id="map-canvas" width="3000" height="2000"
+                style="width: 100%; height: auto; object-fit: contain; max-height: 100%;"></canvas>
+        </div>
+        <div class="charts-container">
+            <div class="stats-box">
+                <div>Batterie: <span id="val-batt" style="font-weight:bold; color:#4CAF50;">--</span></div>
+                <div>Courant: <span id="val-curr" style="font-weight:bold; color:#FF9800;">--</span></div>
+                <div>État: <span id="val-state">--</span></div>
+            </div>
+
+            <canvas id="chart-voltage" height="150"></canvas>
+            <canvas id="chart-current" height="150"></canvas>
+        </div>
+    </div>
+
+    <script src="/static/js/replay.js"></script>
+</body>
+
+</html>

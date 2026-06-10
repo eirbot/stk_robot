@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>MAP</title>
+    <link rel="stylesheet" href="/static/css/common.css">
+    <link rel="stylesheet" href="/static/css/map.css">
+    <script src="/static/js/common.js" defer></script>
+    <script src="/static/js/map.js" defer></script>
+</head>
+
+<body class="mode-BLEUE">
+    <div class="header">
+        <a href="/debug" class="btn-back">← Retour</a>
+        <div style="font-weight:bold;">CARTE TEMPS RÉEL</div>
+        <div class="sys-info" id="sys-info">...</div>
+    </div>
+    <div id="map-container">
+        <canvas id="mapCanvas" width="900" height="600"></canvas>
+        <div class="info-pos" id="pos-text">X: 0 Y: 0 θ: 0</div>
+    </div>
+</body>
+
+</html>

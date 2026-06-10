@@ -1,0 +1,38 @@
+/* Utilisation de toute la largeur disponible */
+.debug-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    padding: 15px;
+    width: 98%; /* Prend presque tout l'écran */
+    margin: 0 auto;
+    text-align: left;
+    box-sizing: border-box;
+}
+
+/* GRAPHIQUE WRAPPER (Essentiel pour Chart.js) */
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+/* LOGS */
+.log-box { background: #000; color: #0f0; font-family: monospace; height: 300px; overflow-y: scroll; padding: 10px; font-size: 0.85em; border-radius: 5px; border: 1px solid #444; }
+.log-line { border-bottom: 1px solid #222; padding: 2px 0; }
+.log-time { color: #888; margin-right: 5px; }
+.log-info { color: #2196f3; } .log-warn { color: #ff9800; } .log-err { color: #f44336; }
+
+/* STATUS DOTS */
+.status-dot { width: 12px; height: 12px; border-radius: 50%; background: #444; display: inline-block; margin-left: auto;}
+.status-ok { background: #0f0; box-shadow: 0 0 5px #0f0; }
+.status-err { background: #f00; box-shadow: 0 0 5px #f00; }
+.dev-status { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #333; }
+
+/* BOUTONS SPECIFIQUES */
+.btn-flash { background: #FF5722; font-size: 0.9em; padding: 10px; border: none; border-radius: 4px; color: white; cursor: pointer; transition: 0.2s;}
+.btn-flash:hover { opacity: 0.8; }
+
+/* CAMERA */
+.camera-container { text-align: center; background: #000; min-height: 200px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px;}
+.camera-container img { width: 100%; height: auto; display: block; }
