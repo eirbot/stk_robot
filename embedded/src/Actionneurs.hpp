@@ -2,9 +2,8 @@
 #define ACTIONNEURS_HPP
 
 #include "Arduino.h"
-#include "ComWithRaspActionneurs.hpp"
+#include "PCF8575.h"  // Bibliothèque de Rob Tillaart
 #include "GpioActionneurs.hpp"
-#include "PCF8575.h" // Bibliothèque de Rob Tillaart
 #include <ESP32Servo.h>
 
 extern PCF8575 pcf;
@@ -49,7 +48,8 @@ struct Actionneur {
         p17G_status -= 1;
       }
       servo17G.write(p17G_status);
-      delay(10);
+      // delay(10)
+      vTaskDelay(10 / portTICK_PERIOD_MS);
     }
   }
 
@@ -109,21 +109,14 @@ struct Actionneur {
       }
     }
   }
-
-  void grab() {
-    this->openPiston();
-    delay(1000);
-    this->goDown(10000);
-    this->closePiston();
-    delay(2000);
-    this->goUp(3000);
-  }
 };
 
 extern Actionneur act1;
 extern Actionneur act2;
 extern Actionneur act3;
 extern Actionneur act4;
+
+void startActionneurTask();
 
 void ARDUINO_ISR_ATTR IntEXTfct();
 
