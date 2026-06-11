@@ -124,10 +124,15 @@ L'interface est ensuite accessible sur le port 5000.
 
 Le code bas niveau utilise PlatformIO.
 
-- Installer VSCode.
-- Installer l'extension PlatformIO IDE.
-- Ouvrir le dossier racine du projet.
-- Connecter la carte via USB et cliquer sur le bouton Upload (flèche droite) dans la barre d'état.
+- Installer VSCode
+- Installer l'extension PlatformIO IDE
+- Ouvrir le dossier racine du projet
+- Connecter la carte via USB et cliquer sur le bouton Upload (flèche droite)
+dans la barre d'état
+- Pour les personnes qui ont des soucis de téléversement sur Ubuntu `>22`
+(notamment pour la détection d'un port signal dans le système de fichiers),
+regarder ce [gist de M.
+Menier](https://gist.github.com/Wanchai290/73266ffd43b70c3f2799cfb87df5f0b9)
 
 ---
 
