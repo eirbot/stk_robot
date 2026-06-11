@@ -78,11 +78,11 @@ if __name__ == "__main__":
                     time.sleep(0.5)
             return False
 
-        print("[MAIN] Attente du serveur Flask sur le port 5000...")
-        if wait_for_port(5000):
+        print("[MAIN] Attente du serveur Go sur le port 8080...")
+        if wait_for_port(8080):
             print("[MAIN] Serveur prêt !")
         else:
-            print("[MAIN] ⚠️ Timeout : Le serveur Flask n'a pas démarré à temps.")
+            print("[MAIN] ⚠️ Timeout : Le serveur Go n'a pas démarré à temps.")
 
         # --- UPDATE LED INITIALE (Couleur Equipe) ---
         # Ne pas écraser si on a une alerte tirette en cours
@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
         # 4. Interface Graphique (RÉACTIVÉE)
         print("[MAIN] Lancement de l'affichage local...")
-        webview.create_window('Robot 2026', 'http://127.0.0.1:5000', fullscreen=True)
+        webview.create_window('Robot 2026', 'http://127.0.0.1:8080', fullscreen=True)
         webview.start()
         
     except KeyboardInterrupt:

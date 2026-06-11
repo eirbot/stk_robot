@@ -4,7 +4,7 @@ import psutil
 import os
 import numpy as np
 # On assure d'importer robot_pos
-from ihm.shared import socketio, state, audio, send_led_cmd, robot_pos 
+from ihm.shared import state, audio, send_led_cmd, robot_pos, send_sys_info
 from utils import get_ip, get_battery_voltage, get_cpu_temp, get_battery_current, get_voltage_float
 
 def background_loop():
@@ -18,9 +18,9 @@ def background_loop():
             if remaining <= 0:
                 state["timer_str"] = "0.0"; state["match_running"] = False; state["match_finished"] = True
                 if state["music_enabled"] and audio: audio.stop(); audio.play('end')
-                send_led_cmd("MATCH_STOP"); socketio.emit('state_update', state)
+                send_led_cmd("MATCH_STOP")
             else:
-                state["timer_str"] = f"{remaining:.1f}"; socketio.emit('state_update', state)
+                state["timer_str"] = f"{remaining:.1f}"
 
         # 2. Infos Système (inchangé)
         devs = {
@@ -54,7 +54,7 @@ def background_loop():
                  send_led_cmd("COLOR:0,255,0") # Retour au vert
 
 
-        socketio.emit('sys_info', {
+        send_sys_info({
             'cpu': f"{psutil.cpu_percent()}%", 
             'temp': get_cpu_temp(),
             'volt': get_battery_voltage(), 
@@ -64,7 +64,4 @@ def background_loop():
             'devs': devs
         })
 
-        # --- 3. Envoi Position Robot en temps réel (Map) ---
-        socketio.emit('robot_position', robot_pos)
-
-        socketio.sleep(0.1) # 10Hz (Suffisant pour une fluidité visuelle)
+        time.sleep(0.1) # 10Hz (Suffisant pour une fluidité visuelle)

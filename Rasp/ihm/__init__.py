@@ -1,16 +1,12 @@
 import sys
-from ihm.shared import app, socketio
-import ihm.routes
-import ihm.events
+import threading
+import time
+from ihm.shared import send_log
+import ihm.shared as shared
 from ihm.tasks import background_loop
+from ihm.zmq_client import ZmqClient
 
-import logging
-
-# Disable werkzeug logs to prevent web server spam
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
-
-# Classe simple pour rediriger les prints vers l'IHM
+# Classe simple pour rediriger les prints vers l'IHM via ZMQ
 class LogCapture:
     def __init__(self, original, tag):
         self.orig = original
@@ -20,7 +16,7 @@ class LogCapture:
         try: self.orig.write(msg); self.orig.flush()
         except: pass
         if msg and msg.strip():
-            try: socketio.emit('new_log', {'msg': msg.strip(), 'type': self.tag, 'time': ""})
+            try: send_log(msg.strip(), self.tag)
             except: pass
     def flush(self): 
         try: self.orig.flush()
@@ -28,11 +24,23 @@ class LogCapture:
     def __getattr__(self, name): return getattr(self.orig, name)
 
 def run_ihm():
-    # Redirection Logs
+    print("[IHM] Démarrage du client ZMQ...")
+    
+    # Initialisation et démarrage du client ZMQ
+    client = ZmqClient(server_ip="127.0.0.1")
+    shared.zmq_client_instance = client
+    client.start()
+    
+    # Redirection Logs (après le démarrage du client)
     sys.stdout = LogCapture(sys.stdout, 'info')
     sys.stderr = LogCapture(sys.stderr, 'error')
+
+    # Démarrage de la boucle d'arrière-plan (tasks : batterie, etc.)
+    bg_thread = threading.Thread(target=background_loop, daemon=True)
+    bg_thread.start()
     
-    print("[IHM] Démarrage Serveur Web...")
-    socketio.start_background_task(background_loop)
-    # On lance en mode bloquant (c'est le main qui gérera les threads)
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False, allow_unsafe_werkzeug=True)
+    print("[IHM] Client ZMQ et tâches de fond démarrés.")
+    
+    # Rester en vie
+    while True:
+        time.sleep(1)

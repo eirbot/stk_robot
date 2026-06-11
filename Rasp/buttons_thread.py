@@ -157,7 +157,6 @@ class ButtonsThread:
                         shared.state['match_running'] = False
                         shared.state['fsm_state'] = "STOPPED"
                         shared.send_led_cmd("COLOR:255,0,0") 
-                        shared.socketio.emit('state_update', shared.state)
                         # Reset tirette state to force re-arm
                         shared.state['tirette'] = "WAIT" 
                     else:
@@ -178,14 +177,12 @@ class ButtonsThread:
                                  print("[BUTTONS] ⚠️ Sécurité : Veuillez RETIRER la tirette !")
                                  shared.state['tirette_msg'] = "REMOVE_TO_RESET"
                                  shared.send_led_cmd("ANIM:BLINK:255,100,0,350")
-                                 shared.socketio.emit('state_update', shared.state)
                         else:
                              # Tirette is Removed. Ready to ARM.
                              print("[BUTTONS] ⏳ Tirette ABSENTE -> Prêt à armer (Bleu)")
                              shared.state['tirette'] = "WAIT_INSERT"
                              shared.state['tirette_msg'] = "WAITING"
                              shared.send_led_cmd("COLOR:0,0,255") # On arrête le clignotement par un bleu fixe
-                             shared.socketio.emit('state_update', shared.state)
 
 
                     elif current_state == "WAIT_INSERT":
@@ -195,7 +192,6 @@ class ButtonsThread:
                              shared.state['match_running'] = False
                              # LED Vert Breath (Green=0,255,0)
                              shared.send_led_cmd("ANIM:BREATH:0,255,0") 
-                             shared.socketio.emit('state_update', shared.state)
 
                     elif current_state == "ARMED":
                         if not is_inserted: # Removed
@@ -204,7 +200,6 @@ class ButtonsThread:
                              shared.state['match_running'] = True
                              shared.state['start_time'] = time.time()
                              shared.send_led_cmd("PLAY:match_start")
-                             shared.socketio.emit('state_update', shared.state)
                              
                     elif current_state == "TRIGGERED":
                          # Match is running. If inserted again -> Stop? Or Just ignore?
@@ -222,8 +217,6 @@ class ButtonsThread:
         # Visual Update
         if new_team == 'JAUNE': shared.send_led_cmd("COLOR:255,160,0")
         else: shared.send_led_cmd("COLOR:0,0,255")
-        
-        shared.socketio.emit('state_update', shared.state)
 
     def action_strat(self):
         # Cycle through strategies
@@ -249,7 +242,6 @@ class ButtonsThread:
         new_id = available[next_idx]
         print(f"[BUTTONS] Changement Stratégie -> {new_id}")
         shared.state['strat_id'] = new_id
-        shared.socketio.emit('state_update', shared.state)
         # Optional: Blink LEDs?
 
     def action_init(self):

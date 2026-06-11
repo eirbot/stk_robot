@@ -14,10 +14,6 @@ def timer_loop():
                 shared.state["timer"] = remaining
                 shared.state["timer_str"] = f"{remaining:.1f}"
                 
-                # Update UI periodically (Heartbeat)
-                # This ensures the timer moves on screen even if strat is thinking
-                shared.socketio.emit('state_update', shared.state)
-                
             time.sleep(0.5) # 2Hz Update Rate
             
         except Exception as e:

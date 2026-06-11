@@ -1,8 +1,7 @@
 import os
 import json
 import socket
-from flask import Flask
-from flask_socketio import SocketIO
+import time
 
 from utils import LedStrip, AudioManager
 
@@ -26,9 +25,15 @@ def save_config(new_cfg):
 
 cfg = load_config()
 
-app = Flask(__name__, template_folder="templates", static_folder="static")
-app.config['SECRET_KEY'] = 'secret_robot_2026'
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+zmq_client_instance = None
+
+def send_sys_info(sys_info_data):
+    if zmq_client_instance:
+        zmq_client_instance.send_event("sys_info", sys_info_data)
+
+def send_log(msg, log_type="info"):
+    if zmq_client_instance:
+        zmq_client_instance.send_event("new_log", {"msg": msg, "type": log_type, "time": ""})
 
 # Hardware
 from utils.sensors.camera_libcamera import LibCamera
