@@ -1,6 +1,6 @@
-#include "ComWithRaspActionneurs.hpp"
-#include "ActionneurVTask.hpp"
-#include "Actionneurs.hpp"
+#include "Communicator.hpp"
+#include "AppState.hpp"
+#include "Arm_ActuatorVTask.hpp"
 #include "Arduino.h"
 #include <cstdint>
 
@@ -32,8 +32,8 @@ void ComWithRasp::Receive() {
   Serial.println("Booting up...");
   
 
-  while (1) {
-    while (Serial.available()) {
+  while (!appState.timeout) {
+    while (!appState.timeout && Serial.available()) {
       char c = (char)Serial.read();
       // Si on détecte la touche Entrée (\r ou \n)
       if (c == '\n' || c == '\r') {

@@ -1,6 +1,8 @@
-#include "Actionneurs.hpp"
-#include "ComWithRaspActionneurs.hpp"
+#include "Arm_Actuator.hpp"
+#include "Communicator.hpp"
+
 #define INCLUDE_vTaskDelay 1
+
 
 static ComWithRasp comRasp;
 

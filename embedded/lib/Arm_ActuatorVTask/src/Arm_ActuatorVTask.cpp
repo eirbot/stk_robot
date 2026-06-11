@@ -1,4 +1,5 @@
-#include "ActionneurVTask.hpp"
+#include "Arm_ActuatorVTask.hpp"
+#include "AppState.hpp"
 #include "Arduino.h"
 #include <cstdint>
 
@@ -70,7 +71,7 @@ ActionneurVTask::ActionneurVTask(Actionneur &act, uint8_t actId, QueueHandle_t &
 void ActVTaskRunner(void *pvParameter) {
     ActionneurVTask* myObject = static_cast<ActionneurVTask*>(pvParameter);
 
-    for (;;) {
+    while (!appState.timeout) {
         TaskParams params{'~', 255, -1}; // empty buffer
 
         // temporary shit polling
