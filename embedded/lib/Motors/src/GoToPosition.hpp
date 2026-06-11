@@ -1,13 +1,6 @@
 #ifndef GOTOPOSITION_H
 #define GOTOPOSITION_H
 
-#include "Arduino.h"
-#include "ClassMotors.hpp"
-#include "common.h"
-#include <cmath>
-#include <iostream>
-#include <vector>
-
 struct Zone {
   float x1, y1, x2, y2;
 };

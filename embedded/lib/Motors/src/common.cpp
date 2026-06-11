@@ -7,8 +7,6 @@ FastAccelStepperEngine engine = FastAccelStepperEngine();
 FastAccelStepper *moteurGauche = NULL;
 FastAccelStepper *moteurDroit = NULL;
 
-ClassMotors mot;
-
 bool FLAG_STOP = false; // Valeur initiale (1 = stop, 0 = continue)
 
 SemaphoreHandle_t xPositionMutex;

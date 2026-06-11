@@ -1,5 +1,8 @@
 #include "main_robot.h"
 
+#include "esp_task_wdt.h"
+#include "Communicator.hpp"
+
 TaskHandle_t vstratHandle = NULL;
 TaskHandle_t vterminal_bluetoothHandle = NULL;
 
@@ -49,7 +52,8 @@ void setup() {
   Serial.println("Démarrage de la communication avec la Raspberry Pi...");
 
   comRasp.StartCom();
-  comRasp.StartTelemetry();
+  // TODO: reimplement the telemetry, if stil required
+  // comRasp.StartTelemetry();
 }
 
 void loop() {}

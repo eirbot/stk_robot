@@ -3,8 +3,9 @@
 
 #include "Arduino.h"
 #include "FastAccelStepper.h"
-#include "common.h"
 #include <cmath>
+
+#include "common.h"
 
 #define DECCEL 30000.0
 

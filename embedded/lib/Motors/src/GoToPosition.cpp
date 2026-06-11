@@ -1,5 +1,9 @@
 #include "GoToPosition.hpp"
 
+#include <cmath>
+#include "common.h"
+#include "ClassMotors.hpp"
+
 GoToPosition::GoToPosition(const float &x_i, const float &y_i,
                            const float &cangle_i, const float &x_f,
                            const float &y_f, const float &cangle_f) {

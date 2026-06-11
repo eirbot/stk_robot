@@ -1,9 +1,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include "Arduino.h"
-#include "common.h"
-#include "ComWithRaspActionneurs.hpp"
+#include "Motors.hpp"
 
 extern TaskParams Parameters;
 
