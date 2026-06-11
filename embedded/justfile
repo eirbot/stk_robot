@@ -1,0 +1,11 @@
+help:
+  @just --list
+
+build:
+  pio run -e Actionneurs
+
+test:
+  pio test -e Actionneurs
+
+upload:
+  pio run -e Actionneurs -t upload 
