@@ -2,14 +2,14 @@
 #define COM_WITH_RASP_HPP
 
 // #include "main_robot.h"
+#include "ActuatorThread.hpp"
 #include <Arduino.h>
 #include <vector>
 
 class ComWithRasp {
 public:
-  ComWithRasp();
+  ComWithRasp(std::vector<ActuatorManager *> actuator_managers): _actuator_managers(actuator_managers) {};
   void StartCom(); // Lance la tâche FreeRTOS
-  void StartWorkers(); // Lance la tâche qui exécute les actions
   void Send();     // Envoie la commande (debug/test)
 
   volatile bool flagInit = false;
@@ -22,6 +22,7 @@ private:
   void asyncGoTo(float x, float y, float angle);
   static void GoToTask(void* pvParameters);
 
+  std::vector<ActuatorManager *> _actuator_managers;
   String commande;
   char rcv;
   static constexpr int MAX_COMMAND_LENGTH = 64;

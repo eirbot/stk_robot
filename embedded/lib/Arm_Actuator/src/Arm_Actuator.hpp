@@ -9,7 +9,7 @@
 extern PCF8575 pcf;
 extern volatile bool IntDetected;
 
-struct Actionneur {
+struct Arm_Actuator {
   uint8_t p9G, p17G, v1, v2, stp, dir, sns;
   bool dir_elevator;
   Servo servo9G, servo17G;
@@ -111,12 +111,10 @@ struct Actionneur {
   }
 };
 
-extern Actionneur act1;
-extern Actionneur act2;
-extern Actionneur act3;
-extern Actionneur act4;
-
-void startActionneurTask();
+extern Arm_Actuator act1;
+extern Arm_Actuator act2;
+extern Arm_Actuator act3;
+extern Arm_Actuator act4;
 
 void ARDUINO_ISR_ATTR IntEXTfct();
 

@@ -1,7 +1,9 @@
 #pragma once
 
+#include "ActuatorThread.hpp"
+#include "Arduino.h"
 #include "Arm_Actuator.hpp"
-#include <stdint.h>
+#include <array>
 
 #define idlog(act, msg) { \
     Serial.print("[Task|Act"); \
@@ -10,40 +12,53 @@
     Serial.println("]" msg); \
 }
 
-extern QueueHandle_t qActVtask1, qActVtask2, qActVtask3, qActVtask4;
-
- /**
- * G: None
- * R: None
- * T: Inversion of current state, no param needed
- * P: Angle flag, one value or the other
- * A: PID controller factor ??? TODO: CHECK
- * I: None
- */
-class TaskParams {
-    public:
-      TaskParams(char cmd, uint8_t P_angleFlag, int A_param1): _cmd(cmd), _P_angleFlag(P_angleFlag), _A_param1(A_param1) {}
-        const char _cmd;
-        const uint8_t _P_angleFlag;
-        const int _A_param1;
-    private:
-};
-
-class ActionneurVTask {
+class Arm_ActuatorVTask: public ActuatorThread<Arm_Actuator, void> {
 public:
-    ActionneurVTask(Actionneur& act, uint8_t actId, QueueHandle_t& queue);
-    void processCommand(TaskParams params);
-    QueueHandle_t& _queue;
-    bool flagInit;
-    const uint8_t _actId;
-private:
-    Actionneur& _act;
-    uint16_t pAngle0, pAngle1;
+    Arm_ActuatorVTask(Arm_Actuator& act, uint8_t actId, const char *const threadName, QueueHandle_t& queue);
+ 
+    void vTask(void *const pvParameter) override;
+
+    bool is_arm_initiated();
+
+protected:
+    void processCommand(TaskParams params) override;
+
+    bool _arm_initiated = false;
 };
 
-extern ActionneurVTask actVTask1;
-extern ActionneurVTask actVTask2;
-extern ActionneurVTask actVTask3;
-extern ActionneurVTask actVTask4;
+#define ARM_TASK_QUEUE_SIZE 25
 
-void ActVTaskRunner(void *pvParameter);
+class Arm_ActuatorManager: public ActuatorManager {
+
+public:
+  /** Init all the thread related to the 4 actuators
+    */
+  Arm_ActuatorManager();
+
+  /**
+   * G: None
+   * R: None
+   * T: Inversion of current state, no param needed
+   * P: Angle flag, one value or the other
+   * A: PID controller factor ??? TODO: CHECK
+   * I: None
+   */
+  void processCommand(const String &cmd,
+                      const std::vector<int> &params) override;
+
+private:
+    std::array<QueueHandle_t, 4> _arm_queues = {
+      xQueueCreate(ARM_TASK_QUEUE_SIZE, sizeof(TaskParams)),
+      xQueueCreate(ARM_TASK_QUEUE_SIZE, sizeof(TaskParams)),
+      xQueueCreate(ARM_TASK_QUEUE_SIZE, sizeof(TaskParams)),
+      xQueueCreate(ARM_TASK_QUEUE_SIZE, sizeof(TaskParams)),
+    };
+
+    std::array<Arm_ActuatorVTask, 4> _arm_threads = {
+        Arm_ActuatorVTask {act1, 0, "Arm_Actuator1_Thread", _arm_queues[0]},
+        Arm_ActuatorVTask {act2, 1, "Arm_Actuator2_Thread", _arm_queues[1]},
+        Arm_ActuatorVTask {act3, 2, "Arm_Actuator3_Thread", _arm_queues[2]},
+        Arm_ActuatorVTask {act4, 3, "Arm_Actuator4_Thread", _arm_queues[3]},
+    };
+
+};

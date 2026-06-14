@@ -1,26 +1,11 @@
 #include "Communicator.hpp"
+#include "ActuatorThread.hpp"
 #include "AppState.hpp"
-#include "Arm_ActuatorVTask.hpp"
 #include "Arduino.h"
-#include <cstdint>
-
-// TODO: check if the cpu assignment without affinity is an issue the CPU core
-ComWithRasp::ComWithRasp() { Serial.begin(115200); }
-
-void ComWithRasp::StartWorkers() {
-  act1.initialiser();
-  act2.initialiser();
-  act3.initialiser();
-  act4.initialiser();
-
-  xTaskCreatePinnedToCore(ActVTaskRunner, "TaskWorkerAct1", 4000, &actVTask1, 1, NULL, tskNO_AFFINITY);
-  xTaskCreatePinnedToCore(ActVTaskRunner, "TaskWorkerAct2", 4000, &actVTask2, 1, NULL, tskNO_AFFINITY);
-  xTaskCreatePinnedToCore(ActVTaskRunner, "TaskWorkerAct3", 4000, &actVTask3, 1, NULL, tskNO_AFFINITY);
-  xTaskCreatePinnedToCore(ActVTaskRunner, "TaskWorkerAct4", 4000, &actVTask4, 1, NULL, tskNO_AFFINITY);
-}
 
 void ComWithRasp::StartCom() {
   // Crée une tâche FreeRTOS qui appelle this->Receive()
+  // TODO: check if the cpu assignment without affinity is an issue the CPU core
   xTaskCreatePinnedToCore([](void *obj) { static_cast<ComWithRasp *>(obj)->Receive(); },
               "ComWithRasp", 4000, this, 1, NULL, tskNO_AFFINITY);
 }
@@ -133,68 +118,8 @@ void ComWithRasp::processLine() {
 }
 
 void ComWithRasp::processCommand(const String &cmd,const std::vector<int> &params) {
-  // wait for all inits
-  if (cmd == "I") {
-    TaskParams taskParams = TaskParams(cmd.charAt(0), 0, 0);
-    xQueueSendToBack(actVTask1._queue, &taskParams, 0);
-    xQueueSendToBack(actVTask2._queue, &taskParams, 0);
-    xQueueSendToBack(actVTask3._queue, &taskParams, 0);
-    xQueueSendToBack(actVTask4._queue, &taskParams, 0);
-
-    while (!actVTask1.flagInit) { Serial.println("waiting for flag init"); vTaskDelay(0); };
-    Serial.println("Init Act1 terminé");
-    while (!actVTask2.flagInit) { Serial.println("waiting for flag init"); vTaskDelay(0); };
-    Serial.println("Init Act2 terminé"); 
-    while(!actVTask3.flagInit) { Serial.println("waiting for flag init"); vTaskDelay(0); };
-    Serial.println("Init Act3 terminé");
-    while(!actVTask4.flagInit) { Serial.println("waiting for flag init"); vTaskDelay(0); };
-    Serial.println("Init Act4 terminé");
-    flagInit = true;
-    return;
-  }
-
-  if (params.size() == 0) {
-    Serial.println("No parameters for other actions, thus not valid ! Ignoring...");
-    return;
-  }
-  
-  int actioStatus = 0;
-  int actId = (int) params[0];
-  int A_param1 = 0;
-  uint8_t P_angleFlag = 0;
-  if (cmd == "P") {
-    if (params.size() != 2) {
-      Serial.println("Invalid number of parameters for command P");
-      return;
-    }
-    P_angleFlag = params[1];
-  } else if (cmd == "A") {
-    if (params.size() != 2) {
-      Serial.println("Invalid number of parameters for command A");
-      return;
-    }
-    A_param1 = params[1];
-  }
-  char buf[8];
-  Serial.print(itoa(actId, buf, 10));
-  Serial.println(" id");
-  TaskParams taskParams = TaskParams(cmd.charAt(0), P_angleFlag, A_param1);
-  
-  switch (actId) {
-    case 1:
-      xQueueSendToBack(actVTask1._queue, &taskParams, 0);
-      break;
-    case 2:
-      xQueueSendToBack(actVTask2._queue, &taskParams, 0);
-      break;
-    case 3:
-      xQueueSendToBack(actVTask3._queue, &taskParams, 0);
-      break;
-    case 4:
-      xQueueSendToBack(actVTask4._queue, &taskParams, 0);
-      break;
-  }
-
+  for (ActuatorManager* actuator_manager: _actuator_managers)
+     actuator_manager->processCommand(cmd, params);
 }
 
 void ComWithRasp::GoToTask(void *pvParameters) {
