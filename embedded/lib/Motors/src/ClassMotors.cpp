@@ -1,13 +1,13 @@
 #include "ClassMotors.hpp"
 
 ClassMotors::ClassMotors() {
-  xQueue = xQueueCreate(30, sizeof(TaskParams));
-  xQueueBuffer = xQueueCreate(30, sizeof(TaskParams));
+  xQueue = xQueueCreate(30, sizeof(MotorTaskParams));
+  xQueueBuffer = xQueueCreate(30, sizeof(MotorTaskParams));
 }
 
 void ClassMotors::vMotors(void *pvParameters) {
   ClassMotors *instance = (ClassMotors *)pvParameters;
-  TaskParams taskParams;
+  MotorTaskParams taskParams;
 
   const TickType_t maxIdleTime = pdMS_TO_TICKS(5000);
 
@@ -132,21 +132,21 @@ void ClassMotors::StartMotors() {
 }
 
 void ClassMotors::EnvoyerDonnees(void *Params) {
-  TaskParams *ptaskParams =
-      (TaskParams *)(Params); // Merci au patron de l'année derrnière en dépit
+  MotorTaskParams *ptaskParams =
+      (MotorTaskParams *)(Params); // Merci au patron de l'année derrnière en dépit
                               // de ses maigres performances concernant la coupe
   xQueueSend(xQueue, ptaskParams, portMAX_DELAY);
 }
 
 void ClassMotors::TransferQueueBuffer() {
-  TaskParams tmp;
+  MotorTaskParams tmp;
   while (xQueueReceive(xQueue, &tmp, 0) == pdTRUE) {
     xQueueSend(xQueueBuffer, &tmp, 0); // Sauvegarde dans le tampon
   }
 }
 
 void ClassMotors::RestoreQueueBuffer() {
-  TaskParams tmp;
+  MotorTaskParams tmp;
   while (xQueueReceive(xQueueBuffer, &tmp, 0) == pdTRUE) {
     xQueueSend(xQueue, &tmp, 0); // Recharge
   }
@@ -172,7 +172,7 @@ void ClassMotors::Stop() {
     vTaskSuspend(vMotorsHandle);
 
   UBaseType_t nbMessages = uxQueueMessagesWaiting(xQueue);
-  TaskParams tmp;
+  MotorTaskParams tmp;
   for (UBaseType_t i = 0; i < nbMessages; ++i)
     xQueueReceive(xQueue, &tmp, 0);
 

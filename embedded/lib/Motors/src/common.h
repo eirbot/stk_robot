@@ -23,7 +23,7 @@ typedef struct {
   int angle;
   int direction;
   int vitesse;
-} TaskParams;
+} MotorTaskParams;
 
 extern float X_POS_INIT;
 extern float Y_POS_INIT;

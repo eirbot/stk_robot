@@ -3,7 +3,7 @@
 
 #include "Motors.hpp"
 
-extern TaskParams Parameters;
+extern MotorTaskParams Parameters;
 
 extern unsigned long startMillis;
 

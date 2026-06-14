@@ -53,7 +53,7 @@ void GoToPosition::CalculPolar() {
 bool GoToPosition::Go(float x_f, float y_f, float cangle_f) {
   static int retryCount = 0;
 
-  TaskParams Params;
+  MotorTaskParams Params;
   x_final = x_f;
   y_final = y_f;
   cangle_final = cangle_f;

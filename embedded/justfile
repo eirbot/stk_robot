@@ -4,6 +4,9 @@ help:
 build:
   pio run -e Actionneurs
 
+motor-build:
+  pio run -e Motor
+
 test:
   pio test -e Actionneurs
 

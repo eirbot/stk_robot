@@ -1,5 +1,6 @@
 #include "main_robot.h"
 
+#include "ActuatorThread.hpp"
 #include "esp_task_wdt.h"
 #include "Communicator.hpp"
 
@@ -8,13 +9,13 @@ TaskHandle_t vterminal_bluetoothHandle = NULL;
 
 unsigned long startMillis;
 
-TaskParams Parameters = {0, 0, 0, 0};
+MotorTaskParams Parameters = {0, 0, 0, 0};
 
 GoToPosition serialGoto{X_POS_INIT, Y_POS_INIT, ANGLE_INIT, 1000, 1000, 0};
 
 void setup() {
   esp_task_wdt_init(10, true);
-  static ComWithRasp comRasp;
+  static ComWithRasp comRasp {std::vector<ActuatorManager*>{}};
 
   // Config des vitesses max et accélérations
   engine.init();
