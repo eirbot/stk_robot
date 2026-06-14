@@ -258,3 +258,5 @@ void ClassMotors::UpdateOdometry() {
     xSemaphoreGive(xPositionMutex);
   }
 }
+
+ClassMotors mot;
