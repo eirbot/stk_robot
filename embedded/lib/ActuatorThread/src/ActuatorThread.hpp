@@ -56,8 +56,10 @@ protected:
 
 class ActuatorManager {
 public:
-  virtual void processCommand(const String &cmd,
+  virtual void scheduleCommand(const String &cmd,
                               const std::vector<int> &params) = 0;
+
+  virtual void loop();
 };
 
 template <typename Actuator, typename PvParametersType>
@@ -85,6 +87,10 @@ template <typename Actuator, typename PvParametersType> void ActuatorThread<Actu
     xQueueSendToBack(_queue_to_thread, &params, 0);
 }
 
+/** Abstract class for an imitation of promises. 
+ *
+ *  Example of await usage : if (!promise.loop()) return;
+ */
 class Promise {
   /** Carry out a promise lifecycle loop.
    *
@@ -107,18 +113,19 @@ protected:
    *
    *  For instance, send a command to another thread through a FreeRTOS Queue.
    */
-  virtual void on_start();
+  virtual void on_start() = 0;
 
   /** Carry out a custom action when the promise has ended with success.
    *
    *  For instance, ask the communication module to notify the Raspberry Pi on
    *  the success of a command.
    */
-  virtual void on_success();
+  virtual void on_success() = 0;
 
   /** Carry out custom checking to figure out if the promise has succedded.
    *
    */
-  virtual bool check_promise_success();
+  virtual bool check_promise_success() = 0;
 };
+
 #endif // ACTUATOR_THREAD_HPP

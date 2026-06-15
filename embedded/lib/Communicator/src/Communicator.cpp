@@ -48,6 +48,8 @@ void ComWithRasp::Receive() {
           rx_index = 0; // On vide pour éviter de bloquer l'ESP
         }
       }
+      for (ActuatorManager *actuator_manager : _actuator_managers)
+         actuator_manager->loop();
     }
     //Serial.println("[Task|Com] Serial empty, delegating CPU...");
     // On rend la main à FreeRTOS
@@ -119,7 +121,7 @@ void ComWithRasp::processLine() {
 
 void ComWithRasp::processCommand(const String &cmd,const std::vector<int> &params) {
   for (ActuatorManager* actuator_manager: _actuator_managers)
-     actuator_manager->processCommand(cmd, params);
+     actuator_manager->scheduleCommand(cmd, params);
 }
 
 void ComWithRasp::GoToTask(void *pvParameters) {

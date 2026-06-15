@@ -10,9 +10,9 @@ const uint16_t pangles0[4] = {40, 60, 120, 140};
 
 Arm_ActuatorVTask::Arm_ActuatorVTask(Arm_Actuator &act, uint8_t actId,
                                      const char *const threadName,
-                                     QueueHandle_t &queue)
+                                     QueueHandle_t &queue_to_thread, QueueHandle_t &queue_from_thread)
     : ActuatorThread<Arm_Actuator, void>::ActuatorThread(act, actId, threadName,
-                                                         queue) {
+                                                         queue_to_thread, queue_from_thread) {
   // assign possible p angles
   if (actId < 4)
     this->pAngle0 = pangles0[actId];
@@ -74,7 +74,7 @@ void Arm_ActuatorVTask::vTask(void *const pvParameter) {
         int to_wait_ms = 10;  // the maximal blocking waiting time of millisecond
         const TickType_t xTicksToWait = pdMS_TO_TICKS(to_wait_ms);
 
-        if (xQueueReceive(_queue, (void *) &params, 0) == pdTRUE) {
+        if (xQueueReceive(_queue_to_thread, (void *) &params, 0) == pdTRUE) {
             if (params._cmd == '~') {
                 Serial.println("Warning: invalid value parsed from queue");
             }
@@ -89,7 +89,7 @@ void Arm_ActuatorVTask::vTask(void *const pvParameter) {
     vTaskDelete(NULL);
 }
 
-Arm_ActuatorManager::Arm_ActuatorManager() {
+Arm_Manager::Arm_Manager() {
   act1.initialiser();
   act2.initialiser();
   act3.initialiser();
@@ -99,24 +99,11 @@ Arm_ActuatorManager::Arm_ActuatorManager() {
     arm_thread.initVTask(NULL);
 }
 
-void Arm_ActuatorManager::processCommand(const String &cmd,
+void Arm_Manager::scheduleCommand(const String &cmd,
                                          const std::vector<int> &params) {
 
   // wait for all inits
   if (cmd == "I") {
-    TaskParams taskParams = TaskParams(cmd.charAt(0), 0, 0);
-    for (Arm_ActuatorVTask arm_thread: _arm_threads)
-       arm_thread.sendToThreadQueue(taskParams);
-
-    bool all_arms_initiated = true;
-    for (Arm_ActuatorVTask arm_thread : _arm_threads) {
-        if (!arm_thread.is_arm_initiated()) {
-            all_arms_initiated = false;
-            break;
-        }
-    }
-
-    if (!all_arms_initiated)
         vTaskDelay(0);
     return;
   }
@@ -151,4 +138,32 @@ void Arm_ActuatorManager::processCommand(const String &cmd,
 
   if (0 <= actId && actId < 4)
      _arm_threads[actId].sendToThreadQueue(taskParams); 
+}
+
+void InitArmPromise::on_start() {
+  TaskParams taskParams = TaskParams('I', 0, 0);
+  for (Arm_ActuatorVTask arm_thread : _arm_threads)
+    arm_thread.sendToThreadQueue(taskParams);
+}
+
+void InitArmPromise::on_success() {
+  // TODO: notify that the init is done
+}
+
+bool InitArmPromise::check_promise_success() {
+  bool all_arms_initiated = true;
+  for (Arm_ActuatorVTask arm_thread : _arm_threads) {
+    if (!arm_thread.is_arm_initiated()) {
+      all_arms_initiated = false;
+      break;
+    }
+  }
+  return all_arms_initiated;
+}
+
+void Arm_Manager::loop() {
+
+    if ()
+_ascensor_pending_tasks
+
 }
