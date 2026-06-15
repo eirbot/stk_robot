@@ -16,8 +16,8 @@ class TaskParams {
 template <typename Actuator, typename PvParametersType>
 class ActuatorThread {
 public:
-    ActuatorThread(Actuator& act, uint8_t actId, const char *const threadName,QueueHandle_t& queue)
-        : _act(act), _actId(actId), _threadName(threadName), _queue(queue) {}
+    ActuatorThread(Actuator& act, uint8_t actId, const char *const threadName, QueueHandle_t& queue_to_thread, QueueHandle_t& queue_from_thread)
+        : _act(act), _actId(actId), _threadName(threadName), _queue_to_thread(_queue_to_thread), _queue_from_thread(queue_from_thread) {}
 
     virtual ~ActuatorThread() = default;
 
@@ -39,7 +39,8 @@ public:
 
 
 protected:
-    QueueHandle_t& _queue;
+    QueueHandle_t& _queue_to_thread;
+    QueueHandle_t& _queue_from_thread;
     bool flagInit = false;
     const uint8_t _actId;
     const char *const _threadName;
@@ -81,6 +82,43 @@ template <typename Actuator, typename PvParametersType> void ActuatorThread<Actu
 }
 
 template <typename Actuator, typename PvParametersType> void ActuatorThread<Actuator, PvParametersType>::sendToThreadQueue(TaskParams& params) {
-    xQueueSendToBack(_queue, &params, 0);
+    xQueueSendToBack(_queue_to_thread, &params, 0);
 }
+
+class Promise {
+  /** Carry out a promise lifecycle loop.
+   *
+   *  Returns the success state of the Promise.
+   *
+   *  If it is not a success, consider yielding to the other async loops.
+   *  Else, consider processing the next instructions/promises of your async
+   *  loop.
+   *
+   *  If the promise has not started yet, then the first loop call will be carry
+   *  out the start action.
+   */
+  bool loop();
+
+protected:
+  bool _started = false;
+  bool _finished = false;
+
+  /** Carry out a custom action when the promise is initiated.
+   *
+   *  For instance, send a command to another thread through a FreeRTOS Queue.
+   */
+  virtual void on_start();
+
+  /** Carry out a custom action when the promise has ended with success.
+   *
+   *  For instance, ask the communication module to notify the Raspberry Pi on
+   *  the success of a command.
+   */
+  virtual void on_success();
+
+  /** Carry out custom checking to figure out if the promise has succedded.
+   *
+   */
+  virtual bool check_promise_success();
+};
 #endif // ACTUATOR_THREAD_HPP
