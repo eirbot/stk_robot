@@ -1,0 +1,3 @@
+[submodule "embedded/lib/qpcpp"]
+	path = embedded/lib/qpcpp
+	url = https://github.com/QuantumLeaps/qpcpp

@@ -2,7 +2,7 @@ help:
   @just --list
 
 build:
-  pio run -e Actionneurs
+  pio run -e full
 
 motor-build:
   pio run -e Motor
