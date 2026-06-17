@@ -66,23 +66,9 @@ if __name__ == "__main__":
         # Petit délai pour laisser le temps à Flask/SocketIO de démarrer
         time.sleep(3)
 
-        # --- ATTENTE DU SERVEUR WEB ---
-        import socket
-        def wait_for_port(port, host='127.0.0.1', timeout=30):
-            start_time = time.time()
-            while time.time() - start_time < timeout:
-                try:
-                    with socket.create_connection((host, port), timeout=1):
-                        return True
-                except (ConnectionRefusedError, OSError):
-                    time.sleep(0.5)
-            return False
-
-        print("[MAIN] Attente du serveur Go sur le port 8080...")
-        if wait_for_port(8080):
-            print("[MAIN] Serveur prêt !")
-        else:
-            print("[MAIN] ⚠️ Timeout : Le serveur Go n'a pas démarré à temps.")
+        # --- LIEN VERS LE SERVEUR DÉPORTÉ ---
+        server_ip = shared.cfg.get('server_ip', '192.168.10.2')
+        print(f"[MAIN] Connexion au serveur déporté {server_ip}:8080...")
 
         # --- UPDATE LED INITIALE (Couleur Equipe) ---
         # Ne pas écraser si on a une alerte tirette en cours
@@ -99,7 +85,7 @@ if __name__ == "__main__":
 
         # 4. Interface Graphique (RÉACTIVÉE)
         print("[MAIN] Lancement de l'affichage local...")
-        webview.create_window('Robot 2026', 'http://127.0.0.1:8080', fullscreen=True)
+        webview.create_window('Robot 2026', f'http://{server_ip}:8080?mode=robot', fullscreen=True)
         webview.start()
         
     except KeyboardInterrupt:

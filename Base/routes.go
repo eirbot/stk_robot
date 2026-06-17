@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -8,6 +9,26 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 )
+
+func broadcastState() {
+	globalState.Lock()
+	packet, err := json.Marshal(map[string]interface{}{
+		"type": "state_update",
+		"data": &globalState,
+	})
+	globalState.Unlock()
+
+	if err == nil {
+		globalHub.Broadcast(packet)
+	}
+}
+
+func saveConfigToFile(cfg map[string]interface{}) {
+	configData, err := json.MarshalIndent(cfg, "", "    ")
+	if err == nil {
+		_ = os.WriteFile("../Rasp/config.json", configData, 0644)
+	}
+}
 
 func setupRoutes(app *fiber.App) {
 	// Services de fichiers statiques pour l'IHM
@@ -25,16 +46,18 @@ func setupRoutes(app *fiber.App) {
 		act := c.Params("act")
 
 		globalState.Lock()
-		defer globalState.Unlock()
-
 		if act == "team" {
 			if globalState.Team == "BLEUE" {
 				globalState.Team = "JAUNE"
 			} else {
 				globalState.Team = "BLEUE"
 			}
-			// On notifie le robot instantanément pour ses LEDs de couleur d'équipe
-			envoyerAuRobot("set_team", map[string]string{"team": globalState.Team})
+			if globalState.Config != nil {
+				globalState.Config["team"] = globalState.Team
+				saveConfigToFile(globalState.Config)
+			}
+			// On notifie le robot de la nouvelle configuration
+			envoyerAuRobot("config_update", globalState.Config)
 		} else if act == "start" {
 			globalState.MatchRunning = true
 			globalState.FsmState = "RUNNING"
@@ -52,6 +75,9 @@ func setupRoutes(app *fiber.App) {
 		} else if act == "tirette" {
 			envoyerAuRobot("action", "tirette")
 		}
+		globalState.Unlock()
+
+		broadcastState()
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
 
@@ -68,6 +94,8 @@ func setupRoutes(app *fiber.App) {
 		}
 		envoyerAuRobot("update_score", map[string]int{"score_current": globalState.ScoreCurrent})
 		globalState.Unlock()
+
+		broadcastState()
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
 
@@ -76,7 +104,47 @@ func setupRoutes(app *fiber.App) {
 		if err := c.BodyParser(&body); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 		}
-		envoyerAuRobot("config_edit", body)
+
+		key, okKey := body["key"].(string)
+		val, okVal := body["val"]
+
+		if okKey && okVal && val != nil {
+			globalState.Lock()
+			if globalState.Config == nil {
+				globalState.Config = make(map[string]interface{})
+			}
+
+			// Helper to set nested or flat key in config map
+			keys := strings.Split(key, ".")
+			curr := globalState.Config
+			for i := 0; i < len(keys)-1; i++ {
+				k := keys[i]
+				nextMap, ok := curr[k].(map[string]interface{})
+				if !ok {
+					newMap := make(map[string]interface{})
+					curr[k] = newMap
+					curr = newMap
+				} else {
+					curr = nextMap
+				}
+			}
+			curr[keys[len(keys)-1]] = val
+
+			// Special side-effects
+			if key == "team" {
+				if strVal, ok := val.(string); ok {
+					globalState.Team = strVal
+				}
+			}
+
+			saveConfigToFile(globalState.Config)
+			globalState.Unlock()
+
+			// Notifier le robot avec la config complète mise à jour
+			envoyerAuRobot("config_update", globalState.Config)
+			broadcastState()
+		}
+
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
 
@@ -167,11 +235,32 @@ func setupRoutes(app *fiber.App) {
 
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
 		fmt.Println("[Web-IHM] Client connecté")
-		defer c.Close()
+		
+		ch := make(chan []byte, 100)
+		globalHub.Lock()
+		globalHub.clients[c] = ch
+		globalHub.Unlock()
+
+		defer func() {
+			globalHub.Lock()
+			delete(globalHub.clients, c)
+			globalHub.Unlock()
+			c.Close()
+		}()
+
+		// Envoyer l'état initial immédiatement après connexion
+		globalState.Lock()
+		initPacket, err := json.Marshal(map[string]interface{}{
+			"type": "state_update",
+			"data": &globalState,
+		})
+		globalState.Unlock()
+		if err == nil {
+			c.WriteMessage(websocket.TextMessage, initPacket)
+		}
 
 		// Boucle d'envoi de la télémétrie/état vers le navigateur à haute fréquence
-		for {
-			msg := <-chanToWeb
+		for msg := range ch {
 			if err := c.WriteMessage(websocket.TextMessage, msg); err != nil {
 				break
 			}

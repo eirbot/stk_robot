@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	zmq "github.com/pebbe/zmq4"
 )
 
@@ -27,7 +28,27 @@ func pipelineReceptionRobot() {
 		}
 
 		if isGeneric {
-			if msgObj.Type == "state_update" {
+			if msgObj.Type == "telemetry" {
+				var tel RobotTelemetry
+				if err := json.Unmarshal(msgObj.Data, &tel); err == nil {
+					globalState.Lock()
+					globalState.Telemetry = tel
+
+					// Si la tirette est tirée physiquement sur le robot, on déclenche le départ côté PC
+					if tel.Tirette == "TRIGGERED" && !globalState.MatchRunning {
+						globalState.MatchRunning = true
+						globalState.FsmState = "RUNNING"
+					}
+
+					packet, _ := json.Marshal(map[string]interface{}{
+						"type": "state_update",
+						"data": &globalState,
+					})
+					globalState.Unlock()
+
+					globalHub.Broadcast(packet)
+				}
+			} else if msgObj.Type == "state_update" {
 				var update StateUpdate
 				if err := json.Unmarshal(msgObj.Data, &update); err == nil {
 					globalState.Lock()
@@ -87,17 +108,84 @@ func pipelineReceptionRobot() {
 					})
 					globalState.Unlock()
 
-					select {
-					case chanToWeb <- packet:
-					default:
+					globalHub.Broadcast(packet)
+				}
+			} else if msgObj.Type == "action" {
+				var act string
+				if err := json.Unmarshal(msgObj.Data, &act); err == nil {
+					globalState.Lock()
+					if act == "team" {
+						if globalState.Team == "BLEUE" {
+							globalState.Team = "JAUNE"
+						} else {
+							globalState.Team = "BLEUE"
+						}
+						if globalState.Config != nil {
+							globalState.Config["team"] = globalState.Team
+							saveConfigToFile(globalState.Config)
+						}
+						envoyerAuRobot("config_update", globalState.Config)
+					} else if act == "start" {
+						globalState.MatchRunning = true
+						globalState.FsmState = "RUNNING"
+						envoyerAuRobot("action", "start")
+					} else if act == "stop" {
+						globalState.MatchRunning = false
+						globalState.FsmState = "STOPPED"
+						envoyerAuRobot("action", "stop")
+					} else if act == "reset" {
+						globalState.MatchRunning = false
+						globalState.MatchFinished = false
+						globalState.ScoreCurrent = 0
+						globalState.FsmState = "WAIT_START"
+						envoyerAuRobot("action", "reset")
+					}
+					globalState.Unlock()
+					broadcastState()
+				}
+			} else if msgObj.Type == "config_edit" {
+				var body map[string]interface{}
+				if err := json.Unmarshal(msgObj.Data, &body); err == nil {
+					key, okKey := body["key"].(string)
+					val, okVal := body["val"]
+
+					if okKey && okVal && val != nil {
+						globalState.Lock()
+						if globalState.Config == nil {
+							globalState.Config = make(map[string]interface{})
+						}
+
+						keys := strings.Split(key, ".")
+						curr := globalState.Config
+						for i := 0; i < len(keys)-1; i++ {
+							k := keys[i]
+							nextMap, ok := curr[k].(map[string]interface{})
+							if !ok {
+								newMap := make(map[string]interface{})
+								curr[k] = newMap
+								curr = newMap
+							} else {
+								curr = nextMap
+							}
+						}
+						curr[keys[len(keys)-1]] = val
+
+						if key == "team" {
+							if strVal, ok := val.(string); ok {
+								globalState.Team = strVal
+							}
+						}
+
+						saveConfigToFile(globalState.Config)
+						globalState.Unlock()
+
+						envoyerAuRobot("config_update", globalState.Config)
+						broadcastState()
 					}
 				}
 			} else {
 				// Relay any other message types (new_log, sys_info) directly to web clients
-				select {
-				case chanToWeb <- []byte(msg):
-				default:
-				}
+				globalHub.Broadcast([]byte(msg))
 			}
 		} else {
 			// Fallback: decode as flat telemetry
@@ -115,10 +203,7 @@ func pipelineReceptionRobot() {
 				})
 				globalState.Unlock()
 
-				select {
-				case chanToWeb <- packet:
-				default:
-				}
+				globalHub.Broadcast(packet)
 			}
 		}
 	}

@@ -102,6 +102,21 @@ window.socket.on('state_update', (state) => {
     arrows.forEach(e => {
         e.style.visibility = (manualEnabled && !runningMatch) ? 'visible' : 'hidden';
     });
+
+    // --- 9. Infos Système & Stratégie (Haut de l'écran) ---
+    const sysInfoEl = document.getElementById('sys-info');
+    if (sysInfoEl) {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') === 'robot') {
+            const config = state.config || {};
+            const stratName = state.strat_id || config.static_strat || 'Aucune';
+            let voltStr = '--.-V';
+            if (state.telemetry && typeof state.telemetry.voltage === 'number') {
+                voltStr = state.telemetry.voltage.toFixed(1) + 'V';
+            }
+            sysInfoEl.innerText = `${stratName} | ${voltStr}`;
+        }
+    }
 });
 
 // Fonction indispensable pour les boutons de score

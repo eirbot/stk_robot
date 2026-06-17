@@ -1,64 +1,60 @@
 {
-    "team": "BLEUE",
-    "score_target": 142,
-    "ui": {
-        "width": 800,
-        "height": 480
-    },
-    "gpio": {
-        "use_buttons": true,
-        "pins": {
-            "UP": 17,
-            "DOWN": 27,
-            "SELECT": 22,
-            "BACK": 23,
-            "START": 5,
-            "STOP": 6
-        }
-    },
-    "leds": {
-        "enabled": true,
-        "num_leds": 60,
-        "pin_pwm": 18,
-        "brightness": 128,
-        "invert": false,
-        "freq_hz": 800000,
-        "dma": 10
-    },
-    "camera": {
-        "enabled": true,
-        "id": 0,
-        "width": 320,
-        "height": 240,
-        "fps": 20
-    },
     "audio": {
         "enabled": true,
-        "volume": 0.8,
         "tracks": {
+            "end": "outro.mp3",
             "intro": "intro.mp3",
-            "match": "match_loop.mp3",
-            "end": "outro.mp3"
-        }
+            "match": "match_loop.mp3"
+        },
+        "volume": 0.8
+    },
+    "avoidance": true,
+    "camera": {
+        "enabled": true,
+        "fps": 20,
+        "height": 240,
+        "id": 0,
+        "width": 320
+    },
+    "ekf": true,
+    "gpio": {
+        "pins": {
+            "BACK": 23,
+            "DOWN": 27,
+            "SELECT": 22,
+            "START": 5,
+            "STOP": 6,
+            "UP": 17
+        },
+        "use_buttons": true
+    },
+    "leds": {
+        "brightness": 128,
+        "dma": 10,
+        "enabled": true,
+        "freq_hz": 800000,
+        "invert": false,
+        "num_leds": 60,
+        "pin_pwm": 18
     },
     "lidar": {
-        "port": "/dev/lidar",
+        "angle_offset_deg": -90,
         "baudrate": 460800,
-        "angle_offset_deg": -90.0,
         "beacons": {
             "A": [
-                50.0,
-                -1594.0
+                50,
+                -1594
             ],
             "B": [
-                1950.0,
-                -1594.0
+                1950,
+                -1594
             ],
             "C": [
-                1000.0,
-                1594.0
+                1000,
+                1594
             ]
         },
+        "port": "/dev/lidar",
         "table_dimensions": [
             3000,
             2000
@@ -66,9 +62,14 @@
     },
     "lidar_mode": "MATCH",
     "lidar_simu": false,
+    "score_target": 142,
+    "server_ip": "192.168.10.2",
     "skip_homologation": false,
-    "ekf": true,
-    "avoidance": true,
+    "static_strat": "3b_pouss_plus",
     "strat_mode": "STATIC",
-    "static_strat": "3_b_pouss"
+    "team": "BLEUE",
+    "ui": {
+        "height": 480,
+        "width": 800
+    }
 }

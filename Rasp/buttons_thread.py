@@ -210,23 +210,16 @@ class ButtonsThread:
 
     # --- ACTIONS ---
     def action_team(self):
-        new_team = 'JAUNE' if shared.state['team'] == 'BLEUE' else 'BLEUE'
-        print(f"[BUTTONS] Changement Equipe -> {new_team}")
-        shared.state['team'] = new_team
-        
-        # Visual Update
-        if new_team == 'JAUNE': shared.send_led_cmd("COLOR:255,160,0")
-        else: shared.send_led_cmd("COLOR:0,0,255")
+        print("[BUTTONS] Demande Changement Equipe au serveur Go...")
+        if shared.zmq_client_instance:
+            shared.zmq_client_instance.send_event("action", "team")
 
     def action_strat(self):
         # Cycle through strategies
         current_id = shared.state.get('strat_id', '')
         
-        # Reload strategies if empty (maybe files were added late)
         if not shared.strategies_list:
-             print("[BUTTONS] Liste stratégies vide, tentative de reload...")
-             # Assuming shared could initiate reload or we just warn
-             # For now, just warn.
+             print("[BUTTONS] Liste stratégies vide, impossible de changer.")
         
         available = list(shared.strategies_list.keys())
         if not available:
@@ -240,9 +233,9 @@ class ButtonsThread:
             next_idx = 0
             
         new_id = available[next_idx]
-        print(f"[BUTTONS] Changement Stratégie -> {new_id}")
-        shared.state['strat_id'] = new_id
-        # Optional: Blink LEDs?
+        print(f"[BUTTONS] Demande Changement Stratégie -> {new_id} au serveur Go...")
+        if shared.zmq_client_instance:
+            shared.zmq_client_instance.send_event("config_edit", {"key": "static_strat", "val": new_id})
 
     def action_init(self):
         print("[BUTTONS] INIT des Actionneurs !")

@@ -1,8 +1,9 @@
-/* Rasp/ihm/static/blockly_style.css */
+/* static/blockly_style.css */
 
-html, body { 
-    height: 100%; 
-    margin: 0; 
+html,
+body {
+    height: 100%;
+    margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
@@ -10,15 +11,15 @@ html, body {
 }
 
 /* Le bandeau du haut */
-#controls { 
-    background: #333; 
-    color: white; 
-    padding: 0 20px; 
-    height: 60px; 
+#controls {
+    background: #333;
+    color: white;
+    padding: 0 20px;
+    height: 60px;
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     z-index: 10;
 }
 
@@ -26,25 +27,32 @@ html, body {
 #main-container {
     display: flex;
     flex-grow: 1;
-    height: calc(100% - 60px); /* Le reste de la hauteur */
+    height: calc(100% - 60px);
+    /* Le reste de la hauteur */
     overflow: hidden;
 }
 
 /* Partie Gauche : Blockly */
 #blocklyArea {
-    flex: 60%; /* Prend 60% de la largeur */
+    flex: 60%;
+    /* Prend 60% de la largeur */
     height: 100%;
     position: relative;
     border-right: 2px solid #ccc;
 }
+
 #blocklyDiv {
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 /* Partie Droite : Simulation */
 #simuArea {
-    flex: 40%; /* Prend 40% de la largeur */
+    flex: 40%;
+    /* Prend 40% de la largeur */
     background-color: #f0f0f0;
     display: flex;
     flex-direction: column;
@@ -56,18 +64,25 @@ html, body {
 
 canvas {
     background: white;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     border-radius: 4px;
     max-width: 100%;
     /* On garde le ratio de la table */
 }
 
 /* Styles Communs */
-input, select { padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-right: 10px; }
-button { 
-    padding: 8px 16px; 
-    border: none; 
-    cursor: pointer; 
+input,
+select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    margin-right: 10px;
+}
+
+button {
+    padding: 8px 16px;
+    border: none;
+    cursor: pointer;
     font-weight: bold;
     border-radius: 4px;
     transition: 0.2s;
@@ -75,11 +90,73 @@ button {
 }
 
 /* Couleurs Boutons */
-#saveBtn { background: #28a745; color: white; }
-#saveBtn:hover { background: #218838; }
+#saveBtn {
+    background: #28a745;
+    color: white;
+}
 
-#loadBtn { background: #17a2b8; color: white; }
-#loadBtn:hover { background: #138496; }
+#saveBtn:hover {
+    background: #218838;
+}
 
-#simuBtn { background: #ffc107; color: #333; } /* Bouton Jaune pour Simu */
-#simuBtn:hover { background: #e0a800; }
+#loadBtn {
+    background: #17a2b8;
+    color: white;
+}
+
+#loadBtn:hover {
+    background: #138496;
+}
+
+#simuBtn {
+    background: #ffc107;
+    color: #333;
+}
+
+/* Bouton Jaune pour Simu */
+#simuBtn:hover {
+    background: #e0a800;
+}
+
+/* =============================================================================
+   PERSONNALISATION DE LA TOOLBOX BLOCKLY (AMÉLIORATION DU CONTRASTE)
+   ============================================================================= */
+
+/* Fond sombre de la colonne de la Toolbox (remplace le gris clair par défaut) */
+.blocklyToolbox {
+    background-color: #1e293b !important; /* Bleu ardoise très sombre */
+    color: #f8fafc !important; /* Texte de base blanc */
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Style de chaque ligne/catégorie de la Toolbox */
+.blocklyToolboxCategory {
+    padding: 8px 12px !important;
+    margin: 4px 6px !important;
+    border-radius: 6px !important;
+    background-color: transparent !important;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+/* Couleur et style du texte des catégories */
+.blocklyToolboxCategoryLabel {
+    color: #f8fafc !important; /* Contraste maximal (blanc) */
+    font-weight: 600 !important;
+    font-size: 0.95em !important;
+    font-family: 'Segoe UI', sans-serif !important;
+}
+
+/* Survol des catégories (effet hover discret) */
+.blocklyToolboxCategory:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    transform: translateX(2px);
+}
+
+/* Catégorie active / sélectionnée */
+.blocklyToolboxCategory.blocklyToolboxSelected {
+    background-color: #007bff !important; /* Fond bleu de sélection */
+}
+
+.blocklyToolboxCategory.blocklyToolboxSelected .blocklyToolboxCategoryLabel {
+    color: #ffffff !important;
+}

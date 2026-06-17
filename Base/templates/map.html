@@ -2,23 +2,29 @@
 <html>
 
 <head>
-    <title>MAP</title>
+    <title>Simulation 3D - EIRBOT 2026</title>
     <link rel="stylesheet" href="/static/css/common.css">
-    <link rel="stylesheet" href="/static/css/map.css">
+    <link rel="stylesheet" href="/static/css/map.css?v=1.2">
+    <!-- Three.js CDN and addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="/static/js/common.js" defer></script>
-    <script src="/static/js/map.js" defer></script>
+    <script src="/static/js/map.js?v=1.3" defer></script>
 </head>
 
 <body class="mode-BLEUE">
     <div class="header">
-        <a href="/debug" class="btn-back">← Retour</a>
-        <div style="font-weight:bold;">CARTE TEMPS RÉEL</div>
+        <a href="/" class="btn-back">← Retour</a>
+        <div style="font-weight:bold;">CARTE 3D TEMPS RÉEL</div>
         <div class="sys-info" id="sys-info">...</div>
     </div>
-    <div id="map-container">
-        <canvas id="mapCanvas" width="900" height="600"></canvas>
-        <div class="info-pos" id="pos-text">X: 0 Y: 0 θ: 0</div>
+    
+    <div id="simu3d-container">
+        <button class="btn-view-toggle" id="btn-view-toggle">Vue 2D (Dessus)</button>
+        <div id="coord-tooltip" class="coord-tooltip" style="display: none;">X: 0, Y: 0</div>
     </div>
+    <div class="info-pos" id="pos-text">Connexion au robot en cours...</div>
 </body>
 
 </html>

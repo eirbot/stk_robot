@@ -191,3 +191,66 @@ button:active {
         background: #ff5252;
     }
 }
+
+/* --- ROBOT SCREEN MODE --- */
+body.robot-screen {
+    border: none !important;
+    overflow: hidden !important;
+}
+
+body.robot-screen .controls,
+body.robot-screen #tirette-status,
+body.robot-screen .header > div:first-child,
+body.robot-screen .dashboard > div:nth-child(3),
+body.robot-screen .dashboard > div:nth-child(4),
+body.robot-screen .dashboard > div:nth-child(5) {
+    display: none !important;
+}
+
+body.robot-screen .header {
+    width: 100vw;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center !important;
+    align-items: center;
+    border-bottom: none !important;
+    background: transparent !important;
+    padding: 3vh 0 0 0 !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+}
+
+body.robot-screen .sys-info {
+    font-size: 5vh !important;
+    text-align: center !important;
+    width: 100%;
+    opacity: 1 !important;
+}
+
+body.robot-screen .dashboard {
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    padding: 10vh 2vw 2vh 2vw !important;
+}
+
+body.robot-screen .team-box {
+    font-size: 8vh !important;
+    padding: 1.5vh 5vw !important;
+    margin-bottom: 0vh !important;
+}
+
+body.robot-screen .score-box {
+    font-size: 30vh !important;
+}
+
+body.robot-screen .timer-box {
+    font-size: 18vh !important;
+    margin-top: 0vh !important;
+}

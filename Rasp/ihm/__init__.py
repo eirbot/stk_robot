@@ -27,7 +27,8 @@ def run_ihm():
     print("[IHM] Démarrage du client ZMQ...")
     
     # Initialisation et démarrage du client ZMQ
-    client = ZmqClient(server_ip="127.0.0.1")
+    server_ip = shared.cfg.get('server_ip', '192.168.10.2')
+    client = ZmqClient(server_ip=server_ip)
     shared.zmq_client_instance = client
     client.start()
     

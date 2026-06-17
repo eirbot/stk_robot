@@ -1,6 +1,11 @@
 package main
 
-import zmq "github.com/pebbe/zmq4"
+import (
+	"sync"
+
+	"github.com/gofiber/websocket/v2"
+	zmq "github.com/pebbe/zmq4"
+)
 
 var globalState = FullState{
 	Team:     "BLEUE",
@@ -8,6 +13,24 @@ var globalState = FullState{
 	FsmState: "WAIT_START",
 }
 
-// Canaux internes Go pour dispatcher les messages
-var chanToWeb = make(chan []byte, 100)
+type Hub struct {
+	sync.Mutex
+	clients map[*websocket.Conn]chan []byte
+}
+
+var globalHub = Hub{
+	clients: make(map[*websocket.Conn]chan []byte),
+}
+
+func (h *Hub) Broadcast(msg []byte) {
+	h.Lock()
+	defer h.Unlock()
+	for _, ch := range h.clients {
+		select {
+		case ch <- msg:
+		default:
+		}
+	}
+}
+
 var zmqPublisher *zmq.Socket

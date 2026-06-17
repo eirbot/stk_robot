@@ -1,3 +1,67 @@
-#map-container { position: relative; margin: 20px auto; border: 2px solid #555; display: inline-block; }
-canvas { background: #222; max-width: 100%; height: auto; display: block; }
-.info-pos { margin-top: 5px; font-family: monospace; color: #aaa; text-align: center; }
+#simu3d-container {
+    width: 100vw;
+    height: calc(100vh - 62px); /* calc height below header */
+    position: relative;
+    background: #0f1115;
+    cursor: crosshair; /* Set cursor to crosshair for precise pointing */
+}
+
+.info-pos {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 10;
+    background: rgba(20, 24, 33, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.1em;
+    padding: 12px 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    pointer-events: none; /* Click pass-through to OrbitControls */
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.btn-view-toggle {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 15;
+    background: rgba(0, 123, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    font-family: inherit;
+    font-weight: bold;
+    font-size: 0.95em;
+    padding: 12px 20px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+    transition: 0.2s ease-in-out;
+}
+
+.btn-view-toggle:hover {
+    background: rgba(0, 123, 255, 1);
+    transform: translateY(-2px);
+}
+
+.coord-tooltip {
+    position: absolute;
+    z-index: 20;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #38bdf8; /* Nice tech cyan color */
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    font-size: 0.9em;
+    padding: 6px 12px;
+    border-radius: 6px;
+    pointer-events: none;
+    transform: translate(15px, 15px); /* Offset from cursor */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}

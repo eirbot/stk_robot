@@ -1,14 +1,38 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
 	zmq "github.com/pebbe/zmq4"
 )
 
+func loadConfig() map[string]interface{} {
+	content, err := os.ReadFile("../Rasp/config.json")
+	if err != nil {
+		log.Printf("Impossible de lire config.json : %v", err)
+		return make(map[string]interface{})
+	}
+	var cfg map[string]interface{}
+	if err := json.Unmarshal(content, &cfg); err != nil {
+		log.Printf("Impossible de décoder config.json : %v", err)
+		return make(map[string]interface{})
+	}
+	return cfg
+}
+
 func main() {
+	// Charger la configuration globale
+	globalState.Lock()
+	globalState.Config = loadConfig()
+	if t, ok := globalState.Config["team"].(string); ok {
+		globalState.Team = t
+	}
+	globalState.Unlock()
+
 	// Initialisation du canal descendant ZMQ PUB (PC -> Robot)
 	var err error
 	zmqPublisher, err = zmq.NewSocket(zmq.PUB)

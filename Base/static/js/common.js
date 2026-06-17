@@ -120,3 +120,25 @@ window.socket.on('state_update', (state) => {
     if (state.match_finished) document.body.classList.add('breathing-' + state.team);
     else document.body.classList.remove('breathing-BLEUE', 'breathing-JAUNE');
 });
+
+// --- DÉTECTION DU MODE ÉCRAN ROBOT ---
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'robot') {
+        document.body.classList.add('robot-screen');
+        console.log("[COMMON] Mode Robot activé (classe CSS robot-screen ajoutée)");
+    }
+});
+
+// --- MISE À JOUR COMMUNE DES INFOS SYSTEME (IP & Batterie) SUR PC ---
+window.socket.on('sys_info', (data) => {
+    const sysInfoEl = document.getElementById('sys-info');
+    if (sysInfoEl) {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') !== 'robot') {
+            const volt = data.volt || '--.-V';
+            const ip = data.ip || '?.?.?.?';
+            sysInfoEl.innerText = `${ip} | ${volt}`;
+        }
+    }
+});

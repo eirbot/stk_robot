@@ -21,6 +21,7 @@ class ZmqClient(threading.Thread):
         self.sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
         
         self.running = True
+        self.last_sent_state = {}
 
     def run(self):
         print(f"[ZMQ CLIENT] Démarrage... PUSH -> {self.server_ip}:5555, SUB -> {self.server_ip}:5556")
@@ -48,14 +49,9 @@ class ZmqClient(threading.Thread):
 
             print(f"[ZMQ CLIENT] Commande reçue : {cmd_type} -> {payload}")
             
-            if cmd_type == "set_team":
-                new_team = payload.get("team")
-                if new_team:
-                    shared.state["team"] = new_team
-                    if new_team == 'JAUNE':
-                        shared.send_led_cmd("COLOR:255,160,0")
-                    else:
-                        shared.send_led_cmd("COLOR:0,0,255")
+            if cmd_type == "config_update":
+                if payload:
+                    shared.update_config_from_server(payload)
                     
             elif cmd_type == "action":
                 act = payload
@@ -85,25 +81,6 @@ class ZmqClient(threading.Thread):
             elif cmd_type == "update_score":
                 score = payload.get("score_current", 0)
                 shared.state["score_current"] = score
-
-            elif cmd_type == "config_edit":
-                key = payload.get("key")
-                val = payload.get("val")
-                if key and val is not None:
-                    shared.state[key] = val
-                    if key == "ekf_enabled":
-                        shared.ekf_enabled = val
-                    if "config" in shared.state:
-                        conf = shared.state["config"]
-                        keys = key.split('.')
-                        current_level = conf
-                        for k in keys[:-1]:
-                            if k not in current_level or not isinstance(current_level[k], dict):
-                                current_level[k] = {}
-                            current_level = current_level[k]
-                        current_level[keys[-1]] = val
-                        shared.state["config"] = conf
-                        shared.save_config(conf)
 
             elif cmd_type == "goto":
                 try:
@@ -168,31 +145,44 @@ class ZmqClient(threading.Thread):
     def _sender_loop(self):
         while self.running:
             try:
-                state_data = {
+                # 1. Envoi de la télémétrie à 10Hz
+                telemetry_data = {
+                    "x": shared.robot_pos.get("x", 0.0),
+                    "y": shared.robot_pos.get("y", 0.0),
+                    "theta": shared.robot_pos.get("theta", 0.0),
+                    "voltage": shared.state.get("voltage", 0.0),
+                    "current": shared.state.get("current", 0.0),
+                    "tirette": shared.state.get("tirette", "WAIT_INSERT"),
+                    "imu_yaw": 0.0
+                }
+                try:
+                    from utils.system_info import get_voltage_float, get_battery_current
+                    telemetry_data["voltage"] = get_voltage_float()
+                    telemetry_data["current"] = get_battery_current()
+                except Exception as e:
+                    pass
+
+                self.send_event("telemetry", telemetry_data)
+
+                # 2. Envoi de l'état de contrôle uniquement s'il y a un changement
+                current_state = {
                     "match_running": shared.state.get("match_running", False),
                     "match_finished": shared.state.get("match_finished", False),
                     "score_current": shared.state.get("score_current", 0),
-                    "team": shared.state.get("team", "BLEUE"),
                     "timer_str": shared.state.get("timer_str", "100.0"),
-                    "fsm_state": shared.state.get("fsm_state", "INIT"),
-                    "telemetry": {
-                        "x": shared.robot_pos.get("x", 0.0),
-                        "y": shared.robot_pos.get("y", 0.0),
-                        "theta": shared.robot_pos.get("theta", 0.0),
-                        "voltage": shared.state.get("voltage", 0.0),
-                        "current": shared.state.get("current", 0.0),
-                        "tirette": shared.state.get("tirette", "WAIT_INSERT"),
-                        "imu_yaw": 0.0
-                    }
+                    "fsm_state": shared.state.get("fsm_state", "INIT")
                 }
-                from utils import get_voltage_float, get_battery_current
-                try:
-                    state_data["telemetry"]["voltage"] = get_voltage_float()
-                    state_data["telemetry"]["current"] = get_battery_current()
-                except:
-                    pass
 
-                self.send_event("state_update", state_data)
+                if current_state != self.last_sent_state:
+                    # Envoi uniquement des champs modifiés pour éviter les écrasements concurrents (ex: couleur équipe)
+                    diff_state = {}
+                    for k, v in current_state.items():
+                        if k not in self.last_sent_state or self.last_sent_state[k] != v:
+                            diff_state[k] = v
+                    if diff_state:
+                        self.send_event("state_update", diff_state)
+                    self.last_sent_state = current_state.copy()
+
             except Exception as e:
                 print(f"[ZMQ CLIENT] Erreur boucle d'envoi : {e}")
             time.sleep(0.1)
