@@ -30,6 +30,10 @@ struct ArmTaskParam {
 #define ARM__MAX_PENDING_CMD_NB 25
 #endif
 
+#ifndef ARM_TASK_DELAY_MS
+#define ARM_TASK_DELAY_MS 25
+#endif
+
 const uint16_t pangles0[4] = {40, 60, 120, 140};
 
 class Arm: public ActiveObject {
@@ -51,8 +55,8 @@ private:
   Arm_Actuator *const _actuator;
   uint8_t _actId;
   const uint16_t *_pAngle0;
-  TaskHandle_t _relatedFreeRTOSTask = NULL;
-
+  TaskHandle_t _relatedFreeRTOSTask;
+ 
   /** Carry out the blocking interactions with the firmware to process the
 command.
 

@@ -90,15 +90,22 @@ TaskHandle_t Arm::getRelatedFreeRTOSTask() {
 void arm_task(void *pvParameters) {
    Arm *arm = (Arm*) pvParameters;
    while (!appState.timeout) {
-     // TODO: wait
-     
+     arm->loop();
+     vTaskDelay(pdMS_TO_TICKS(ARM_TASK_DELAY_MS));
    };
 }
 
 std::array<Arm, 4> init_4_arms_rtos_tasks() {
+  std::array<char const[5], 4> armPcNames{"arm1","arm2","arm3","arm4"};
   std::array<Arm, 4> arms{
-    Arm{&act1, 1}, Arm{&act2, 2}, Arm{&act3, 3}, Arm{&act4, 3}
+    Arm{&act1, 0}, Arm{&act2, 1}, Arm{&act3, 2}, Arm{&act4, 3}
   };
-  // TODO: START FREERTOS TASKS AND assigne them to the arms
+  for (uint8_t arm_id = 0; arm_id < 4; arm_id++) {
+    Arm arm = arms[arm_id];
+    char const *armPcName = armPcNames[arm_id];
+    TaskHandle_t relatedTask;
+    xTaskCreatePinnedToCore(arm_task, armPcName, 4000, &arm, 1, &relatedTask, tskNO_AFFINITY);
+    arm.setRelatedFreeRTOSTask(relatedTask);
+  }
   return arms;
 }
