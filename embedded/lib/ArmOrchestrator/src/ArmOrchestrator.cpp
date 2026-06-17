@@ -53,20 +53,22 @@ void ArmOrchestrator::scheduleCommand(Command &cmd) {
   forwardCommandToArms(cmd);
 }
 
-std::optional<Command> ArmOrchestrator::getNextTerminatedCommand() {
+bool ArmOrchestrator::getNextTerminatedCommand(Command *opt) {
   std::vector<int> dummy_params{};
   Command cmd {'~', dummy_params};
-  if (xQueueReceive(queue_out_from_object(), &cmd, 0) == pdTRUE)
-     return std::optional<Command>{cmd};
-  return std::nullopt;
+  if (xQueueReceive(queue_out_from_object(), &cmd, 0) == pdTRUE) {
+     *opt = cmd;
+     return true;
+  }
+  return false;
 }
 
 void ArmOrchestrator::loop() {
   // Check the arms finished missions
   for (Arm arm: _arms) {
-    std::optional<ArmTaskParam> maybe_finished_cmd = arm.getNextEndedCommand();
+    ArmTaskParam finished_arm_cmd;
+    bool maybe_finished_cmd = arm.getNextEndedCommand(&finished_arm_cmd);
     if (maybe_finished_cmd) {
-      ArmTaskParam finished_arm_cmd = maybe_finished_cmd.value();
       // Dispatch the terminated command 
       // TODO: set a param, e.g. a cmd id
       Command cmd {finished_arm_cmd.cmd, std::vector<int>{}};

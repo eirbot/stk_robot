@@ -3,7 +3,6 @@
 #include "ActiveObject.hpp"
 #include "Arduino.h"
 #include "Arm_Actuator.hpp"
-#include <optional>
 
 #define idlog(act, msg) { \
     Serial.print("[Task|Act"); \
@@ -21,9 +20,9 @@
  * I: None
  */
 struct ArmTaskParam {
-  const char cmd;
-  const uint8_t P_angleFlag;
-  const int A_param1;
+  char cmd;
+  uint8_t P_angleFlag;
+  int A_param1;
 };
 
 #ifndef ARM__MAX_PENDING_CMD_NB
@@ -44,7 +43,9 @@ public:
 
   void scheduleArmCommand(ArmTaskParam &command);
 
-  std::optional<ArmTaskParam> getNextEndedCommand();
+  /** Retrun true if something is returned (then opt has been edited).
+   */
+  bool getNextEndedCommand(ArmTaskParam *opt);
 
   void loop() override;
 

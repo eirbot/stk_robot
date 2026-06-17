@@ -3,13 +3,13 @@
 #include "ActiveObject.hpp"
 
 #include <Arduino.h>
-#include <optional>
+#include <vector>
 
 #include "Arm.hpp"
 
 struct Command {
-  const char cmd;
-  const std::vector<int> &params;
+  char cmd;
+  std::vector<int> params;
 };
 
 class ArmOrchestrator: public ActiveObject {
@@ -19,7 +19,7 @@ public:
   void loop() override;
 
   void scheduleCommand(Command &cmd);
-  std::optional<Command> getNextTerminatedCommand();
+  bool getNextTerminatedCommand(Command *opt);
 
 private:
   std::array<Arm, 4> &_arms;

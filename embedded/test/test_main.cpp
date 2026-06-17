@@ -23,14 +23,16 @@ void test_small_communication(void) {
     
     vTaskDelay(pdMS_TO_TICKS(5000));
 
+    Serial.println("Scheduling Commands...");
     for (int arm_id; arm_id < 4; arm_id++) {
-        Command init_cmd {'I', std::vector<int>{arm_id}};
-        Command ascend {'A', std::vector<int>{arm_id, arm_id < 2 ? 10 : -10}};
-        Command descend {'A', std::vector<int>{arm_id, arm_id < 2 ? -10 : 10}};
+        Command init_cmd {'I', {arm_id}};
+        Command ascend {'A', {arm_id, arm_id < 2 ? 10 : -10,}};
+        Command descend {'A', {arm_id, arm_id < 2 ? -10 : 10,}};
         arm_orchestrator.scheduleCommand(init_cmd);
         arm_orchestrator.scheduleCommand(ascend);
         arm_orchestrator.scheduleCommand(descend);
     }
+    Serial.println("Scheduled!");
 
     vTaskDelay(pdMS_TO_TICKS(7000));
     
@@ -61,13 +63,17 @@ void arm_orchestrator_life(void *pvParameters) {
 
 void setup()
 {
+    Serial.println("Waiting 2 seconds...");
     delay(2000); // service delay
 
     UNITY_BEGIN();
+    Serial.println("Tests started!");
 
     espSetup();
+    Serial.println("Start orchestrator task!");
     xTaskCreatePinnedToCore(arm_orchestrator_life, "armOrchestratorPc", 4000, NULL, 1, NULL, tskNO_AFFINITY);
 
+    Serial.println("Orchestrator task started! Waiting 2seconds");
     vTaskDelay(pdMS_TO_TICKS(2000));
 
     RUN_TEST(test_small_communication);

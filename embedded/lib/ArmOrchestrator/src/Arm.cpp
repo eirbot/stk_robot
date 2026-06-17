@@ -6,13 +6,14 @@ void Arm::scheduleArmCommand(ArmTaskParam &command) {
    xQueueSendToBack(queue_into_object(), &command, 0);
 }
 
-std::optional<ArmTaskParam> Arm::getNextEndedCommand() {
-   ArmTaskParam pvBuffer {};
-   if (xQueueReceive(queue_out_from_object(), &pvBuffer, 0) == pdTRUE)
-     return std::optional<ArmTaskParam>{pvBuffer};
-   return std::nullopt;
+bool Arm::getNextEndedCommand(ArmTaskParam *opt) {
+  ArmTaskParam pvBuffer{};
+  if (xQueueReceive(queue_out_from_object(), &pvBuffer, 0) == pdTRUE) {
+    *opt = pvBuffer;
+    return true;
+  }
+  return false;
 }
-
 
 void Arm::triggerFirmwareForCommand(ArmTaskParam command) {
       switch (command.cmd) {
