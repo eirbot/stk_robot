@@ -87,7 +87,5 @@ void ArmOrchestrator::loop() {
   }
 }
 
-std::array<Arm, 4> _arms{
-  Arm{&act1, 1}, Arm{&act2, 2}, Arm{&act3, 3}, Arm{&act4, 3}
-};
+std::array<Arm, 4> _arms = init_4_arms_rtos_tasks(); 
 ArmOrchestrator arm_orchestrator{_arms};
