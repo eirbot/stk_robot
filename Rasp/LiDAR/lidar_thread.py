@@ -5,7 +5,6 @@ import time
 
 # On importe ton shared pour accéder à robot_pos et state
 import ihm.shared as shared
-from LiDAR.localise import calculer_pose_intelligente
 
 class LidarCollisionThread(threading.Thread):
     def __init__(self, robot, seuil_mm=300.0):
@@ -38,6 +37,34 @@ class LidarCollisionThread(threading.Thread):
         
         while self.running:
             try:
+                mode = shared.state.get("lidar_mode", "OFF")
+
+                # --- DÉMARRAGE / ARRÊT PHYSIQUE DU PROCESSUS LIDAR ---
+                import subprocess
+                if mode == "OFF":
+                    if shared.lidar_process is not None:
+                        print("[LIDAR THREAD] LiDAR sur OFF : Arrêt physique du capteur...")
+                        shared.lidar_process.terminate()
+                        try:
+                            shared.lidar_process.wait(timeout=1.0)
+                        except:
+                            shared.lidar_process.kill()
+                        shared.lidar_process = None
+                        
+                        # Reset immédiat de l'état d'obstacle
+                        shared.state["obstacle_detected"] = False
+                        shared.state["obstacle_type"] = 0
+                        self.robot.set_lidar_state(0)
+                else:
+                    if shared.lidar_process is None and shared.lidar_bin:
+                        print("[LIDAR THREAD] LiDAR activé : Démarrage physique du capteur...")
+                        shared.lidar_process = subprocess.Popen([shared.lidar_bin])
+
+                # Si le LiDAR est désactivé, on évite de bloquer sur la socket
+                if mode == "OFF":
+                    time.sleep(0.1)
+                    continue
+
                 # Lecture des 64 octets (format 4 balises : 3 floats + 1 int + 12 floats)
                 data, addr = self.sock.recvfrom(64)
                 
@@ -46,6 +73,23 @@ class LidarCollisionThread(threading.Thread):
                     
                     angle, dist, intensity = unpacked[0:3]
                     num_beacons = unpacked[3]
+
+                    # Envoi de la trame LiDAR brute au PC via ZMQ pour la localisation distante
+                    if shared.zmq_client_instance:
+                        beacons_data = []
+                        for i in range(min(num_beacons, 4)):
+                            idx = 4 + (i * 3)
+                            beacons_data.append({
+                                "angle": unpacked[idx],
+                                "distance": unpacked[idx+1]
+                            })
+                        shared.zmq_client_instance.send_event("lidar_frame", {
+                            "obstacle": {
+                                "angle": angle,
+                                "distance": dist
+                            },
+                            "beacons": beacons_data
+                        })
                     
                     if time.time() - last_log_time > 2.0:
                         if dist < 90000:  
@@ -113,45 +157,13 @@ class LidarCollisionThread(threading.Thread):
                                 print(f"[✅ LIBRE] Voie libre confirmée !")
                                 shared.state["obstacle_detected"] = False
                                 shared.state["obstacle_type"] = 0
-                                self.robot.set_lidar_state(0)
-                                
-                    # ====================================================
-                    # --- 2. LOCALISATION INTELLIGENTE (LOGS SEULS) ---
-                    # ====================================================
-                    if num_beacons >= 3:
-                        mesures = []
-                        for i in range(num_beacons):
-                            idx = 4 + (i * 3) # L'angle est à idx, la distance à idx+1
-                            mesures.append((unpacked[idx], unpacked[idx+1]))
-                            
-                        # On récupère la position estimée par l'ESP32 !
-                        # (.get avec valeurs par défaut pour éviter un crash si l'ESP n'a pas encore répondu)
-                        est_x = shared.robot_pos.get('x', 0.0)
-                        est_y = shared.robot_pos.get('y', 0.0)
-                        est_cap = shared.robot_pos.get('theta', 0.0)
-                        
-                        result, status = calculer_pose_intelligente(mesures, est_x, est_y, est_cap)
-                        
-                        if status.startswith("OK"):
-                            x_lidar, y_lidar, theta_lidar, err_lidar = result
-                            print(f"📍 [POS LiDAR] X={x_lidar:4.0f} | Y={y_lidar:4.0f} | Cap={theta_lidar:5.1f}° (Bruit: {err_lidar:.0f}mm)")
-                            # Émission vers la carte temps réel
-                            from ihm.shared import socketio as _sio
-                            _sio.emit('lidar_pos', {'x': x_lidar, 'y': y_lidar, 'theta': theta_lidar, 'err': err_lidar})
-                        else:
-                            # --- LE PRINT MAGIQUE POUR COMPRENDRE LE PROBLÈME ---
-                            # print(f"📡 [DEBUG] Vues: {num_beacons} balises | {status} | Odom ESP32: X={est_x:.0f} Y={est_y:.0f} Cap={est_cap:.0f}°")
-                            pass
-                    
-                    elif num_beacons > 0:
-                        # S'il voit 1 ou 2 balises, on veut le savoir aussi !
-                        # print(f"📡 [DEBUG] Pas assez de balises vues ({num_beacons}/3)")
-                        pass
+                        self.robot.set_lidar_state(0)
                         
             except socket.timeout:
-                print("[⚠️ ALERTE] Perte de com LiDAR. Arrêt par sécurité.")
-                # Si le C++ crash vraiment, tu pourras envisager de couper les moteurs ici
-                # self.robot.set_lidar_state(1) 
+                if shared.state.get("lidar_mode", "OFF") != "OFF":
+                    print("[⚠️ ALERTE] Perte de com LiDAR. Arrêt par sécurité.")
+                    # Si le C++ crash vraiment, tu pourras envisager de couper les moteurs ici
+                    # self.robot.set_lidar_state(1) 
             except Exception as e:
                 if self.running:
                     print(f"[LIDAR THREAD] Erreur : {e}")

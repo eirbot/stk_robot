@@ -10,7 +10,7 @@
     },
     "avoidance": true,
     "camera": {
-        "enabled": true,
+        "enabled": false,
         "fps": 20,
         "height": 240,
         "id": 0,

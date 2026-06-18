@@ -36,8 +36,14 @@ if __name__ == "__main__":
             print("[MAIN] 3. Compilation du driver LiDAR C++...")
             subprocess.run(["g++", "-O3", lidar_cpp, "-o", lidar_bin], check=True)
             
-        print("[MAIN] 4. Lancement du service LiDAR UDP...")
-        lidar_process = subprocess.Popen([lidar_bin])
+        shared.lidar_bin = lidar_bin
+        
+        # On ne lance le LiDAR physiquement que si le mode initial n'est pas OFF
+        if shared.state.get("lidar_mode", "OFF") != "OFF":
+            print("[MAIN] 4. Lancement du service LiDAR UDP...")
+            shared.lidar_process = subprocess.Popen([lidar_bin])
+        else:
+            print("[MAIN] 4. LiDAR configuré sur OFF par défaut. Lancement physique différé.")
         
         # 3. Hardware & Collision
         print("[MAIN] 5. Initialisation RobotActions & Collision Thread...")
@@ -46,6 +52,12 @@ if __name__ == "__main__":
         robot_instance = RobotActions()
         collision_thread = LidarCollisionThread(robot=robot_instance, seuil_mm=350.0)
         collision_thread.start()
+
+        # 3b. Vidéo Streaming (MJPEG pour PC déporté et cam.py)
+        print("[MAIN] 5b. Lancement Thread Camera Streamer (MJPEG port 8081)...")
+        from Vision.mjpeg_streamer import MjpegStreamer
+        cam_streamer = MjpegStreamer(host='0.0.0.0', port=8081)
+        cam_streamer.start()
 
         # 4. Stratégie
         print("[MAIN] 6. Lancement Thread Stratégie...")
@@ -101,12 +113,12 @@ if __name__ == "__main__":
             except subprocess.TimeoutExpired:
                 led_process.kill()
         
-        if 'lidar_process' in locals() and lidar_process:
+        if shared.lidar_process:
             print("[MAIN] Arrêt du capteur LiDAR (C++)...")
-            lidar_process.terminate()
+            shared.lidar_process.terminate()
             try:
-                lidar_process.wait(timeout=2)
+                shared.lidar_process.wait(timeout=2)
             except subprocess.TimeoutExpired:
-                lidar_process.kill()
+                shared.lidar_process.kill()
         
         sys.exit(0)

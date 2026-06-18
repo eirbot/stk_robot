@@ -51,6 +51,10 @@ if cam_cfg.get("enabled", True):
         print(f"[CAM] Erreur initialisation globale : {e}")
         camera = None
 
+# LiDAR partagé
+lidar_bin = None
+lidar_process = None
+
 # Etat Global Partagé
 state = {
     "config": cfg,

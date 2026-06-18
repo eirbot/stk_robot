@@ -10,6 +10,24 @@
 
 using namespace std;
 
+#include <signal.h>
+
+int global_serial_fd = -1;
+
+void sig_handler(int signo) {
+  if (signo == SIGTERM || signo == SIGINT) {
+    cout << "\n[LIDAR C++] 🛑 Signal recu, arret du moteur LiDAR..." << endl;
+    if (global_serial_fd >= 0) {
+      unsigned char stop_cmd[] = {0xA5, 0x25};
+      write(global_serial_fd, stop_cmd, 2);
+      usleep(50000);
+      close(global_serial_fd);
+      global_serial_fd = -1;
+    }
+    exit(0);
+  }
+}
+
 #pragma pack(push, 1)
 struct LidarPoint {
   float angle;
@@ -41,6 +59,9 @@ float normalize_angle(float angle) {
 }
 
 int main() {
+  signal(SIGINT, sig_handler);
+  signal(SIGTERM, sig_handler);
+
   int sock = socket(AF_INET, SOCK_DGRAM, 0);
   sockaddr_in addr;
   addr.sin_family = AF_INET;
@@ -49,6 +70,7 @@ int main() {
 
   const char *port = "/dev/lidar";
   int serial_fd = open(port, O_RDWR | O_NOCTTY | O_SYNC);
+  global_serial_fd = serial_fd;
   if (serial_fd < 0) {
     cout << "[LIDAR C++] ❌ ERREUR: Impossible d'ouvrir " << port << endl;
     return 1;
@@ -115,6 +137,7 @@ int main() {
       close(serial_fd);
       usleep(1000000); // Wait 1 second
       serial_fd = open(port, O_RDWR | O_NOCTTY | O_SYNC);
+      global_serial_fd = serial_fd;
       if (serial_fd >= 0) {
         tcsetattr(serial_fd, TCSANOW, &tty);
         write(serial_fd, start_cmd, 2);

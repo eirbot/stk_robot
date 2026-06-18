@@ -27,7 +27,7 @@ const TABLE_L_MM = 3000; // Longueur de la table (axe X Three.js)
 const TABLE_W_MM = 2000; // Largeur de la table (axe Y Three.js)
 
 let scene, camera, renderer, controls;
-let robotGroup, lidarGroup;
+let robotGroup, lidarGroup, lidarScanGroup;
 let robotMaterial, lidarMaterial;
 let beacons = [];
 let targetSphere = null;
@@ -36,6 +36,8 @@ let robotPos = { x: 0, y: 1000, theta: 0 };
 let lidarPos = null;
 let currentTeam = "BLEUE";
 let isTopDown = false;
+let obstacleDetected = false;
+let obstacleType = 0;
 
 // -----------------------------------------------------------------------------
 // INITIALISATION DE LA SCÈNE 3D
@@ -94,6 +96,10 @@ function init3D() {
 
     // 5. Création des Représentations des Robots
     createRobots();
+
+    // Groupe pour l'affichage de la trame LiDAR courante
+    lidarScanGroup = new THREE.Group();
+    scene.add(lidarScanGroup);
 
     // 6. Gestion du bouton de bascule de vue (2D / 3D)
     const toggleBtn = document.getElementById('btn-view-toggle');
@@ -339,6 +345,12 @@ function setupWebSocket() {
                     updateTeamColor();
                 }
 
+                // Détection d'obstacle par le LiDAR
+                if (state.obstacle_detected !== undefined) {
+                    obstacleDetected = state.obstacle_detected;
+                    obstacleType = state.obstacle_type;
+                }
+
                 // Télémétrie odométrique
                 if (state.telemetry) {
                     robotPos = {
@@ -364,6 +376,11 @@ function setupWebSocket() {
                 lidarGroup.visible = true;
                 updateRobotMeshPosition(lidarGroup, lidarPos);
                 updateUI();
+            }
+
+            // 3. Traitement de la trame LiDAR brute (Obstacle + Balises)
+            if (msg.type === "lidar_frame" && msg.data) {
+                updateLidarFrame(msg.data);
             }
 
         } catch (err) {
@@ -412,6 +429,13 @@ function updateUI() {
     if (lidarPos) {
         const lThetaDeg = lidarPos.theta * 180 / Math.PI;
         txt += `  ·  LiDAR | X: ${lidarPos.x.toFixed(0)} | Y: ${lidarPos.y.toFixed(0)} | θ: ${lThetaDeg.toFixed(1)}° (Δ${lidarPos.err.toFixed(0)}mm)`;
+    }
+    
+    if (obstacleDetected) {
+        let typeStr = "360°";
+        if (obstacleType === 2) typeStr = "AVANT";
+        else if (obstacleType === 3) typeStr = "ARRIÈRE";
+        txt += `  ·  🛑 OBSTACLE DÉTECTÉ (${typeStr})`;
     }
     el.innerText = txt;
 }
@@ -616,7 +640,110 @@ function animate() {
         controls.update(); // Permet l'amorti fluide des contrôles camera
     }
 
+    // Effet visuel clignotant rouge si un obstacle est détecté
+    if (robotMaterial) {
+        if (obstacleDetected) {
+            const time = Date.now() * 0.005;
+            const pulse = 0.5 + 0.5 * Math.sin(time); // Pulse de 0 à 1
+            const baseColor = (currentTeam === 'JAUNE') ? 0xffa600 : 0x007bff;
+            const targetColor = 0xff3333; // Rouge vif
+            
+            // Interpolation linéaire entre la couleur d'équipe et le rouge
+            robotMaterial.color.setHex(baseColor).lerp(new THREE.Color(targetColor), pulse);
+        } else {
+            // Rétablir la couleur normale de l'équipe
+            const teamColor = (currentTeam === 'JAUNE') ? 0xffa600 : 0x007bff;
+            robotMaterial.color.setHex(teamColor);
+        }
+    }
+
     if (renderer && scene && camera) {
         renderer.render(scene, camera);
+    }
+}
+
+// -----------------------------------------------------------------------------
+// ENVOI ET AFFICHAGE DES TRAMES LIDAR BRUTES SUR LE PC (OBSTACLES & BALISES)
+// -----------------------------------------------------------------------------
+function updateLidarFrame(data) {
+    if (!lidarScanGroup) return;
+
+    // Nettoyer les anciens tracés de la trame LiDAR précédente
+    while (lidarScanGroup.children.length > 0) {
+        const obj = lidarScanGroup.children[0];
+        lidarScanGroup.remove(obj);
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+            if (Array.isArray(obj.material)) {
+                obj.material.forEach(m => m.dispose());
+            } else {
+                obj.material.dispose();
+            }
+        }
+    }
+
+    const currentRobotPos = robotPos;
+    if (!currentRobotPos) return;
+
+    // Fonction d'aide pour transformer la position relative (polaire) en coordonnées mondiales Three.js
+    function getGlobalCoords(relAngleDeg, relDistMm) {
+        // Angle relatif en radians
+        const relAngleRad = relAngleDeg * Math.PI / 180;
+        // Angle absolu dans le repère de la carte (Trigonométrique CCW+)
+        const globalAngleRad = currentRobotPos.theta + relAngleRad;
+        
+        const globalX = currentRobotPos.x + relDistMm * Math.cos(globalAngleRad);
+        const globalY = currentRobotPos.y + relDistMm * Math.sin(globalAngleRad);
+        
+        return {
+            x: globalX,
+            y: 1000 - globalY // Axe Y de Three.js inversé
+        };
+    }
+
+    // 1. Tracer l'obstacle le plus proche
+    if (data.obstacle && data.obstacle.distance > 0 && data.obstacle.distance < 90000) {
+        const pt = getGlobalCoords(data.obstacle.angle, data.obstacle.distance);
+        
+        // Sphère rouge brillante pour l'obstacle
+        const obsGeo = new THREE.SphereGeometry(20, 16, 16);
+        const obsMat = new THREE.MeshBasicMaterial({ color: 0xff3333, transparent: true, opacity: 0.8 });
+        const obsMesh = new THREE.Mesh(obsGeo, obsMat);
+        obsMesh.position.set(pt.x, pt.y, 15);
+        lidarScanGroup.add(obsMesh);
+
+        // Anneau d'avertissement autour de l'obstacle
+        const ringGeo = new THREE.RingGeometry(30, 35, 32);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xff3333, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.position.set(pt.x, pt.y, 2);
+        lidarScanGroup.add(ringMesh);
+    }
+
+    // 2. Tracer les balises détectées en vert fluo
+    if (data.beacons && Array.isArray(data.beacons)) {
+        data.beacons.forEach(b => {
+            if (b.distance > 0 && b.distance < 90000) {
+                const pt = getGlobalCoords(b.angle, b.distance);
+                
+                // Petit cylindre vert fluo représentant le signal de la balise
+                const bGeo = new THREE.CylinderGeometry(25, 25, 120, 16);
+                const bMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.5 });
+                const bMesh = new THREE.Mesh(bGeo, bMat);
+                bMesh.rotation.x = Math.PI / 2; // Cylindre debout dans le repère Z-up
+                bMesh.position.set(pt.x, pt.y, 60);
+                lidarScanGroup.add(bMesh);
+
+                // Ligne fine reliant le robot à la balise détectée
+                const points = [
+                    new THREE.Vector3(currentRobotPos.x, 1000 - currentRobotPos.y, 15),
+                    new THREE.Vector3(pt.x, pt.y, 15)
+                ];
+                const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+                const lineMat = new THREE.LineBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.35 });
+                const line = new THREE.Line(lineGeo, lineMat);
+                lidarScanGroup.add(line);
+            }
+        });
     }
 }

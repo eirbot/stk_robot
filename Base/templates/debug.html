@@ -64,29 +64,23 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: left;">
-                <div style="grid-column: span 2; margin-bottom: 10px;">
-                    <label>Mode LiDAR :</label>
-                    <select id="lidar-mode" onchange="updateLidarConfig('lidar_mode', this.value)"
-                        style="background:#333; color:white; border:1px solid #555; padding:5px; width: 100%; margin-top:5px;">
-                        <option value="OFF">Éteint</option>
-                        <option value="MATCH">Match (Cône 45°)</option>
-                        <option value="HOMOLOGATION">Homologation (360°)</option>
-                    </select>
-                </div>
+            <div style="margin-top: 10px; padding-bottom: 10px; border-bottom: 1px solid #444;">
+                <label>Mode LiDAR :</label>
+                <select id="lidar-mode" onchange="updateLidarConfig('lidar_mode', this.value)"
+                    style="background:#333; color:white; border:1px solid #555; padding:5px; width: 100%; margin-top:5px;">
+                    <option value="OFF">Éteint (Désactivé)</option>
+                    <option value="MATCH">Match (Cône d'évitement)</option>
+                    <option value="HOMOLOGATION">Homologation (Scan 360°)</option>
+                </select>
+            </div>
 
-                <label><input type="checkbox" id="chk-lidar-simu" onchange="toggleConfig('lidar_simu', this)"> Simu
-                    LiDAR</label>
-
-                <label><input type="checkbox" id="chk-ekf" onchange="toggleConfig('ekf_enabled', this)"> EKF
-                    (Pos)</label>
-                <label><input type="checkbox" id="chk-cam" onchange="toggleConfig('camera.enabled', this)">
-                    Caméra</label>
-
-                <label><input type="checkbox" id="chk-avoid" onchange="toggleConfig('avoidance', this)">
-                    Évitement</label>
-                <label><input type="checkbox" id="chk-skip-homolog" onchange="toggleConfig('skip_homologation', this)">
-                    Skip Homolog</label>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+                <button id="btn-toggle-cam" onclick="toggleCamera()" class="btn-toggle-active state-off">
+                    📷 Activer la caméra
+                </button>
+                <button id="btn-toggle-lidar" onclick="toggleLidar()" class="btn-toggle-active state-off">
+                    🚨 Activer le LiDAR
+                </button>
             </div>
         </div>
 
@@ -119,6 +113,16 @@
                     <label style="font-size:0.8em; color:#aaa;">θ (Deg)</label>
                     <input type="number" id="pos-theta" value="0"
                         style="width: 80px; background: #333; color: white; border: 1px solid #555; padding: 5px;">
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="grid-column: span 2;">
+            <h3>📷 Flux Caméra Embarquée</h3>
+            <div style="display:flex; justify-content:center; align-items:center; background:#111; border:1px solid #333; border-radius:8px; min-height:240px; margin-top:10px; overflow:hidden; position:relative;">
+                <img id="camera-stream" src="" alt="Flux vidéo" style="max-width:100%; max-height:360px; border-radius: 4px; display: none;">
+                <div id="camera-placeholder" style="color:#666; font-size: 0.9em; padding: 20px; text-align: center;">
+                    🎥 En attente du flux vidéo de la caméra...
                 </div>
             </div>
         </div>

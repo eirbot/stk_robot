@@ -70,6 +70,12 @@ func pipelineReceptionRobot() {
 					if update.FsmState != nil {
 						globalState.FsmState = *update.FsmState
 					}
+					if update.ObstacleDetected != nil {
+						globalState.ObstacleDetected = *update.ObstacleDetected
+					}
+					if update.ObstacleType != nil {
+						globalState.ObstacleType = *update.ObstacleType
+					}
 					if update.Telemetry != nil {
 						globalState.Telemetry = *update.Telemetry
 					} else {

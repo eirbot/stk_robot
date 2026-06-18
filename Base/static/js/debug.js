@@ -30,25 +30,44 @@ function initDebugPage() {
 
 // Mise à jour Config via l'événement state_update
 window.socket.on('state_update', (state) => {
-    // Si on est sur la page Debug
-    const lidarSel = document.getElementById('lidar-mode');
-    if (lidarSel) {
+    const btnCam = document.getElementById('btn-toggle-cam');
+    if (btnCam) {
         const c = state.config || {};
+        
+        // 1. État caméra
+        let camEnabled = (typeof c.camera === 'object') ? c.camera.enabled : c.camera;
+        if (camEnabled) {
+            btnCam.innerText = "📷 Caméra Active";
+            btnCam.className = "btn-toggle-active state-on";
+        } else {
+            btnCam.innerText = "📷 Caméra Inactive";
+            btnCam.className = "btn-toggle-active state-off";
+        }
+        window.currentCameraEnabled = !!camEnabled;
 
-        const setCheck = (id, val) => {
-            const el = document.getElementById(id);
-            if (el) el.checked = val;
-        };
-
+        // 2. État LiDAR
+        const btnLidar = document.getElementById('btn-toggle-lidar');
+        const selectLidarMode = document.getElementById('lidar-mode');
         const lidarMode = c.lidar_mode || "OFF";
-        lidarSel.value = lidarMode;
+        
+        if (selectLidarMode) {
+            selectLidarMode.value = lidarMode;
+        }
 
-        setCheck('chk-lidar-simu', c.lidar_simu);
-        setCheck('chk-skip-homolog', c.skip_homologation);
-        setCheck('chk-ekf', c.ekf_enabled);
-        let camStatus = (typeof c.camera === 'object') ? c.camera.enabled : c.camera;
-        setCheck('chk-cam', camStatus);
-        setCheck('chk-avoid', c.avoidance);
+        if (lidarMode !== "OFF") {
+            window.lastActiveLidarMode = lidarMode;
+        }
+
+        if (btnLidar) {
+            if (lidarMode !== "OFF") {
+                btnLidar.innerText = `🚨 LiDAR Actif (${lidarMode})`;
+                btnLidar.className = "btn-toggle-active state-on";
+            } else {
+                btnLidar.innerText = "🚨 LiDAR Inactif";
+                btnLidar.className = "btn-toggle-active state-off";
+            }
+            window.currentLidarMode = lidarMode;
+        }
 
         // Gestion Mode Stratégie
         const stratMode = c.strat_mode || "DYNAMIC";
@@ -64,6 +83,28 @@ window.socket.on('state_update', (state) => {
         }
     }
 });
+
+// Fonctions de bascule d'état caméra et LiDAR
+async function toggleCamera() {
+    const nextState = !window.currentCameraEnabled;
+    console.log("Toggle caméra ->", nextState);
+    await fetch('/api/config_edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'camera.enabled', val: nextState })
+    });
+}
+
+async function toggleLidar() {
+    const activeMode = window.lastActiveLidarMode || "MATCH";
+    const nextMode = (window.currentLidarMode === "OFF") ? activeMode : "OFF";
+    console.log("Toggle LiDAR ->", nextMode);
+    await fetch('/api/config_edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'lidar_mode', val: nextMode })
+    });
+}
 
 // Envoi modifications de la stratégie
 // Envoi modifs stratégie + Mise à jour VISUELLE immédiate
@@ -128,6 +169,25 @@ window.socket.on('sys_info', (data) => {
         updateDevStatus('status-esp_motors', data.devs.esp_motors);
         updateDevStatus('status-esp_arms', data.devs.esp_arms);
         updateDevStatus('status-camera', data.devs.camera);
+
+        // Mise à jour de la source du flux vidéo caméra (HTTP MJPEG)
+        const img = document.getElementById('camera-stream');
+        const placeholder = document.getElementById('camera-placeholder');
+        if (img && placeholder) {
+            if (data.devs.camera && data.ip) {
+                const streamUrl = 'http://' + data.ip + ':8081/stream';
+                // Évite de réassigner inutilement l'URL pour ne pas interrompre le flux continu
+                if (img.src !== streamUrl) {
+                    img.src = streamUrl;
+                }
+                img.style.display = 'block';
+                placeholder.style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                placeholder.style.display = 'block';
+                placeholder.innerText = '🎥 Flux caméra inactif ou arrêté.';
+            }
+        }
     }
 });
 
@@ -195,3 +255,5 @@ async function setRobotPosition() {
         console.log("Position robot mise à jour avec succès");
     }
 }
+
+// Le flux caméra MJPEG est chargé directement par le navigateur via l'URL HTTP de la Raspberry Pi

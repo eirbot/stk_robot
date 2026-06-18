@@ -170,7 +170,9 @@ class ZmqClient(threading.Thread):
                     "match_finished": shared.state.get("match_finished", False),
                     "score_current": shared.state.get("score_current", 0),
                     "timer_str": shared.state.get("timer_str", "100.0"),
-                    "fsm_state": shared.state.get("fsm_state", "INIT")
+                    "fsm_state": shared.state.get("fsm_state", "INIT"),
+                    "obstacle_detected": shared.state.get("obstacle_detected", False),
+                    "obstacle_type": shared.state.get("obstacle_type", 0)
                 }
 
                 if current_state != self.last_sent_state:

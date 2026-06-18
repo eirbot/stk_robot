@@ -22,12 +22,13 @@ def background_loop():
             else:
                 state["timer_str"] = f"{remaining:.1f}"
 
-        # 2. Infos Système (inchangé)
+        # 2. Infos Système (mis à jour avec les vrais ports et l'état caméra)
+        import ihm.shared as shared
         devs = {
             'lidar': os.path.exists('/dev/lidar'),
-            'esp_motors': os.path.exists('/dev/esp32_motors'),
-            'esp_arms': os.path.exists('/dev/esp32_arms'),
-            'camera': False 
+            'esp_motors': os.path.exists('/dev/esp_motors'),
+            'esp_arms': os.path.exists('/dev/esp_action'),
+            'camera': shared.camera is not None and shared.camera.running
         }
         
         volts = get_voltage_float()
