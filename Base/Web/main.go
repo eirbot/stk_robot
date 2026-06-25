@@ -11,7 +11,7 @@ import (
 )
 
 func loadConfig() map[string]interface{} {
-	content, err := os.ReadFile("../Rasp/config.json")
+	content, err := os.ReadFile("../../Rasp/config.json")
 	if err != nil {
 		log.Printf("Impossible de lire config.json : %v", err)
 		return make(map[string]interface{})

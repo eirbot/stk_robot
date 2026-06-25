@@ -5,6 +5,19 @@ let currentChart = null;
 document.addEventListener("DOMContentLoaded", () => {
     initDebugPage();
     loadBlocklyStrats('strat-select'); // Charge la liste pour le mode Statique
+
+    // EventListener pour le bouton de calibration de la vision zénithale
+    const btnCalibrate = document.getElementById('btn-calibrate-vision');
+    if (btnCalibrate) {
+        btnCalibrate.addEventListener('click', () => {
+            console.log("Demande de calibration vision zénithale envoyée...");
+            if (window.socket && window.socket.ws && window.socket.ws.readyState === WebSocket.OPEN) {
+                window.socket.ws.send(JSON.stringify({ type: "action", payload: "calibrate_vision" }));
+            } else {
+                console.warn("WebSocket non ouvert. Impossible d'envoyer la demande de calibration.");
+            }
+        });
+    }
 });
 
 function initDebugPage() {

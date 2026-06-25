@@ -26,7 +26,7 @@ func broadcastState() {
 func saveConfigToFile(cfg map[string]interface{}) {
 	configData, err := json.MarshalIndent(cfg, "", "    ")
 	if err == nil {
-		_ = os.WriteFile("../Rasp/config.json", configData, 0644)
+		_ = os.WriteFile("../../Rasp/config.json", configData, 0644)
 	}
 }
 
@@ -167,7 +167,7 @@ func setupRoutes(app *fiber.App) {
 	})
 
 	app.Get("/api/list_blockly_strats", func(c *fiber.Ctx) error {
-		files, err := os.ReadDir("../Rasp/strat/strategies")
+		files, err := os.ReadDir("../../Rasp/strat/strategies")
 		if err != nil {
 			return c.JSON([]string{})
 		}
@@ -182,7 +182,7 @@ func setupRoutes(app *fiber.App) {
 
 	app.Get("/api/load_strat/:name", func(c *fiber.Ctx) error {
 		name := c.Params("name")
-		content, err := os.ReadFile("../Rasp/strat/strategies/" + name + ".xml")
+		content, err := os.ReadFile("../../Rasp/strat/strategies/" + name + ".xml")
 		if err != nil {
 			return c.Status(404).JSON(fiber.Map{"status": "error"})
 		}
@@ -197,8 +197,8 @@ func setupRoutes(app *fiber.App) {
 		name := strings.ReplaceAll(body["filename"], ".xml", "")
 		name = strings.ReplaceAll(name, ".py", "")
 		
-		err1 := os.WriteFile("../Rasp/strat/strategies/"+name+".xml", []byte(body["xml"]), 0644)
-		err2 := os.WriteFile("../Rasp/strat/strategies/"+name+".py", []byte(body["code"]), 0644)
+		err1 := os.WriteFile("../../Rasp/strat/strategies/"+name+".xml", []byte(body["xml"]), 0644)
+		err2 := os.WriteFile("../../Rasp/strat/strategies/"+name+".py", []byte(body["code"]), 0644)
 		if err1 != nil || err2 != nil {
 			return c.Status(500).JSON(fiber.Map{"status": "error"})
 		}
@@ -258,6 +258,27 @@ func setupRoutes(app *fiber.App) {
 		if err == nil {
 			c.WriteMessage(websocket.TextMessage, initPacket)
 		}
+
+		// Goroutine pour lire les messages du client WebSocket
+		go func() {
+			for {
+				_, msg, err := c.ReadMessage()
+				if err != nil {
+					break
+				}
+				
+				var packet struct {
+					Type    string      `json:"type"`
+					Payload interface{} `json:"payload"`
+				}
+				if err := json.Unmarshal(msg, &packet); err == nil {
+					if packet.Type == "action" && packet.Payload == "calibrate_vision" {
+						fmt.Println("[Web-IHM] Message de calibration vision reçu, retransmission vers ZMQ...")
+						envoyerAuRobot("action", "calibrate_vision")
+					}
+				}
+			}
+		}()
 
 		// Boucle d'envoi de la télémétrie/état vers le navigateur à haute fréquence
 		for msg := range ch {
