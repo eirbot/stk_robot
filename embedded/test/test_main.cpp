@@ -48,6 +48,11 @@ void espSetup() {
     attachInterrupt(digitalPinToInterrupt(IntEXT), IntEXTfct, FALLING);
 }
 
+// TODO: put those links in a documentation
+// https://sourceforge.net/p/freertos/code/HEAD/tree/trunk/FreeRTOS/Demo/Common/Minimal/StaticAllocation.c#l53
+// https://freertos.org/Documentation/02-Kernel/02-Kernel-features/09-Memory-management/03-Static-vs-Dynamic-memory-allocation
+// https://freertos.org/Documentation/02-Kernel/02-Kernel-features/09-Memory-management/01-Memory-management#heap_4c
+// https://www.youtube.com/watch?v=Qske3yZRW5I&list=PLEBQazB0HUyQ4hAPU1cJED6t3DU0h34bz&index=4
 #define QUEUE_LENGTH_IN_ITEMS 25
 #define TASK_STACK_SIZE (sizeof(Arm) + sizeof(Arm_Actuator)) * 5
 #define TASK_PRIORITY	( tskIDLE_PRIORITY + 2 )
