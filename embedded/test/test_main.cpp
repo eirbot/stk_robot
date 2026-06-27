@@ -2,7 +2,7 @@
 #include <unity.h>
 #include "AppState.hpp"
 #include "Arm.hpp"
-#include "ArmOrchestrator.hpp"
+#include "Arm_Actuator.hpp"
 #include "freertos/projdefs.h"
 
 String STR_TO_TEST;
@@ -21,19 +21,13 @@ void tearDown(void) {
 
 void test_small_communication(void) {
     
+    Serial.println("Waiting 5 seconds...");
     vTaskDelay(pdMS_TO_TICKS(5000));
 
     Serial.println("Scheduling Commands...");
-    for (int arm_id; arm_id < 4; arm_id++) {
-        Command init_cmd {'I', {arm_id}};
-        Command ascend {'A', {arm_id, arm_id < 2 ? 10 : -10,}};
-        Command descend {'A', {arm_id, arm_id < 2 ? -10 : 10,}};
-        arm_orchestrator.scheduleCommand(init_cmd);
-        arm_orchestrator.scheduleCommand(ascend);
-        arm_orchestrator.scheduleCommand(descend);
-    }
     Serial.println("Scheduled!");
 
+    Serial.println("Waiting 5 seconds before ends the test...");
     vTaskDelay(pdMS_TO_TICKS(7000));
     
     appState.timeout = true;
@@ -54,11 +48,50 @@ void espSetup() {
     attachInterrupt(digitalPinToInterrupt(IntEXT), IntEXTfct, FALLING);
 }
 
-void arm_orchestrator_life(void *pvParameters) {
-    while (!appState.timeout) {
-       arm_orchestrator.loop(); 
-       vTaskDelay(pdMS_TO_TICKS(ARM_TASK_DELAY_MS));
-    }
+#define QUEUE_LENGTH_IN_ITEMS 25
+#define TASK_STACK_SIZE (sizeof(Arm) + sizeof(Arm_Actuator)) * 5
+#define TASK_PRIORITY	( tskIDLE_PRIORITY + 2 )
+
+static StaticQueue_t staticQueueIntoArm;
+static StaticQueue_t staticQueueOutOfArm;
+static uint8_t ucQueueStorageAreaInto[ QUEUE_LENGTH_IN_ITEMS * sizeof( ArmTaskParam ) ];
+static uint8_t ucQueueStorageAreaOutOf[ QUEUE_LENGTH_IN_ITEMS * sizeof( ArmTaskParam ) ];
+
+/*-----------------------------------------------------------*/
+
+/* StaticTask_t is a publicly accessible structure that has the same size and
+alignment requirements as the real TCB structure.  It is provided as a mechanism
+for applications to know the size of the TCB (which is dependent on the
+architecture and configuration file settings) without breaking the strict data
+hiding policy by exposing the real TCB.  This StaticTask_t variable is passed
+into the xTaskCreateStatic() function that creates the
+prvStaticallyAllocatedCreator() task, and will hold the TCB of the created
+tasks. */
+static StaticTask_t xCreatorTaskTCBBuffer;
+
+/* This is the stack that will be used by the prvStaticallyAllocatedCreator()
+task, which is itself created using statically allocated buffers (so without any
+dynamic memory allocation). */
+static StackType_t uxCreatorTaskStackBuffer[ TASK_STACK_SIZE ];
+
+/* Used by the pseudo random number generating function. */
+static uint32_t ulNextRand = 0;
+
+/* Used so a check task can ensure this test is still executing, and not
+stalled. */
+static volatile UBaseType_t uxCycleCounter = 0;
+
+/* A variable that gets set to pdTRUE if an error is detected. */
+static volatile BaseType_t xErrorOccurred = pdFALSE;
+
+/*-----------------------------------------------------------*/
+
+void vStartStaticallyAllocatedTasks( void  )
+{
+}
+/*-----------------------------------------------------------*/
+
+void my_schedule() {
 }
 
 void setup()
@@ -71,7 +104,23 @@ void setup()
 
     espSetup();
     Serial.println("Start orchestrator task!");
-    xTaskCreatePinnedToCore(arm_orchestrator_life, "armOrchestratorPc", 4000, NULL, 1, NULL, tskNO_AFFINITY);
+
+    // ----------- SETUP ------------
+    QueueHandle_t queue_into = xQueueCreateStatic(QUEUE_LENGTH_IN_ITEMS, sizeof(ArmTaskParam), ucQueueStorageAreaInto, &staticQueueIntoArm);    
+    QueueHandle_t queue_out_of = xQueueCreateStatic(QUEUE_LENGTH_IN_ITEMS, sizeof(ArmTaskParam), ucQueueStorageAreaOutOf, &staticQueueOutOfArm);    
+    ArmTaskContext ctx {
+        ArmActuator1, pcf, queue_into, queue_out_of
+    };
+    /* Create a single task, which then repeatedly creates and deletes the other
+    RTOS objects using both statically and dynamically allocated RAM. */
+    xTaskCreateStatic( arm_task,		/* The function that implements the task being created. */
+    			   "Arm1StatCreate",						/* Text name for the task - not used by the RTOS, its just to assist debugging. */
+    			   TASK_STACK_SIZE,		/* Size of the buffer passed in as the stack - in words, not bytes! */
+    			   &ctx,								/* Parameter passed into the task - not used in this case. */
+    			   TASK_PRIORITY,					/* Priority of the task. */
+    			   &( uxCreatorTaskStackBuffer[ 0 ] ),  /* The buffer to use as the task's stack. */
+    			   &xCreatorTaskTCBBuffer );			/* The variable that will hold the task's TCB. */
+    // ----------- SETUP ------------
 
     Serial.println("Orchestrator task started! Waiting 2seconds");
     vTaskDelay(pdMS_TO_TICKS(2000));

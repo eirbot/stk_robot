@@ -19,40 +19,40 @@ void Arm::triggerFirmwareForCommand(ArmTaskParam command) {
       switch (command.cmd) {
         case 'G':
             idlog(this, "Closing piston !");
-            _actuator->closePiston();
+            _actuator.closePiston();
             break;
         case 'R':
             idlog(this, "Opening piston !");
-            _actuator->openPiston();
+            _actuator.openPiston();
             break;
         case 'T':
             {
                 idlog(this, "Command T inversing");
-                int angle = _actuator->p9G_status == 0 ? 180 : 0;
-                _actuator->servo_9G(angle);
-                _actuator->p9G_status = angle;
+                int angle = _actuator.p9G_status == 0 ? 180 : 0;
+                _actuator.servo_9G(angle);
+                _actuator.p9G_status = angle;
             }
             break;
         case 'P':
             idlog(this, "Command P soft servo");
-            _actuator->soft_servo(command.P_angleFlag ? *_pAngle0 : 90);
+            _actuator.soft_servo(command.P_angleFlag ? *_pAngle0 : 90);
             break;
         case 'A':
             {
                 idlog(this, "SetPos");
                 int mmToStep = 80;
                 int asked_height = command.A_param1* mmToStep;
-                if(asked_height >= _actuator->asc_height) {
-                  _actuator->goUp(asked_height - this->_actuator->asc_height);
+                if(asked_height >= _actuator.asc_height) {
+                  _actuator.goUp(asked_height - this->_actuator.asc_height);
                 } else {
-                  _actuator->goDown(_actuator->asc_height - asked_height);
+                  _actuator.goDown(_actuator.asc_height - asked_height);
                 };
-                _actuator->asc_height = asked_height;
+                _actuator.asc_height = asked_height;
             }
             break;
         case 'I':
             idlog(this, "Homming");
-            _actuator->homming();
+            _actuator.homming();
         default:
             break;
     }
@@ -89,24 +89,11 @@ TaskHandle_t Arm::getRelatedFreeRTOSTask() {
 }
 
 void arm_task(void *pvParameters) {
-   Arm *arm = (Arm*) pvParameters;
+   ArmTaskContext *ctx = (ArmTaskContext *) pvParameters; 
+   Arm_Actuator arm_actuator = init_arm_actuator(ctx->act_id, ctx->pcf);
+   Arm arm{arm_actuator, ctx->act_id, ctx->queue_into, ctx->queue_out_of};
    while (!appState.timeout) {
-     arm->loop();
+     arm.loop();
      vTaskDelay(pdMS_TO_TICKS(ARM_TASK_DELAY_MS));
    };
-}
-
-std::array<Arm, 4> init_4_arms_rtos_tasks() {
-  std::array<char const[5], 4> armPcNames{"arm1","arm2","arm3","arm4"};
-  std::array<Arm, 4> arms{
-    Arm{&act1, 0}, Arm{&act2, 1}, Arm{&act3, 2}, Arm{&act4, 3}
-  };
-  for (uint8_t arm_id = 0; arm_id < 4; arm_id++) {
-    Arm arm = arms[arm_id];
-    char const *armPcName = armPcNames[arm_id];
-    TaskHandle_t relatedTask;
-    xTaskCreatePinnedToCore(arm_task, armPcName, 4000, &arm, 1, &relatedTask, tskNO_AFFINITY);
-    arm.setRelatedFreeRTOSTask(relatedTask);
-  }
-  return arms;
 }

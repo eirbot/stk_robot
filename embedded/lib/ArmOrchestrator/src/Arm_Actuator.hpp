@@ -5,11 +5,15 @@
 #include "PCF8575.h"  // Bibliothèque de Rob Tillaart
 #include "GpioActionneurs.hpp"
 #include <ESP32Servo.h>
+#include <cstdint>
 
 extern PCF8575 pcf;
 extern volatile bool IntDetected;
 
-struct Arm_Actuator {
+class Arm_Actuator {
+public:
+  Arm_Actuator(uint8_t p9G, uint8_t p17G, uint8_t v1, uint8_t v2, uint8_t stp, uint8_t dir, uint8_t sns, bool dir_elevator, PCF8575 &pcf): p9G(p9G), p17G(p17G), v1(v1), v2(v2), stp(stp), dir(dir), sns(sns), dir_elevator(dir_elevator), pcf_(pcf) {};
+
   uint8_t p9G, p17G, v1, v2, stp, dir, sns;
   bool dir_elevator;
   Servo servo9G, servo17G;
@@ -20,7 +24,7 @@ struct Arm_Actuator {
   int asc_height;
 
   void initialiser() {
-    pcf.setButtonMask(bit(sns));
+    pcf_.setButtonMask(bit(sns));
 
     pinMode(stp, OUTPUT);
     servo9G.attach(p9G);
@@ -34,7 +38,7 @@ struct Arm_Actuator {
   }
 
   void sns_read() {
-    sns_status = pcf.read(sns);
+    sns_status = pcf_.read(sns);
     canMove = (sns_status == LOW);
   }
 
@@ -54,12 +58,12 @@ struct Arm_Actuator {
   }
 
   void homming() {
-    pcf.write(dir, dir_elevator ? HIGH : LOW);
+    pcf_.write(dir, dir_elevator ? HIGH : LOW);
     soft_servo(90);
     servo_9G(0);
     this->goDown(20000);
 
-    pcf.write(dir, dir_elevator ? LOW : HIGH);
+    pcf_.write(dir, dir_elevator ? LOW : HIGH);
     canMove = true;
     this->goUp(200);
 
@@ -73,17 +77,17 @@ struct Arm_Actuator {
   }
 
   void closePiston() {
-    pcf.write(v1, HIGH);
-    pcf.write(v2, LOW);
+    pcf_.write(v1, HIGH);
+    pcf_.write(v2, LOW);
   }
 
   void openPiston() {
-    pcf.write(v1, LOW);
-    pcf.write(v2, HIGH);
+    pcf_.write(v1, LOW);
+    pcf_.write(v2, HIGH);
   }
 
   void goUp(int steps) {
-    pcf.write(dir, dir_elevator ? LOW : HIGH);
+    pcf_.write(dir, dir_elevator ? LOW : HIGH);
     canMove = true;
     for (int k = 0; k < steps; k++) {
       this->fairePas();
@@ -92,7 +96,7 @@ struct Arm_Actuator {
   }
 
   void goDown(int steps) {
-    pcf.write(dir, dir_elevator ? HIGH : LOW);
+    pcf_.write(dir, dir_elevator ? HIGH : LOW);
     canMove = true;
     sns_read();
     if (sns_status == LOW) {
@@ -109,12 +113,18 @@ struct Arm_Actuator {
       }
     }
   }
+private:
+  PCF8575& pcf_;
 };
 
-extern Arm_Actuator act1;
-extern Arm_Actuator act2;
-extern Arm_Actuator act3;
-extern Arm_Actuator act4;
+enum ArmActuatorId {
+  ArmActuator1,
+  ArmActuator2,
+  ArmActuator3,
+  ArmActuator4
+};
+
+Arm_Actuator init_arm_actuator(ArmActuatorId act_id, PCF8575 &pcf); 
 
 void ARDUINO_ISR_ATTR IntEXTfct();
 

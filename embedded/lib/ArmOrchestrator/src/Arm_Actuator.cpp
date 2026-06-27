@@ -1,12 +1,16 @@
 #include "Arm_Actuator.hpp"
 
-PCF8575 pcf(0x20, &Wire);
+PCF8575 pcf{0x20, &Wire};
 volatile bool IntDetected = false;
 
-Arm_Actuator act1 = {ServoE, ServoF, Verin31EXT, Verin32EXT, asc1_stp, asc1_dirEXT, sns_asc_1EXT, true};
-Arm_Actuator act2 = {ServoA, ServoB, Verin11EXT, Verin12EXT, asc2_stp, asc2_dirEXT, sns_asc_2EXT, false};
-Arm_Actuator act3 = {ServoC, ServoD, Verin21EXT, Verin22EXT, asc3_stp, asc3_dirEXT, sns_asc_3EXT, false};
-Arm_Actuator act4 = {ServoG, ServoH, Verin41EXT, Verin42EXT, asc4_stp, asc4_dirEXT, sns_asc_4EXT, false};
+Arm_Actuator init_arm_actuator(ArmActuatorId act_id, PCF8575 &pcf) {
+  switch (act_id) {
+    case ArmActuator1: return Arm_Actuator{ServoE, ServoF, Verin31EXT, Verin32EXT, asc1_stp, asc1_dirEXT, sns_asc_1EXT, true, pcf}; break;
+    case ArmActuator2: return Arm_Actuator{ServoA, ServoB, Verin11EXT, Verin12EXT, asc2_stp, asc2_dirEXT, sns_asc_2EXT, false, pcf}; break;
+    case ArmActuator3: return Arm_Actuator{ServoC, ServoD, Verin21EXT, Verin22EXT, asc3_stp, asc3_dirEXT, sns_asc_3EXT, false, pcf}; break;
+    case ArmActuator4: return Arm_Actuator{ServoG, ServoH, Verin41EXT, Verin42EXT, asc4_stp, asc4_dirEXT, sns_asc_4EXT, false, pcf}; break;
+  }
+}
 
 TaskHandle_t Handle_TaskActionneurs = NULL;
 

@@ -37,7 +37,7 @@ const uint16_t pangles0[4] = {40, 60, 120, 140};
 
 class Arm: public ActiveObject {
 public:
-  Arm(Arm_Actuator *const actuator, uint8_t actId): _actuator(actuator), _actId(actId), _pAngle0(actId < 4 ? &(pangles0[actId]) : pangles0), ActiveObject(xQueueCreate(ARM__MAX_PENDING_CMD_NB, sizeof(ArmTaskParam)), xQueueCreate(ARM__MAX_PENDING_CMD_NB,sizeof(ArmTaskParam))) {};
+  Arm(Arm_Actuator& actuator, ArmActuatorId actId, QueueHandle_t &queue_into_object, QueueHandle_t &queue_out_from_object): _actuator(actuator), _actId(actId), _pAngle0(&(pangles0[actId])), ActiveObject(queue_into_object, queue_out_from_object) {};
 
   ~Arm() = default;
 
@@ -53,7 +53,7 @@ public:
   TaskHandle_t getRelatedFreeRTOSTask();
 
 private:
-  Arm_Actuator *const _actuator;
+  Arm_Actuator& _actuator;
   uint8_t _actId;
   const uint16_t *_pAngle0;
   TaskHandle_t _relatedFreeRTOSTask;
@@ -67,7 +67,12 @@ command.
   void triggerFirmwareForCommand(ArmTaskParam command);
 };
 
-/** Init the ActiveObjects related to the 4 arm actuators, and start their
- * FreeRTOS tasks.
- */
-std::array<Arm, 4> init_4_arms_rtos_tasks();
+
+void arm_task(void *pvParameters);
+
+struct ArmTaskContext {
+    ArmActuatorId act_id;
+    PCF8575& pcf;
+    QueueHandle_t& queue_into;
+    QueueHandle_t& queue_out_of;
+};

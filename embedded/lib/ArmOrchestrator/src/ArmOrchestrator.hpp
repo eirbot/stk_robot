@@ -27,5 +27,3 @@ private:
 
   void forwardCommandToArms(Command &cmd);
 };
-
-extern ArmOrchestrator arm_orchestrator;
