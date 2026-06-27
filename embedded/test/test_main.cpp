@@ -19,22 +19,6 @@ void tearDown(void) {
     STR_TO_TEST = "";
 }
 
-void test_small_communication(void) {
-    
-    Serial.println("Waiting 5 seconds...");
-    vTaskDelay(pdMS_TO_TICKS(5000));
-
-    Serial.println("Scheduling Commands...");
-    Serial.println("Scheduled!");
-
-    Serial.println("Waiting 5 seconds before ends the test...");
-    vTaskDelay(pdMS_TO_TICKS(7000));
-    
-    appState.timeout = true;
-
-    TEST_ASSERT_EQUAL(1, 1);
-}
-
 // The setup that we do not care a lot in this test
 void espSetup() {
     Wire.begin(21, 22); 
@@ -91,12 +75,45 @@ static volatile BaseType_t xErrorOccurred = pdFALSE;
 
 /*-----------------------------------------------------------*/
 
+// ----------- SETUP ------------
+QueueHandle_t queue_into = xQueueCreateStatic(QUEUE_LENGTH_IN_ITEMS, sizeof(ArmTaskParam), ucQueueStorageAreaInto, &staticQueueIntoArm);    
+QueueHandle_t queue_out_of = xQueueCreateStatic(QUEUE_LENGTH_IN_ITEMS, sizeof(ArmTaskParam), ucQueueStorageAreaOutOf, &staticQueueOutOfArm);    
+ArmTaskContext ctx {
+    ArmActuator1, pcf, queue_into, queue_out_of
+};
+
+
 void vStartStaticallyAllocatedTasks( void  )
 {
+    /* Create a single task, which then repeatedly creates and deletes the other
+    RTOS objects using both statically and dynamically allocated RAM. */
+    xTaskCreateStatic( arm_task,		/* The function that implements the task being created. */
+    			   "Arm1StatCreate",						/* Text name for the task - not used by the RTOS, its just to assist debugging. */
+    			   TASK_STACK_SIZE,		/* Size of the buffer passed in as the stack - in words, not bytes! */
+    			   &ctx,								/* Parameter passed into the task - not used in this case. */
+    			   TASK_PRIORITY,					/* Priority of the task. */
+    			   &( uxCreatorTaskStackBuffer[ 0 ] ),  /* The buffer to use as the task's stack. */
+    			   &xCreatorTaskTCBBuffer );			/* The variable that will hold the task's TCB. */
 }
-/*-----------------------------------------------------------*/
+// ----------- SETUP ------------
 
-void my_schedule() {
+
+
+void test_small_communication(void) {
+    
+    Serial.println("Waiting 5 seconds...");
+    vTaskDelay(pdMS_TO_TICKS(5000));
+
+    Serial.println("Scheduling Commands...");
+    // TODO: add a command to the queue and test
+    Serial.println("Scheduled!");
+
+    Serial.println("Waiting 5 seconds before ends the test...");
+    vTaskDelay(pdMS_TO_TICKS(7000));
+    
+    appState.timeout = true;
+
+    TEST_ASSERT_EQUAL(1, 1);
 }
 
 void setup()
@@ -110,22 +127,7 @@ void setup()
     espSetup();
     Serial.println("Start orchestrator task!");
 
-    // ----------- SETUP ------------
-    QueueHandle_t queue_into = xQueueCreateStatic(QUEUE_LENGTH_IN_ITEMS, sizeof(ArmTaskParam), ucQueueStorageAreaInto, &staticQueueIntoArm);    
-    QueueHandle_t queue_out_of = xQueueCreateStatic(QUEUE_LENGTH_IN_ITEMS, sizeof(ArmTaskParam), ucQueueStorageAreaOutOf, &staticQueueOutOfArm);    
-    ArmTaskContext ctx {
-        ArmActuator1, pcf, queue_into, queue_out_of
-    };
-    /* Create a single task, which then repeatedly creates and deletes the other
-    RTOS objects using both statically and dynamically allocated RAM. */
-    xTaskCreateStatic( arm_task,		/* The function that implements the task being created. */
-    			   "Arm1StatCreate",						/* Text name for the task - not used by the RTOS, its just to assist debugging. */
-    			   TASK_STACK_SIZE,		/* Size of the buffer passed in as the stack - in words, not bytes! */
-    			   &ctx,								/* Parameter passed into the task - not used in this case. */
-    			   TASK_PRIORITY,					/* Priority of the task. */
-    			   &( uxCreatorTaskStackBuffer[ 0 ] ),  /* The buffer to use as the task's stack. */
-    			   &xCreatorTaskTCBBuffer );			/* The variable that will hold the task's TCB. */
-    // ----------- SETUP ------------
+    vStartStaticallyAllocatedTasks();
 
     Serial.println("Orchestrator task started! Waiting 2seconds");
     vTaskDelay(pdMS_TO_TICKS(2000));
