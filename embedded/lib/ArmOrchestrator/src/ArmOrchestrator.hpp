@@ -14,7 +14,7 @@ struct Command {
 
 class ArmOrchestrator: public ActiveObject {
 public:
-  ArmOrchestrator(std::array<Arm, 4> &arms): _arms(arms), ActiveObject(xQueueCreate(ARM__MAX_PENDING_CMD_NB, sizeof(Command)), xQueueCreate(ARM__MAX_PENDING_CMD_NB, sizeof(Command))) {};
+  ArmOrchestrator(std::array<Arm, 4> &arms, QueueHandle_t &queue_into_object, QueueHandle_t &queue_out_from_object): _arms(arms), ActiveObject(queue_into_object, queue_out_from_object) {};
 
   void loop() override;
 
