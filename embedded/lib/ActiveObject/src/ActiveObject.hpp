@@ -5,13 +5,11 @@
 
 #include <Arduino.h>
 
-class ActiveObject {
+class ActiveObjectInterface {
 public:
-  ActiveObject(QueueHandle_t &queue_into_object, QueueHandle_t &queue_out_from_object): _queue_into_object(queue_into_object), _queue_out_from_object(queue_out_from_object) {}; 
+  ActiveObjectInterface(QueueHandle_t &queue_into_object, QueueHandle_t &queue_out_from_object): _queue_into_object(queue_into_object), _queue_out_from_object(queue_out_from_object) {}; 
 
-  ~ActiveObject() = default;
-
-  virtual void loop() = 0;
+  ~ActiveObjectInterface() = default;
 
 protected:
   // The access to the queues is restricted to the inherited classes. 
@@ -24,4 +22,14 @@ private:
   QueueHandle_t& _queue_into_object; 
   QueueHandle_t& _queue_out_from_object; 
 
+};
+
+
+class ActiveObject: public ActiveObjectInterface {
+public:
+  ActiveObject(QueueHandle_t &queue_into_object, QueueHandle_t &queue_out_from_object): ActiveObjectInterface(queue_into_object, queue_out_from_object) {}; 
+
+  ~ActiveObject() = default;
+  
+  virtual void loop() = 0;
 };

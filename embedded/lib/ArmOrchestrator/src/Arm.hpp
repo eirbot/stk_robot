@@ -41,12 +41,6 @@ public:
 
   ~Arm() = default;
 
-  void scheduleArmCommand(ArmTaskParam &command);
-
-  /** Retrun true if something is returned (then opt has been edited).
-   */
-  bool getNextEndedCommand(ArmTaskParam *opt);
-
   void loop() override;
 
   void setRelatedFreeRTOSTask(TaskHandle_t task);
@@ -75,4 +69,17 @@ struct ArmTaskContext {
     PCF8575& pcf;
     QueueHandle_t& queue_into;
     QueueHandle_t& queue_out_of;
+};
+
+class ArmInterface: public ActiveObjectInterface {
+public:
+  ArmInterface(QueueHandle_t &queue_into_object, QueueHandle_t &queue_out_from_object): ActiveObjectInterface(queue_into_object, queue_out_from_object) {};
+
+  ~ArmInterface() = default;
+
+  void scheduleArmCommand(ArmTaskParam &command);
+
+  /** Retrun true if something is returned (then opt has been edited).
+   */
+  bool getNextEndedCommand(ArmTaskParam *opt);
 };

@@ -2,19 +2,6 @@
 #include "AppState.hpp"
 #include "Arduino.h"
 
-void Arm::scheduleArmCommand(ArmTaskParam &command) {
-   xQueueSendToBack(queue_into_object(), &command, 0);
-}
-
-bool Arm::getNextEndedCommand(ArmTaskParam *opt) {
-  ArmTaskParam pvBuffer{};
-  if (xQueueReceive(queue_out_from_object(), &pvBuffer, 0) == pdTRUE) {
-    *opt = pvBuffer;
-    return true;
-  }
-  return false;
-}
-
 void Arm::triggerFirmwareForCommand(ArmTaskParam command) {
       switch (command.cmd) {
         case 'G':
@@ -97,3 +84,17 @@ void arm_task(void *pvParameters) {
      vTaskDelay(pdMS_TO_TICKS(ARM_TASK_DELAY_MS));
    };
 }
+
+void ArmInterface::scheduleArmCommand(ArmTaskParam &command) {
+   xQueueSendToBack(queue_into_object(), &command, 0);
+}
+
+bool ArmInterface::getNextEndedCommand(ArmTaskParam *opt) {
+  ArmTaskParam pvBuffer{};
+  if (xQueueReceive(queue_out_from_object(), &pvBuffer, 0) == pdTRUE) {
+    *opt = pvBuffer;
+    return true;
+  }
+  return false;
+}
+

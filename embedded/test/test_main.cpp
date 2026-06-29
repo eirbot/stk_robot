@@ -63,16 +63,6 @@ task, which is itself created using statically allocated buffers (so without any
 dynamic memory allocation). */
 static StackType_t uxCreatorTaskStackBuffer[ TASK_STACK_SIZE ];
 
-/* Used by the pseudo random number generating function. */
-static uint32_t ulNextRand = 0;
-
-/* Used so a check task can ensure this test is still executing, and not
-stalled. */
-static volatile UBaseType_t uxCycleCounter = 0;
-
-/* A variable that gets set to pdTRUE if an error is detected. */
-static volatile BaseType_t xErrorOccurred = pdFALSE;
-
 /*-----------------------------------------------------------*/
 
 // ----------- SETUP ------------
