@@ -1,6 +1,7 @@
 #include "ArmOrchestrator.hpp"
 #include "Arduino.h"
 #include "Arm.hpp"
+#include "freertos/projdefs.h"
 
 void ArmOrchestrator::forwardCommandToArms(Command &cmd) {
   if (cmd.cmd == 'I') {
@@ -46,14 +47,11 @@ void ArmOrchestrator::forwardCommandToArms(Command &cmd) {
      _arms[actId].scheduleArmCommand(taskParams); 
 }
 
-void ArmOrchestrator::scheduleCommand(Command &cmd) {
-  // INFO: the input queue of the ArmOrchestrator is useless, for now. 
-  // This behavior might change with a complexification of the ActiveObject
-  // management
-  forwardCommandToArms(cmd);
+void ArmOrchestratorInterface::scheduleCommand(Command &cmd) {
+  xQueueSendToBack(queue_into_object(), &cmd, 0);
 }
 
-bool ArmOrchestrator::getNextTerminatedCommand(Command *opt) {
+bool ArmOrchestratorInterface::getNextTerminatedCommand(Command *opt) {
   std::vector<int> dummy_params{};
   Command cmd {'~', dummy_params};
   if (xQueueReceive(queue_out_from_object(), &cmd, 0) == pdTRUE) {
@@ -64,6 +62,9 @@ bool ArmOrchestrator::getNextTerminatedCommand(Command *opt) {
 }
 
 void ArmOrchestrator::loop() {
+  // Check the queue and forward the commands to the arms
+  Command cmd;
+  if (xQueueReceive(queue_into_object(), &cmd, 0) == pdTRUE) forwardCommandToArms(cmd);
   // Check the arms finished missions
   for (Arm arm: _arms) {
     ArmTaskParam finished_arm_cmd;
