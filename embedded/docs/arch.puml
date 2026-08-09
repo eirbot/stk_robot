@@ -1,0 +1,52 @@
+@startuml
+class Arm_Actuator {
+	+ void initialiser()
+	+ void sns_read()
+	+ void servo_9G(int angle)
+	+ void soft_servo(int objectif)
+	+ void homming()
+	+ void fairePas()
+	+ void closePiston()
+	+ void openPiston()
+	+ void goUp()
+	+ void goDown()
+
+	- PCF8575& pcf_
+	+ uint8_t p9G
+	+ uint8_t p17G
+	+ uint8_t v1
+	+ uint8_t v2
+	+ uint8_t stp
+	+ uint8_t dir
+	+ uint8_t sns
+	+ bool dir_elevator
+	+ Servo servo9G
+	+ Servo servo17G
+	+ bool canMove
+	+ int sns_status
+	+ int p17G_status
+	+ int p9G_status
+	+ int asc_height
+}
+
+class ActiveObjectInterface {
+	- QueueHandle_t& _queue_into_object
+	- QueueHandle_t& _queue_out_from_object
+
+	# QueueHandle_t& queue_into_object()
+	# QueueHandle_t& queue_out_from_object()
+}
+
+class ActiveObject
+ActiveObject --|> ActiveObjectInterface
+
+class Arm {
+	- Arm_Actuator& _actuator
+	- uint8_t _actId
+	- const uint16_t* _pAngle0
+	- TaskHandle_t _relatedFreeRTOSTask
+}
+
+Arm --|> ActiveObject
+
+@enduml
