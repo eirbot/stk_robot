@@ -9,7 +9,7 @@ void ArmOrchestrator::forwardCommandToArms(Command &cmd) {
 
     _synchronized_arm_nb = 0;
 
-    for (Arm arm: _arms)
+    for (ArmInterface arm: _arms)
        arm.scheduleArmCommand(taskParams);
 
     return;
@@ -66,7 +66,7 @@ void ArmOrchestrator::loop() {
   Command cmd;
   if (xQueueReceive(queue_into_object(), &cmd, 0) == pdTRUE) forwardCommandToArms(cmd);
   // Check the arms finished missions
-  for (Arm arm: _arms) {
+  for (ArmInterface arm: _arms) {
     ArmTaskParam finished_arm_cmd;
     bool maybe_finished_cmd = arm.getNextEndedCommand(&finished_arm_cmd);
     if (maybe_finished_cmd) {
@@ -82,7 +82,7 @@ void ArmOrchestrator::loop() {
         // If all the arms are synchronized, then notify their FreeRTOS tasks
         // so they will stop suspending
         if (_synchronized_arm_nb == 4) {
-          for (Arm arm_to_be_notified : _arms) 
+          for (ArmInterface arm_to_be_notified : _arms) 
             xTaskNotifyGive(arm_to_be_notified.getRelatedFreeRTOSTask());
         }
       }
