@@ -29,24 +29,32 @@ class Arm_Actuator {
 	+ int asc_height
 }
 
-class ActiveObjectInterface {
-	- QueueHandle_t& _queue_into_object
-	- QueueHandle_t& _queue_out_from_object
-
-	# QueueHandle_t& queue_into_object()
-	# QueueHandle_t& queue_out_from_object()
+struct ActiveObjectStaticInterface {
+	QueueHandle_t& queue_into_object
+	QueueHandle_t& queue_out_from_object
+	TaskHandle_t& task_id
 }
 
-class ActiveObject
-ActiveObject --|> ActiveObjectInterface
+class ActiveObject {
+	# const ActiveObjectStaticInterface& _interface
+}
+
+ActiveObject --o ActiveObjectStaticInterface
 
 class Arm {
 	- Arm_Actuator& _actuator
 	- uint8_t _actId
 	- const uint16_t* _pAngle0
-	- TaskHandle_t _relatedFreeRTOSTask
 }
 
+Arm --o Arm_Actuator
+
 Arm --|> ActiveObject
+
+abstract class ActiveObjectCreator {
+    + {abstract} void init_active_object(ActiveObjectStaticInterface& interface, const char* const pcName) 
+	# TaskHandle_t start_task(...)
+	# QueueHandle_t create_queue(...)
+}
 
 @enduml
