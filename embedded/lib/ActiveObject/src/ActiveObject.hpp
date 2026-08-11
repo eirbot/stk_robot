@@ -10,7 +10,7 @@
   * FreeRTOS tasks. A struct like this must also be initialized statically to
   * be shared.
   */
-struct ActiveObjectInterface {
+struct ActiveObjectStaticInterface {
   QueueHandle_t& queue_into_object; 
   QueueHandle_t& queue_out_from_object; 
   TaskHandle_t& task_id;
@@ -19,12 +19,12 @@ struct ActiveObjectInterface {
 
 class ActiveObject {
 public:
-  ActiveObject(const ActiveObjectInterface& staticInterface): _interface(staticInterface) {}; 
+  ActiveObject(const ActiveObjectStaticInterface& staticInterface): _interface(staticInterface) {}; 
 
   ~ActiveObject() = default;
 
   virtual void loop() = 0;
 
 protected:
-  const ActiveObjectInterface& _interface;
+  const ActiveObjectStaticInterface& _interface;
 };

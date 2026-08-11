@@ -1,5 +1,4 @@
 #include "Arm.hpp"
-#include "AppState.hpp"
 #include "Arduino.h"
 
 void Arm::triggerFirmwareForCommand(ArmTaskParam command) {
@@ -48,7 +47,7 @@ void Arm::triggerFirmwareForCommand(ArmTaskParam command) {
 void Arm::loop() {
   ArmTaskParam params{'~', 255, -1}; // empty buffer
 
-  if (xQueueReceive(queue_into_object(), &params, 0) != pdTRUE)
+  if (xQueueReceive(_interface.queue_into_object, &params, 0) != pdTRUE)
     return;
 
   if (params.cmd == '~') {
@@ -58,7 +57,7 @@ void Arm::loop() {
 
   triggerFirmwareForCommand(params);
   // Notify that the command is finished
-  xQueueSendToBack(queue_out_from_object(), &params, 0);
+  xQueueSendToBack(_interface.queue_out_from_object, &params, 0);
 
   if (params.cmd == 'I') {
     const TickType_t xMaxBlockTime = pdMS_TO_TICKS( 5000 );
@@ -73,28 +72,5 @@ void Arm::setRelatedFreeRTOSTask(TaskHandle_t task) {
 
 TaskHandle_t Arm::getRelatedFreeRTOSTask() {
   return _relatedFreeRTOSTask;
-}
-
-void arm_task(void *pvParameters) {
-   ArmTaskContext *ctx = (ArmTaskContext *) pvParameters; 
-   Arm_Actuator arm_actuator = init_arm_actuator(ctx->act_id, ctx->pcf);
-   Arm arm{arm_actuator, ctx->act_id, ctx->queue_into, ctx->queue_out_of};
-   while (!appState.timeout) {
-     arm.loop();
-     vTaskDelay(pdMS_TO_TICKS(ARM_TASK_DELAY_MS));
-   };
-}
-
-void ArmInterface::scheduleArmCommand(ArmTaskParam &command) {
-   xQueueSendToBack(queue_into_object(), &command, 0);
-}
-
-bool ArmInterface::getNextEndedCommand(ArmTaskParam *opt) {
-  ArmTaskParam pvBuffer{};
-  if (xQueueReceive(queue_out_from_object(), &pvBuffer, 0) == pdTRUE) {
-    *opt = pvBuffer;
-    return true;
-  }
-  return false;
 }
 

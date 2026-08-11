@@ -37,7 +37,10 @@ const uint16_t pangles0[4] = {40, 60, 120, 140};
 
 class Arm: public ActiveObject {
 public:
-  Arm(Arm_Actuator& actuator, ArmActuatorId actId, QueueHandle_t &queue_into_object, QueueHandle_t &queue_out_from_object): _actuator(actuator), _actId(actId), _pAngle0(&(pangles0[actId])), ActiveObject(queue_into_object, queue_out_from_object) {};
+  Arm(Arm_Actuator &actuator, ArmActuatorId actId,
+      ActiveObjectStaticInterface &interface)
+      : _actuator(actuator), _actId(actId), _pAngle0(&(pangles0[actId])),
+        ActiveObject(interface){};
 
   ~Arm() = default;
 
@@ -59,27 +62,4 @@ command.
     this in a FreeRTOS task.
    */
   void triggerFirmwareForCommand(ArmTaskParam command);
-};
-
-
-void arm_task(void *pvParameters);
-
-struct ArmTaskContext {
-    ArmActuatorId act_id;
-    PCF8575& pcf;
-    QueueHandle_t& queue_into;
-    QueueHandle_t& queue_out_of;
-};
-
-class ArmInterface: public ActiveObjectInterface {
-public:
-  ArmInterface(QueueHandle_t &queue_into_object, QueueHandle_t &queue_out_from_object): ActiveObjectInterface(queue_into_object, queue_out_from_object) {};
-
-  ~ArmInterface() = default;
-
-  void scheduleArmCommand(ArmTaskParam &command);
-
-  /** Retrun true if something is returned (then opt has been edited).
-   */
-  bool getNextEndedCommand(ArmTaskParam *opt);
 };

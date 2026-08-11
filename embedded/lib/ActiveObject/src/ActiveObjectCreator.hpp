@@ -47,9 +47,16 @@ struct FreeRTOSQueueStaticBuffers {
 class ActiveObjectCreator {
   public:
     ActiveObjectCreator() {};
+    ~ActiveObjectCreator();
     /** Set the queues and the task id of the active object's interface.   
       */
-    virtual void init_active_object(ActiveObjectInterface &interface, const char *const pcName) = 0;
+    virtual void
+    init_active_object(ActiveObjectStaticInterface &interface,
+                       const char *const pcName,
+                       FreeRTOSTaskStaticBuffers task_static_buffers,
+                       FreeRTOSQueueStaticBuffers queue_in_static_buffers,
+                       FreeRTOSQueueStaticBuffers queue_out_static_buffers) = 0;
+
   protected:
     TaskHandle_t _start_task(TaskFunction_t pvTaskCode, const char *const pcName, const uint32_t ulStackDepth, void *const pvParameters, UBaseType_t uxPriority,FreeRTOSTaskStaticBuffers task_static_buffers);
     QueueHandle_t _create_queue(const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, FreeRTOSQueueStaticBuffers queue_static_buffers);

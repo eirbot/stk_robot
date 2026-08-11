@@ -52,9 +52,14 @@ Arm --o Arm_Actuator
 Arm --|> ActiveObject
 
 abstract class ActiveObjectCreator {
-    + {abstract} void init_active_object(ActiveObjectStaticInterface& interface, const char* const pcName) 
+    + {abstract} void init_active_object(ActiveObjectStaticInterface& interface, ...) 
 	# TaskHandle_t start_task(...)
 	# QueueHandle_t create_queue(...)
 }
+
+class ArmCreator {
+    + void init_active_object(ActiveObjectStaticInterface& interface, ...) 
+}
+ArmCreator --|> ActiveObjectCreator
 
 @enduml
