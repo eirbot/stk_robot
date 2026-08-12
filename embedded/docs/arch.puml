@@ -61,7 +61,7 @@ abstract class ActiveObjectCreator {
 	# QueueHandle_t create_queue(...)
 }
 
-package "Main FreeRTOS Task" <<Node>> {
+package "Orchestrating FreeRTOS Task" <<Node>> {
 	class ArmCreator {
 	    + void init_active_object(ActiveObjectStaticInterface& interface, ...) 
 	}

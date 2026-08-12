@@ -20,12 +20,15 @@ static StackType_t armUxCreatorTaskStackBuffer[ ARM_MAX_NB * ARM_TASK_STACK_SIZE
 static QueueHandle_t armInStaticQueues[ARM_MAX_NB];
 static QueueHandle_t armOutStaticQueues[ARM_MAX_NB];
 static TaskHandle_t armStaticTasks[ARM_MAX_NB];
-static struct ActiveObjectStaticInterface armInterfaces[ARM_MAX_NB] = {
-    {armInStaticQueues[0], armOutStaticQueues[0], armStaticTasks[0]},
-    {armInStaticQueues[1], armOutStaticQueues[1], armStaticTasks[1]},
-    {armInStaticQueues[2], armOutStaticQueues[2], armStaticTasks[2]},
-    {armInStaticQueues[3], armOutStaticQueues[3], armStaticTasks[3]}
-};
+static std::array<struct ActiveObjectStaticInterface, ARM_MAX_NB> armInterfaces{
+    ActiveObjectStaticInterface{armInStaticQueues[0], armOutStaticQueues[0],
+                                armStaticTasks[0]},
+    ActiveObjectStaticInterface{armInStaticQueues[1], armOutStaticQueues[1],
+                                armStaticTasks[1]},
+    ActiveObjectStaticInterface{armInStaticQueues[2], armOutStaticQueues[2],
+                                armStaticTasks[2]},
+    ActiveObjectStaticInterface{armInStaticQueues[3], armOutStaticQueues[3],
+                                armStaticTasks[3]}};
 
 /* Start the FreeRTOS task of the k-th arm from the relevant static buffers,
    which are edited.
