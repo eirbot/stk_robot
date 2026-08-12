@@ -1,7 +1,9 @@
 #include <Arduino.h>
 #include <unity.h>
+#include "ActiveObject.hpp"
 #include "AppState.hpp"
 #include "Arm.hpp"
+#include "Arms.hpp"
 #include "Arm_Actuator.hpp"
 #include "freertos/projdefs.h"
 
@@ -24,7 +26,7 @@ void espSetup() {
     Wire.begin(21, 22); 
     Wire.setClock(100000);
     // TODO: uncomment before match
-    if (!pcf.begin()) {
+    if (!get_static_pcf().begin()) {
       Serial.println("PCF8575 introuvable");
       while (1);
     }
@@ -37,57 +39,6 @@ void espSetup() {
 // https://freertos.org/Documentation/02-Kernel/02-Kernel-features/09-Memory-management/03-Static-vs-Dynamic-memory-allocation
 // https://freertos.org/Documentation/02-Kernel/02-Kernel-features/09-Memory-management/01-Memory-management#heap_4c
 // https://www.youtube.com/watch?v=Qske3yZRW5I&list=PLEBQazB0HUyQ4hAPU1cJED6t3DU0h34bz&index=4
-#define QUEUE_LENGTH_IN_ITEMS 25
-#define TASK_STACK_SIZE (sizeof(Arm) + sizeof(Arm_Actuator)) * 5
-#define TASK_PRIORITY	( tskIDLE_PRIORITY + 2 )
-
-static StaticQueue_t staticQueueIntoArm;
-static StaticQueue_t staticQueueOutOfArm;
-static uint8_t ucQueueStorageAreaInto[ QUEUE_LENGTH_IN_ITEMS * sizeof( ArmTaskParam ) ];
-static uint8_t ucQueueStorageAreaOutOf[ QUEUE_LENGTH_IN_ITEMS * sizeof( ArmTaskParam ) ];
-
-/*-----------------------------------------------------------*/
-
-/* StaticTask_t is a publicly accessible structure that has the same size and
-alignment requirements as the real TCB structure.  It is provided as a mechanism
-for applications to know the size of the TCB (which is dependent on the
-architecture and configuration file settings) without breaking the strict data
-hiding policy by exposing the real TCB.  This StaticTask_t variable is passed
-into the xTaskCreateStatic() function that creates the
-prvStaticallyAllocatedCreator() task, and will hold the TCB of the created
-tasks. */
-static StaticTask_t xCreatorTaskTCBBuffer;
-
-/* This is the stack that will be used by the prvStaticallyAllocatedCreator()
-task, which is itself created using statically allocated buffers (so without any
-dynamic memory allocation). */
-static StackType_t uxCreatorTaskStackBuffer[ TASK_STACK_SIZE ];
-
-/*-----------------------------------------------------------*/
-
-// ----------- SETUP ------------
-QueueHandle_t queue_into = xQueueCreateStatic(QUEUE_LENGTH_IN_ITEMS, sizeof(ArmTaskParam), ucQueueStorageAreaInto, &staticQueueIntoArm);    
-QueueHandle_t queue_out_of = xQueueCreateStatic(QUEUE_LENGTH_IN_ITEMS, sizeof(ArmTaskParam), ucQueueStorageAreaOutOf, &staticQueueOutOfArm);    
-ArmTaskContext ctx {
-    ArmActuator1, get_static_pcf(), queue_into, queue_out_of
-};
-
-
-void vStartStaticallyAllocatedTasks( void  )
-{
-    /* Create a single task, which then repeatedly creates and deletes the other
-    RTOS objects using both statically and dynamically allocated RAM. */
-    xTaskCreateStatic( arm_task,		/* The function that implements the task being created. */
-    			   "Arm1StatCreate",						/* Text name for the task - not used by the RTOS, its just to assist debugging. */
-    			   TASK_STACK_SIZE,		/* Size of the buffer passed in as the stack - in words, not bytes! */
-    			   &ctx,								/* Parameter passed into the task - not used in this case. */
-    			   TASK_PRIORITY,					/* Priority of the task. */
-    			   &( uxCreatorTaskStackBuffer[ 0 ] ),  /* The buffer to use as the task's stack. */
-    			   &xCreatorTaskTCBBuffer );			/* The variable that will hold the task's TCB. */
-}
-// ----------- SETUP ------------
-
-
 
 void test_small_communication(void) {
     
@@ -95,11 +46,20 @@ void test_small_communication(void) {
     vTaskDelay(pdMS_TO_TICKS(5000));
 
     Serial.println("Scheduling Commands...");
-    // TODO: add a command to the queue and test
-    Serial.println("Scheduled!");
 
+    // TODO: add a command to the queue and test
+
+    ArmTaskParam command1{NO_COMMAND+1,'I',0,0};
+    xQueueSendToBack(armInterfaces[ArmActuator1].queue_into_object, &command1, 0);
+    Serial.println("Scheduled!");
     Serial.println("Waiting 5 seconds before ends the test...");
-    vTaskDelay(pdMS_TO_TICKS(7000));
+    vTaskDelay(pdMS_TO_TICKS(2000));
+    xTaskNotifyGive(armInterfaces[ArmActuator1].task_id);
+    // TODO: Set true params for an ascending arm command 
+    // ArmTaskParam command2{NO_COMMAND+2,'A',0,2};
+    // xQueueSendToBack(armInterfaces[ArmActuator1].queue_into_object, &command2, 0);
+
+    vTaskDelay(pdMS_TO_TICKS(3000));
     
     appState.timeout = true;
 
@@ -115,11 +75,11 @@ void setup()
     Serial.println("Tests started!");
 
     espSetup();
-    Serial.println("Start orchestrator task!");
+    Serial.println("Start arm1 task!");
 
-    vStartStaticallyAllocatedTasks();
+    init_arm(ArmActuator1);
 
-    Serial.println("Orchestrator task started! Waiting 2seconds");
+    Serial.println("Arm task started! Waiting 2seconds");
     vTaskDelay(pdMS_TO_TICKS(2000));
 
     RUN_TEST(test_small_communication);
