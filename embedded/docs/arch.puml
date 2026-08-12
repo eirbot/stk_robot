@@ -9,15 +9,12 @@ struct ActiveObjectStaticInterface {
 }
 
 abstract class ActiveObject {
-	# const ActiveObjectStaticInterface& _interface
 	+ {abstract} void loop()
 }
 
-ActiveObject --o ActiveObjectStaticInterface
-
+ActiveObject --o ActiveObjectStaticInterface : # const &_interface
 package "Arm FreeRTOS Task" <<Node>> {
 	class Arm {
-		- Arm_Actuator& _actuator
 		- uint8_t _actId
 		- const uint16_t* _pAngle0
 		+ void loop()
@@ -54,7 +51,7 @@ package "Arm FreeRTOS Task" <<Node>> {
 	}
 }
 
-Arm --o Arm_Actuator
+Arm --o Arm_Actuator : - &_actuator
 
 Arm --|> ActiveObject
 
@@ -64,24 +61,28 @@ abstract class ActiveObjectCreator {
 	# QueueHandle_t create_queue(...)
 }
 
-class ArmCreator {
-    + void init_active_object(ActiveObjectStaticInterface& interface, ...) 
+package "Main FreeRTOS Task" <<Node>> {
+	class ArmCreator {
+	    + void init_active_object(ActiveObjectStaticInterface& interface, ...) 
+	}
+	ArmCreator -up-|> ActiveObjectCreator
+	ArmCreator --> "Arm FreeRTOS Task" : "Start the task"
+
+	class ArmOrchestrator {
+		+ void loop()
+	}
+
+	ArmOrchestrator --o ActiveObjectStaticInterface : - array<., 4> &_arms
+
+	ArmOrchestrator --|> ActiveObject
+
+	class ArmOrchestratorCreator {
+		+ void init_active_object(ActiveObjectStaticInterface& interface, ...) 
+		+ ArmOrchestrator init_arm_orchestrator(ActiveObjectStaticInterface& interface, ...) 
+	}
+
+	ArmOrchestratorCreator -up-|> ActiveObjectCreator
+	ArmOrchestratorCreator --o ArmOrchestrator : Create the object in the same task 
 }
-ArmCreator --|> ActiveObjectCreator
-ArmCreator --> "Arm FreeRTOS Task" : "Start the task"
-
-class ArmOrchestrator {
-	- ActiveObjectStaticInterface& arms[4]
-	+ void loop()
-}
-
-ArmOrchestrator --|> ActiveObject
-
-class ArmOrchestratorCreator {
-	+ void init_active_object(ActiveObjectStaticInterface& interface, ...) 
-	+ ArmOrchestrator init_arm_orchestrator(ActiveObjectStaticInterface& interface, ...) 
-}
-
-ArmOrchestratorCreator --|> ActiveObjectCreator
 
 @enduml
