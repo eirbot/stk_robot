@@ -1,33 +1,6 @@
 @startuml
-class Arm_Actuator {
-	+ void initialiser()
-	+ void sns_read()
-	+ void servo_9G(int angle)
-	+ void soft_servo(int objectif)
-	+ void homming()
-	+ void fairePas()
-	+ void closePiston()
-	+ void openPiston()
-	+ void goUp()
-	+ void goDown()
-
-	- PCF8575& pcf_
-	+ uint8_t p9G
-	+ uint8_t p17G
-	+ uint8_t v1
-	+ uint8_t v2
-	+ uint8_t stp
-	+ uint8_t dir
-	+ uint8_t sns
-	+ bool dir_elevator
-	+ Servo servo9G
-	+ Servo servo17G
-	+ bool canMove
-	+ int sns_status
-	+ int p17G_status
-	+ int p9G_status
-	+ int asc_height
-}
+' TODO: set the attributes that relates to other classes
+' https://plantuml.com/class-diagram#631c2725deb35a73
 
 struct ActiveObjectStaticInterface {
 	QueueHandle_t& queue_into_object
@@ -35,16 +8,50 @@ struct ActiveObjectStaticInterface {
 	TaskHandle_t& task_id
 }
 
-class ActiveObject {
+abstract class ActiveObject {
 	# const ActiveObjectStaticInterface& _interface
+	+ {abstract} void loop()
 }
 
 ActiveObject --o ActiveObjectStaticInterface
 
-class Arm {
-	- Arm_Actuator& _actuator
-	- uint8_t _actId
-	- const uint16_t* _pAngle0
+package "Arm FreeRTOS Task" <<Node>> {
+	class Arm {
+		- Arm_Actuator& _actuator
+		- uint8_t _actId
+		- const uint16_t* _pAngle0
+		+ void loop()
+	}
+
+	class Arm_Actuator {
+		+ void initialiser()
+		+ void sns_read()
+		+ void servo_9G(int angle)
+		+ void soft_servo(int objectif)
+		+ void homming()
+		+ void fairePas()
+		+ void closePiston()
+		+ void openPiston()
+		+ void goUp()
+		+ void goDown()
+
+		- PCF8575& pcf_
+		+ uint8_t p9G
+		+ uint8_t p17G
+		+ uint8_t v1
+		+ uint8_t v2
+		+ uint8_t stp
+		+ uint8_t dir
+		+ uint8_t sns
+		+ bool dir_elevator
+		+ Servo servo9G
+		+ Servo servo17G
+		+ bool canMove
+		+ int sns_status
+		+ int p17G_status
+		+ int p9G_status
+		+ int asc_height
+	}
 }
 
 Arm --o Arm_Actuator
@@ -61,5 +68,20 @@ class ArmCreator {
     + void init_active_object(ActiveObjectStaticInterface& interface, ...) 
 }
 ArmCreator --|> ActiveObjectCreator
+ArmCreator --> "Arm FreeRTOS Task" : "Start the task"
+
+class ArmOrchestrator {
+	- ActiveObjectStaticInterface& arms[4]
+	+ void loop()
+}
+
+ArmOrchestrator --|> ActiveObject
+
+class ArmOrchestratorCreator {
+	+ void init_active_object(ActiveObjectStaticInterface& interface, ...) 
+	+ ArmOrchestrator init_arm_orchestrator(ActiveObjectStaticInterface& interface, ...) 
+}
+
+ArmOrchestratorCreator --|> ActiveObjectCreator
 
 @enduml
