@@ -1,60 +1,63 @@
 #include "Communicator.hpp"
-#include "ActuatorThread.hpp"
 #include "AppState.hpp"
 #include "Arduino.h"
 
-void ComWithRasp::StartCom() {
-  // Crée une tâche FreeRTOS qui appelle this->Receive()
-  // TODO: check if the cpu assignment without affinity is an issue the CPU core
-  xTaskCreatePinnedToCore([](void *obj) { static_cast<ComWithRasp *>(obj)->Receive(); },
-              "ComWithRasp", 4000, this, 1, NULL, tskNO_AFFINITY);
-}
+// TODO: check the best number with test
+#define MAX_SERIAL_READINGS_BEFORE_YIELD 50
 
-void ComWithRasp::Receive() {
+void ComWithRasp::task() {
   // On crée un tableau fixe de 64 cases en mémoire (ultra rapide et sûr)
   char rx_buffer[64];
   int rx_index = 0;
   Serial.println("Booting up...");
   
-
   while (!appState.timeout) {
-    while (!appState.timeout && Serial.available()) {
-      char c = (char)Serial.read();
-      // Si on détecte la touche Entrée (\r ou \n)
-      if (c == '\n' || c == '\r') {
-        // On vérifie qu'on a bien reçu au moins une lettre
-        if (rx_index > 0) {
-          rx_buffer[rx_index] =
-              '\0'; // On met le caractère de fin de chaîne obligatoire en C
-          // On transfère le tableau sécurisé dans ta variable String habituelle
-          commande = String(rx_buffer);
-          Serial.println("-> Ligne complete securisee pour actionneurs : [" + commande + "]");
-          // On lance ton découpage
-          processLine();
-          // On remet le curseur du tableau à zéro pour le prochain message
-          rx_index = 0;
-          commande = ""; // On nettoie au cas où
-        }
-      } else {
-        // C'est une lettre normale, on la range dans le tableau
-        // (On garde une marge de 1 pour le caractère de fin '\0')
-        if (rx_index < 63) {
-          rx_buffer[rx_index] = c;
-          rx_index++;
-          Serial.println("Parsed ! Buffer state : ");
-          //Serial.println(rx_buffer);
-        } else {
-          Serial.println("-> ERREUR : Buffer plein, message trop long !");
-          rx_index = 0; // On vide pour éviter de bloquer l'ESP
-        }
-      }
-    }
+    // TODO: check if Serial.available is false when IDLE
+    for (uint8_t serial_readings = 0;
+         !appState.timeout && Serial.available() &&
+         serial_readings < MAX_SERIAL_READINGS_BEFORE_YIELD;
+         serial_readings++)
+      receive(rx_buffer, rx_index);
+    _taskLocalArmOrchestrator.loop();
     //Serial.println("[Task|Com] Serial empty, delegating CPU...");
     // On rend la main à FreeRTOS
     vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 
   vTaskDelete(NULL);
+}
+
+void ComWithRasp::receive(char rx_buffer[64], int &rx_index) {
+  char c = (char)Serial.read();
+  // Si on détecte la touche Entrée (\r ou \n)
+  if (c == '\n' || c == '\r') {
+    // On vérifie qu'on a bien reçu au moins une lettre
+    if (rx_index > 0) {
+      rx_buffer[rx_index] =
+          '\0'; // On met le caractère de fin de chaîne obligatoire en C
+      // On transfère le tableau sécurisé dans ta variable String habituelle
+      commande = String(rx_buffer);
+      Serial.println("-> Ligne complete securisee pour actionneurs : [" +
+                     commande + "]");
+      // On lance ton découpage
+      processLine();
+      // On remet le curseur du tableau à zéro pour le prochain message
+      rx_index = 0;
+      commande = ""; // On nettoie au cas où
+    }
+  } else {
+    // C'est une lettre normale, on la range dans le tableau
+    // (On garde une marge de 1 pour le caractère de fin '\0')
+    if (rx_index < 63) {
+      rx_buffer[rx_index] = c;
+      rx_index++;
+      Serial.println("Parsed ! Buffer state : ");
+      // Serial.println(rx_buffer);
+    } else {
+      Serial.println("-> ERREUR : Buffer plein, message trop long !");
+      rx_index = 0; // On vide pour éviter de bloquer l'ESP
+    }
+  }
 }
 
 void ComWithRasp::Send() {
@@ -118,8 +121,9 @@ void ComWithRasp::processLine() {
 }
 
 void ComWithRasp::processCommand(const String &cmd,const std::vector<int> &params) {
-  for (ActuatorManager* actuator_manager: _actuator_managers)
-     actuator_manager->processCommand(cmd, params);
+  Command orchestratorCommand{_next_command_id, cmd.charAt(0), params};
+  _next_command_id++;
+  xQueueSendToBack(_armOrchestratorInterface.queue_into_object, &orchestratorCommand, 0);
 }
 
 void ComWithRasp::GoToTask(void *pvParameters) {

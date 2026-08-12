@@ -85,10 +85,11 @@ package "Main FreeRTOS Task" <<Node>> {
 	ArmOrchestratorCreator --o ArmOrchestrator : Create the object in the same task 
 
 	class ComWithRasp {
-		+ void loop()
+		+ void task()
 	}
 
-    ComWithRasp --* ArmOrchestrator : - &_orchestrator
+    ComWithRasp --* ArmOrchestrator : - &_taskLocalArmOrchestrator
+    ComWithRasp --* ActiveObjectStaticInterface : - &_armOrchestratorInterface
 }
 
 @enduml
