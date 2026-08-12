@@ -5,7 +5,6 @@
 #include "AppState.hpp"
 #include "ActiveObject.hpp"
 #include "PCF8575.h"
-#include <cstdint>
 
 struct ArmTaskContext {
     ArmActuatorId act_id;
@@ -23,21 +22,17 @@ void arm_task(void *pvParameters) {
    };
 }
 
-#define QUEUE_LENGTH_IN_ITEMS 25
-#define TASK_STACK_SIZE (sizeof(Arm) + sizeof(Arm_Actuator)) * 5
-#define TASK_PRIORITY	( tskIDLE_PRIORITY + 2 )
-
 void ArmCreator::init_active_object(
     ActiveObjectStaticInterface &interface, const char *const pcName,
-    FreeRTOSTaskStaticBuffers task_static_buffers,
-    FreeRTOSQueueStaticBuffers queue_in_static_buffers,
-    FreeRTOSQueueStaticBuffers queue_out_static_buffers
+    const FreeRTOSTaskStaticBuffers &task_static_buffers,
+    const FreeRTOSQueueStaticBuffers &queue_in_static_buffers,
+    const FreeRTOSQueueStaticBuffers &queue_out_static_buffers
 ) {
   interface.queue_into_object = _create_queue(
-      QUEUE_LENGTH_IN_ITEMS, sizeof(ArmTaskParam), queue_in_static_buffers);
-  interface.queue_out_from_object = _create_queue(QUEUE_LENGTH_IN_ITEMS, sizeof(uint8_t), queue_out_static_buffers);
+      ARM_QUEUE_MAX_ITEM_NB, ARM_IN_QUEUE_ITEM_SIZE, queue_in_static_buffers);
+  interface.queue_out_from_object = _create_queue(ARM_QUEUE_MAX_ITEM_NB, ARM_OUT_QUEUE_ITEM_SIZE, queue_out_static_buffers);
   ArmTaskContext ctx {
-      ArmActuator1, pcf, interface
+      ArmActuator1, get_static_pcf(), interface
   };
-  interface.task_id = _start_task(arm_task, pcName, TASK_STACK_SIZE, &ctx, TASK_PRIORITY, task_static_buffers);
+  interface.task_id = _start_task(arm_task, pcName, ARM_TASK_STACK_SIZE, &ctx, ARM_TASK_PRIORITY, task_static_buffers);
 }

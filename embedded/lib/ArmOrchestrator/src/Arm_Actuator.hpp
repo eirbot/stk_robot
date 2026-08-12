@@ -7,8 +7,9 @@
 #include <ESP32Servo.h>
 #include <cstdint>
 
-extern PCF8575 pcf;
 extern volatile bool IntDetected;
+
+PCF8575& get_static_pcf();
 
 class Arm_Actuator {
 public:

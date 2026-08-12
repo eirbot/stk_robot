@@ -33,7 +33,9 @@ struct ArmTaskParam {
 #define ARM_TASK_DELAY_MS 25
 #endif
 
-const uint16_t pangles0[4] = {40, 60, 120, 140};
+#define ARM_MAX_NB 4
+
+const uint16_t pangles0[ARM_MAX_NB] = {40, 60, 120, 140};
 
 class Arm: public ActiveObject {
 public:

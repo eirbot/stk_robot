@@ -1,7 +1,11 @@
 #include "Arm_Actuator.hpp"
 
-PCF8575 pcf{0x20, &Wire};
+static PCF8575 pcf{0x20, &Wire};
 volatile bool IntDetected = false;
+
+PCF8575& get_static_pcf() {
+  return pcf;  
+}
 
 Arm_Actuator init_arm_actuator(ArmActuatorId act_id, PCF8575 &pcf) {
   switch (act_id) {

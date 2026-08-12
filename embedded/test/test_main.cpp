@@ -69,7 +69,7 @@ static StackType_t uxCreatorTaskStackBuffer[ TASK_STACK_SIZE ];
 QueueHandle_t queue_into = xQueueCreateStatic(QUEUE_LENGTH_IN_ITEMS, sizeof(ArmTaskParam), ucQueueStorageAreaInto, &staticQueueIntoArm);    
 QueueHandle_t queue_out_of = xQueueCreateStatic(QUEUE_LENGTH_IN_ITEMS, sizeof(ArmTaskParam), ucQueueStorageAreaOutOf, &staticQueueOutOfArm);    
 ArmTaskContext ctx {
-    ArmActuator1, pcf, queue_into, queue_out_of
+    ArmActuator1, get_static_pcf(), queue_into, queue_out_of
 };
 
 
