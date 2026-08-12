@@ -17,7 +17,7 @@ void init_arm(ArmActuatorId k) {
           (k * ARM_QUEUE_MAX_ITEM_NB * ARM_OUT_QUEUE_ITEM_SIZE)};
   char arm_process_name[5] = "arm1";
   arm_process_name[3] = k + 1;
-  ArmCreator().init_active_object(armInterfaces[k], arm_process_name, task_buffer, in_queue_buffer, out_queue_buffer);
+  ArmCreator{k}.init_active_object(armInterfaces[k], arm_process_name, task_buffer, in_queue_buffer, out_queue_buffer);
 }
 
 void init_arms() {

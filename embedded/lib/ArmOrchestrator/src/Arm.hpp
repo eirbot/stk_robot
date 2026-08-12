@@ -20,6 +20,7 @@
  * I: None
  */
 struct ArmTaskParam {
+  command_id cmd_id;
   char cmd;
   uint8_t P_angleFlag;
   int A_param1;
@@ -48,14 +49,10 @@ public:
 
   void loop() override;
 
-  void setRelatedFreeRTOSTask(TaskHandle_t task);
-  TaskHandle_t getRelatedFreeRTOSTask();
-
 private:
   Arm_Actuator& _actuator;
   uint8_t _actId;
   const uint16_t *_pAngle0;
-  TaskHandle_t _relatedFreeRTOSTask;
  
   /** Carry out the blocking interactions with the firmware to process the
 command.

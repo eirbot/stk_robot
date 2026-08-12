@@ -16,6 +16,11 @@ struct ActiveObjectStaticInterface {
   TaskHandle_t& task_id;
 };
 
+// the identifier to be returned when the command is ended
+typedef unsigned short command_id;
+
+#define NO_COMMAND (command_id) 0
+
 
 class ActiveObject {
 public:

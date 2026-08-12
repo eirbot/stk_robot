@@ -1,4 +1,5 @@
 #include "Arm.hpp"
+#include "ActiveObject.hpp"
 #include "Arduino.h"
 
 void Arm::triggerFirmwareForCommand(ArmTaskParam command) {
@@ -45,7 +46,7 @@ void Arm::triggerFirmwareForCommand(ArmTaskParam command) {
 }
 
 void Arm::loop() {
-  ArmTaskParam params{'~', 255, -1}; // empty buffer
+  ArmTaskParam params{NO_COMMAND, '~', 255, -1}; // empty buffer
 
   if (xQueueReceive(_interface.queue_into_object, &params, 0) != pdTRUE)
     return;
@@ -57,20 +58,13 @@ void Arm::loop() {
 
   triggerFirmwareForCommand(params);
   // Notify that the command is finished
-  xQueueSendToBack(_interface.queue_out_from_object, &params, 0);
+  xQueueSendToBack(_interface.queue_out_from_object, &params.cmd_id, 0);
 
   if (params.cmd == 'I') {
+    // If the command was homing, wait a sync notification from the orchestrator
     const TickType_t xMaxBlockTime = pdMS_TO_TICKS( 5000 );
     uint32_t notify_result;
     BaseType_t xResult = xTaskNotifyWait(pdFALSE, UINT32_MAX, &notify_result, xMaxBlockTime);
   }
-}
-
-void Arm::setRelatedFreeRTOSTask(TaskHandle_t task) {
-  _relatedFreeRTOSTask = task;
-}
-
-TaskHandle_t Arm::getRelatedFreeRTOSTask() {
-  return _relatedFreeRTOSTask;
 }
 

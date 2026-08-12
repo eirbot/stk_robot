@@ -10,7 +10,7 @@
 
 #define ARM_QUEUE_MAX_ITEM_NB 25
 #define ARM_IN_QUEUE_ITEM_SIZE sizeof( ArmTaskParam )
-#define ARM_OUT_QUEUE_ITEM_SIZE sizeof( uint8_t )
+#define ARM_OUT_QUEUE_ITEM_SIZE sizeof( command_id )
 #define ARM_TASK_STACK_SIZE (sizeof(Arm) + sizeof(Arm_Actuator)) * 5
 #ifndef ARM_TASK_PRIORITY
 #define ARM_TASK_PRIORITY ( tskIDLE_PRIORITY + 2 )
@@ -18,7 +18,7 @@
 
 class ArmCreator : public ActiveObjectCreator {
 public:
-  ArmCreator() {};
+  ArmCreator(ArmActuatorId arm_id): _arm_id(arm_id) {};
   ~ArmCreator();
   void init_active_object(
       ActiveObjectStaticInterface &interface, const char *const pcName,
@@ -27,4 +27,5 @@ public:
       const FreeRTOSQueueStaticBuffers &queue_out_static_buffers) override;
 
 private:
+  ArmActuatorId _arm_id;
 };

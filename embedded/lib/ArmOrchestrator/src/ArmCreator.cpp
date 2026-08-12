@@ -32,7 +32,7 @@ void ArmCreator::init_active_object(
       ARM_QUEUE_MAX_ITEM_NB, ARM_IN_QUEUE_ITEM_SIZE, queue_in_static_buffers);
   interface.queue_out_from_object = _create_queue(ARM_QUEUE_MAX_ITEM_NB, ARM_OUT_QUEUE_ITEM_SIZE, queue_out_static_buffers);
   ArmTaskContext ctx {
-      ArmActuator1, get_static_pcf(), interface
+      _arm_id, get_static_pcf(), interface
   };
   interface.task_id = _start_task(arm_task, pcName, ARM_TASK_STACK_SIZE, &ctx, ARM_TASK_PRIORITY, task_static_buffers);
 }
