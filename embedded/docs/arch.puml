@@ -51,7 +51,7 @@ package "Arm FreeRTOS Task" <<Node>> {
 	}
 }
 
-Arm --o Arm_Actuator : - &_actuator
+Arm --* Arm_Actuator : - &_actuator
 
 Arm --|> ActiveObject
 
@@ -83,6 +83,12 @@ package "Main FreeRTOS Task" <<Node>> {
 
 	ArmOrchestratorCreator -up-|> ActiveObjectCreator
 	ArmOrchestratorCreator --o ArmOrchestrator : Create the object in the same task 
+
+	class ComWithRasp {
+		+ void loop()
+	}
+
+    ComWithRasp --* ArmOrchestrator : - &_orchestrator
 }
 
 @enduml
