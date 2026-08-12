@@ -92,4 +92,12 @@ package "Orchestrating FreeRTOS Task" <<Node>> {
     ComWithRasp --* ActiveObjectStaticInterface : - &_armOrchestratorInterface
 }
 
+package "Main FreeRTOS Task" <<Node>> {
+	class CommunicatorCreator {
+		+ void start_task(...)
+	}
+	CommunicatorCreator -up-|> ActiveObjectCreator
+	CommunicatorCreator -up-> "Orchestrating FreeRTOS Task" : "Start the task" 
+}
+
 @enduml
