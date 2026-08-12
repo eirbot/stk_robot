@@ -20,6 +20,7 @@ public:
   volatile bool flagInit = false;
 
 private:
+  // TODO: write in serial the id of the ended commands 
   void receive(char rx_buffer[64], int &rx_index); // One UART reading
   void TelemetryLoop(); // Envoi périodique de la télémétrie
   void processLine(); // Découpe et traite la commande
