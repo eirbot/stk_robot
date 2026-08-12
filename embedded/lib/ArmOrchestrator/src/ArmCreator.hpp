@@ -19,7 +19,6 @@
 class ArmCreator : public ActiveObjectCreator {
 public:
   ArmCreator(ArmActuatorId arm_id): _arm_id(arm_id) {};
-  ~ArmCreator();
   void init_active_object(
       ActiveObjectStaticInterface &interface, const char *const pcName,
       const FreeRTOSTaskStaticBuffers &task_static_buffers,

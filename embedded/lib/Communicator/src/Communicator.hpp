@@ -28,8 +28,8 @@ private:
   void asyncGoTo(float x, float y, float angle);
   static void GoToTask(void* pvParameters);
 
-  ActiveObjectStaticInterface _armOrchestratorInterface;
-  ArmOrchestrator _taskLocalArmOrchestrator;
+  ActiveObjectStaticInterface &_armOrchestratorInterface;
+  ArmOrchestrator &_taskLocalArmOrchestrator;
   command_id _next_command_id = NO_COMMAND + 1;
   String commande;
   char rcv;

@@ -26,8 +26,6 @@ class ActiveObject {
 public:
   ActiveObject(const ActiveObjectStaticInterface& staticInterface): _interface(staticInterface) {}; 
 
-  ~ActiveObject() = default;
-
   virtual void loop() = 0;
 
 protected:

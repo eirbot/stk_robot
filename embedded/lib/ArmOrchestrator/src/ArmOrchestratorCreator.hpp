@@ -6,7 +6,6 @@
 class ArmOrchestratorCreator : public ActiveObjectCreator {
 public:
   ArmOrchestratorCreator() : ActiveObjectCreator() {};  
-  ~ArmOrchestratorCreator();
 
   /* Do not implement this function. */
   void init_active_object(ActiveObjectStaticInterface &interface,

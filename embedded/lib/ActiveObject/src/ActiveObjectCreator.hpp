@@ -47,7 +47,6 @@ struct FreeRTOSQueueStaticBuffers {
 class ActiveObjectCreator {
   public:
     ActiveObjectCreator() {};
-    ~ActiveObjectCreator();
     /** Set the queues and the task id of the active object's interface.   
       */
     virtual void

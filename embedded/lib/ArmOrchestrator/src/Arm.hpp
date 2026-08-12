@@ -45,8 +45,6 @@ public:
       : _actuator(actuator), _actId(actId), _pAngle0(&(pangles0[actId])),
         ActiveObject(interface){};
 
-  ~Arm() = default;
-
   void loop() override;
 
 private:
