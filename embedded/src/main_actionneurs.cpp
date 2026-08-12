@@ -1,7 +1,5 @@
-#include "ArmOrchestrator.hpp"
-#include "Arms.hpp"
-#include "ArmOrchestratorStatic.hpp"
-#include "Communicator.hpp"
+#include "CommunicatorStatic.hpp"
+#include "AppState.hpp"
 #include "Arm_Actuator.hpp"
 
 #define INCLUDE_vTaskDelay 1
@@ -29,19 +27,14 @@ void setup()
     espSetup();
     Serial.println("Start orchestrator task!");
 
-    // TODO: start the arm orchestrator and communication in a freertos task
-    init_arms();
-    ArmOrchestrator arm_orchestrator = init_orchestrator(armInterfaces);
-    ComWithRasp com_object{orchestrator_interface, arm_orchestrator};
-    com_object.task();
+    start_communicator_task();
 
-    // TODO: keep this in the main task
-    // Serial.println("Orchestrator task started! Waiting 2seconds");
-    // vTaskDelay(pdMS_TO_TICKS(2000));
+    Serial.println("Orchestrator task started! Waiting 10 seconds");
 
-    // test_small_communication();
+    vTaskDelay(pdMS_TO_TICKS(10000));
 
-    // appState.timeout = true;
+    Serial.println("Timeout! Every task will be stopped.");
+    appState.timeout = true;
 }
 
 void loop() {}
