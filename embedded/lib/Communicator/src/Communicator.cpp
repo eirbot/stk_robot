@@ -7,8 +7,6 @@
 
 void ComWithRasp::task() {
   // On crée un tableau fixe de 64 cases en mémoire (ultra rapide et sûr)
-  char rx_buffer[64];
-  int rx_index = 0;
   Serial.println("Booting up...");
   
   while (!appState.timeout) {
@@ -17,7 +15,7 @@ void ComWithRasp::task() {
          !appState.timeout && Serial.available() &&
          serial_readings < MAX_SERIAL_READINGS_BEFORE_YIELD;
          serial_readings++)
-      receive(rx_buffer, rx_index);
+      receive();
     _taskLocalArmOrchestrator.loop();
     //Serial.println("[Task|Com] Serial empty, delegating CPU...");
     // On rend la main à FreeRTOS
@@ -27,35 +25,35 @@ void ComWithRasp::task() {
   vTaskDelete(NULL);
 }
 
-void ComWithRasp::receive(char rx_buffer[64], int &rx_index) {
+void ComWithRasp::receive() {
   char c = (char)Serial.read();
   // Si on détecte la touche Entrée (\r ou \n)
   if (c == '\n' || c == '\r') {
     // On vérifie qu'on a bien reçu au moins une lettre
-    if (rx_index > 0) {
-      rx_buffer[rx_index] =
+    if (_rx_index > 0) {
+      _rx_buffer[_rx_index] =
           '\0'; // On met le caractère de fin de chaîne obligatoire en C
       // On transfère le tableau sécurisé dans ta variable String habituelle
-      commande = String(rx_buffer);
+      commande = String(_rx_buffer);
       Serial.println("-> Ligne complete securisee pour actionneurs : [" +
                      commande + "]");
       // On lance ton découpage
       processLine();
       // On remet le curseur du tableau à zéro pour le prochain message
-      rx_index = 0;
+      _rx_index = 0;
       commande = ""; // On nettoie au cas où
     }
   } else {
     // C'est une lettre normale, on la range dans le tableau
     // (On garde une marge de 1 pour le caractère de fin '\0')
-    if (rx_index < 63) {
-      rx_buffer[rx_index] = c;
-      rx_index++;
+    if (_rx_index < 63) {
+      _rx_buffer[_rx_index] = c;
+      _rx_index++;
       Serial.println("Parsed ! Buffer state : ");
-      // Serial.println(rx_buffer);
+      // Serial.println(_rx_buffer);
     } else {
       Serial.println("-> ERREUR : Buffer plein, message trop long !");
-      rx_index = 0; // On vide pour éviter de bloquer l'ESP
+      _rx_index = 0; // On vide pour éviter de bloquer l'ESP
     }
   }
 }

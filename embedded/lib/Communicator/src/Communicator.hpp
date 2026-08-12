@@ -21,7 +21,7 @@ public:
 
 private:
   // TODO: write in serial the id of the ended commands 
-  void receive(char rx_buffer[64], int &rx_index); // One UART reading
+  void receive(); // One UART reading
   void TelemetryLoop(); // Envoi périodique de la télémétrie
   void processLine(); // Découpe et traite la commande
   void processCommand(const String &cmd, const std::vector<int> &params);
@@ -35,6 +35,8 @@ private:
   char rcv;
   static constexpr int MAX_COMMAND_LENGTH = 64;
   volatile bool isMoving = false;
+  char _rx_buffer[64];
+  int _rx_index = 0;
 };
 
 #endif
