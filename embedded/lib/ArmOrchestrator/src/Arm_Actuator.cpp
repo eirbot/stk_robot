@@ -36,10 +36,11 @@ ArmVars per_arm_vars(ArmActuatorId arm_id) {
 TaskHandle_t Handle_TaskActionneurs = NULL;
 
 void ARDUINO_ISR_ATTR IntEXTfct() {
-  IntDetected = true;
-  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-  vTaskNotifyGiveFromISR(Handle_TaskActionneurs, &xHigherPriorityTaskWoken);
-  if (xHigherPriorityTaskWoken) {
-    portYIELD_FROM_ISR();
-  }
+  // IntDetected = true;
+  // BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  // TODO: send interrupt notification to each freertos task
+  // vTaskNotifyGiveFromISR(Handle_TaskActionneurs, &xHigherPriorityTaskWoken);
+  // if (xHigherPriorityTaskWoken) {
+  //   portYIELD_FROM_ISR();
+  // }
 }

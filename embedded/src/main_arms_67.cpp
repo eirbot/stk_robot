@@ -13,18 +13,17 @@ void espSetup() {
       Serial.println("PCF8575 introuvable");
       while (1);
     }
-    pinMode(IntEXT, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(IntEXT), IntEXTfct, FALLING);
+    // pinMode(IntEXT, INPUT_PULLUP);
+    // attachInterrupt(digitalPinToInterrupt(IntEXT), IntEXTfct, FALLING);
 }
 
 void setup()
 {
+    espSetup();
+
     Serial.println("Waiting 2 seconds...");
     delay(2000); // service delay
 
-    Serial.println("Tests started!");
-
-    espSetup();
     Serial.println("Start orchestrator task!");
 
     Arm_Actuator my_arm{ArmActuator1, get_static_pcf()};
@@ -37,7 +36,9 @@ void setup()
 
     vTaskDelay(pdMS_TO_TICKS(3000));
 
-    my_arm.setElevatorPosition(50);
+    my_arm.setElevatorPosition(100);
+
+    vTaskDelay(pdMS_TO_TICKS(3000));
 
     Serial.println("Timeout! Every task will be stopped.");
     appState.timeout = true;
