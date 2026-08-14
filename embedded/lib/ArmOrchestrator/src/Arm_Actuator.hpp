@@ -49,44 +49,54 @@ public:
     _servo9G.attach(_armVars.p9G);
     _servo17G.attach(_armVars.p17G);
 
-    _canMove = true;
+    _canElevatorMove = true;
     _sns_status = 0;
     _p17G_status = 89;
     _p9G_status = 0;
     _asc_height = 0;
   }
 
-
-  // Invert the angle of the servo9G (switch between 0° and 180°)
-  void invert_servo9G() {
-    int degree_angle = _p9G_status == 0 ? 180 : 0;
-    _set_servo9G_angle(degree_angle);
+  // Set the angle of the servo9G and update the status.
+  void set_finger_angle(int degree_angle) {
+    _servo9G.write(degree_angle);
+    _p9G_status = degree_angle;
   }
 
-  // TODO: set the spec
-  void soft_servo(int objectif) {
-    while (abs(objectif - _p17G_status) >= 1) {
-      if (objectif - _p17G_status >= 0) {
+  /** Invert the angle of the arm's finger. 
+    * Invert the angle of the servo9G (switch between 0° and 180°)
+    */
+  void invert_finger_angle() {
+    int degree_angle = _p9G_status == 0 ? 180 : 0;
+    set_finger_angle(degree_angle);
+  }
+
+  /** Rotate the elevator in the horizontal plane. 
+   *  Rotate degree per degree the servo17G
+   */
+  void set_elevator_horizontal_angle(int degree_angle) {
+    while (abs(degree_angle - _p17G_status) >= 1) {
+      if (degree_angle - _p17G_status >= 0) {
         _p17G_status += 1;
       } else {
         _p17G_status -= 1;
       }
       _servo17G.write(_p17G_status);
-      // delay(10)
       vTaskDelay(10 / portTICK_PERIOD_MS);
     }
   }
 
-  // Set both servo motors and the elevator to their initial synchronization values.  
-  // TODO: review the spec.
+  // Set both servo motors and the elevator to their initial synchronization state. 
   void homming() {
     _pcf.write(_armVars.dir, _armVars.dir_elevator ? HIGH : LOW);
-    soft_servo(90);
-    _set_servo9G_angle(0);
+    set_elevator_horizontal_angle(90);
+    set_finger_angle(0);
+    // Makes the elevator go down until its minmimum height.
+    // It will reach the 0 height when the sensor detects it.
     this->goDown(20000);
 
     _pcf.write(_armVars.dir, _armVars.dir_elevator ? LOW : HIGH);
-    _canMove = true;
+    _canElevatorMove = true;
+    // Lift up the elevator by 2cm.
     this->goUp(200);
 
     _asc_height = 0;
@@ -107,7 +117,7 @@ public:
   // Make the elevator go up with the given step number.
   void goUp(int steps) {
     _pcf.write(_armVars.dir, _armVars.dir_elevator ? LOW : HIGH);
-    _canMove = true;
+    _canElevatorMove = true;
     for (int k = 0; k < steps; k++) {
       _makeStep();
       // TODO: transform into vTaskDelay
@@ -118,7 +128,7 @@ public:
   // Make the elevator go down with the given step number.
   void goDown(int steps) {
     _pcf.write(_armVars.dir, _armVars.dir_elevator ? HIGH : LOW);
-    _canMove = true;
+    _canElevatorMove = true;
     _sns_read();
     if (_sns_status == LOW) {
       for (int k = 0; k < steps; k++) {
@@ -151,7 +161,7 @@ private:
   ArmVars _armVars;
 
   Servo _servo9G, _servo17G;
-  bool _canMove;
+  bool _canElevatorMove;
   int _sns_status;
   int _p17G_status;
   int _p9G_status;
@@ -161,21 +171,15 @@ private:
 
   // Achieve one step with the actuator in its current state.  
   void _makeStep() {
-    if (_canMove) {
+    if (_canElevatorMove) {
       digitalWrite(_armVars.stp, !digitalRead(_armVars.stp));
     }
   }
 
-  // Read the sns and update the status and the actuator locking state.
+  // Read the sensor and update the elevator locking state.
   void _sns_read() {
     _sns_status = _pcf.read(_armVars.sns);
-    _canMove = (_sns_status == LOW);
-  }
-
-  // Set the angle of the servo9G and update the status.
-  void _set_servo9G_angle(int degree_angle) {
-    _servo9G.write(degree_angle);
-    _p9G_status = degree_angle;
+    _canElevatorMove = (_sns_status == LOW);
   }
 };
 

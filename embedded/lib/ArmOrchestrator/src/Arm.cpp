@@ -14,12 +14,11 @@ void Arm::triggerFirmwareForCommand(ArmTaskParam command) {
       break;
     case 'T':
       idlog(this, "Command T inversing");
-      _actuator.invert_servo9G();
+      _actuator.invert_finger_angle();
       break;
     case 'P':
       idlog(this, "Command P soft servo");
-      // TODO: document the soft_servo
-      _actuator.soft_servo(command.P_angleFlag ? *_pAngle0 : 90);
+      _actuator.set_elevator_horizontal_angle(command.P_angleFlag ? *_pAngle0 : 90);
       break;
     case 'A':
       idlog(this, "SetPos");
