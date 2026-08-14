@@ -1,18 +1,21 @@
 #include "AppState.hpp"
 #include "Arduino.h"
 #include "Arm_Actuator.hpp"
+#include "freertos/projdefs.h"
 
 #define INCLUDE_vTaskDelay 1
 
 // The setup that we do not care a lot in this test
 void espSetup() {
-    Wire.begin(21, 22); 
-    Wire.setClock(100000);
-    // TODO: uncomment before match
-    if (!get_static_pcf().begin()) {
-      Serial.println("PCF8575 introuvable");
-      while (1);
-    }
+  Wire.begin(21, 22);
+  Wire.setClock(100000);
+  // TODO: uncomment before match
+  if (!get_static_pcf().begin()) {
+    Serial.println("PCF8575 introuvable");
+    while (1) {
+      vTaskDelay(pdMS_TO_TICKS(1000));
+    };
+  }
 }
 
 void setup()
