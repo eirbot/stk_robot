@@ -2,13 +2,13 @@ help:
   @just --list
 
 build:
-  pio run -e Actionneurs
+  pio run -e ${PIO_ENV:-Actionneurs}
 
 motor-build:
   pio run -e Motor
 
 test:
-  pio test -e Actionneurs
+  pio test -e ${PIO_ENV:-Actionneurs}
 
 upload:
-  pio run -e Actionneurs -t upload 
+  pio run -e ${PIO_ENV:-Actionneurs} -t upload 
