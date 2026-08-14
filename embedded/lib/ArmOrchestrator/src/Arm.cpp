@@ -18,7 +18,7 @@ void Arm::triggerFirmwareForCommand(ArmTaskParam command) {
       break;
     case 'P':
       idlog(this, "Command P soft servo");
-      _actuator.set_elevator_horizontal_angle(command.P_angleFlag ? *_pAngle0 : 90);
+      _actuator.trigger_elevator_horizontal_rotation(command.P_angleFlag);
       break;
     case 'A':
       idlog(this, "SetPos");

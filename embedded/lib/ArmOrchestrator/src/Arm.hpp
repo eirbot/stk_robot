@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ActiveObject.hpp"
-#include "Arduino.h"
 #include "Arm_Actuator.hpp"
 
 #define idlog(act, msg) { \
@@ -36,13 +35,11 @@ struct ArmTaskParam {
 
 #define ARM_MAX_NB 4
 
-const uint16_t pangles0[ARM_MAX_NB] = {40, 60, 120, 140};
-
 class Arm: public ActiveObject {
 public:
   Arm(Arm_Actuator &actuator, ArmActuatorId actId,
       ActiveObjectStaticInterface &interface)
-      : _actuator(actuator), _actId(actId), _pAngle0(&(pangles0[actId])),
+      : _actuator(actuator), _actId(actId),
         ActiveObject(interface){};
 
   void loop() override;
@@ -50,7 +47,6 @@ public:
 private:
   Arm_Actuator& _actuator;
   uint8_t _actId;
-  const uint16_t *_pAngle0;
  
   /** Carry out the blocking interactions with the firmware to process the
 command.

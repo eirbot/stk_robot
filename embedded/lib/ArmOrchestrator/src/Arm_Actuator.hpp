@@ -20,6 +20,7 @@ struct ArmVars {
   uint8_t dir;
   uint8_t sns;
   bool dir_elevator;
+  uint16_t servo17GAngle0;
 };
 
 enum ArmActuatorId {
@@ -83,6 +84,11 @@ public:
       _servo17G.write(_p17G_status);
       vTaskDelay(10 / portTICK_PERIOD_MS);
     }
+  }
+
+  void trigger_elevator_horizontal_rotation(bool mustBeTriggered) {
+    set_elevator_horizontal_angle(mustBeTriggered ? _armVars.servo17GAngle0
+                                                  : 90);
   }
 
   // Set both servo motors and the elevator to their initial synchronization state. 
