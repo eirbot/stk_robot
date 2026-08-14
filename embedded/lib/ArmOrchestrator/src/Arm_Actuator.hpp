@@ -96,7 +96,7 @@ public:
 
     _pcf.write(_armVars.dir, _armVars.dir_elevator ? LOW : HIGH);
     _canElevatorMove = true;
-    // Lift up the elevator by 2cm.
+    // Slightly lift up the elevator.
     this->goUp(200);
 
     _asc_height = 0;
