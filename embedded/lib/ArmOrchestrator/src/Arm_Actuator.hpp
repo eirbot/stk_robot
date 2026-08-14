@@ -7,8 +7,6 @@
 #include <ESP32Servo.h>
 #include <cstdint>
 
-extern volatile bool IntDetected;
-
 PCF8575& get_static_pcf();
 
 struct ArmVars {
@@ -21,6 +19,7 @@ struct ArmVars {
   uint8_t sns;
   bool dir_elevator;
   uint16_t servo17GAngle0;
+  int pExtInterruptor;
 };
 
 enum ArmActuatorId {
@@ -31,14 +30,15 @@ enum ArmActuatorId {
 };
 
 ArmVars per_arm_vars(ArmActuatorId arm_id);
+bool& armInterruptionStateRef(ArmActuatorId armId);
 
 #define ELEVATOR_MM_HEIGHT_TO_STEP 80
 
 class Arm_Actuator {
 public:
   // Init all the vars and init the servos.
-  Arm_Actuator(ArmActuatorId arm_id, PCF8575 &pcf)
-      : _pcf(pcf), _armVars(per_arm_vars(arm_id)) {
+  Arm_Actuator(ArmActuatorId arm_id, PCF8575 &pcf, bool &sensorInterruptBit)
+      : _pcf(pcf), _armVars(per_arm_vars(arm_id)), _sensorInterruptBit(sensorInterruptBit) {
     initialize_status_and_servos();
   };
 
@@ -93,6 +93,7 @@ public:
 
   // Set both servo motors and the elevator to their initial synchronization state. 
   void homming() {
+    // TODO: mutex that
     _pcf.write(_armVars.dir, _armVars.dir_elevator ? HIGH : LOW);
     set_elevator_horizontal_angle(90);
     set_finger_angle(0);
@@ -100,6 +101,7 @@ public:
     // It will reach the 0 height when the sensor detects it.
     this->goDown(20000);
 
+    // TODO: mutex that
     _pcf.write(_armVars.dir, _armVars.dir_elevator ? LOW : HIGH);
     _canElevatorMove = true;
     // Slightly lift up the elevator.
@@ -110,18 +112,21 @@ public:
 
   // Close the piston.
   void closePiston() {
+    // TODO: mutex that
     _pcf.write(_armVars.v1, HIGH);
     _pcf.write(_armVars.v2, LOW);
   }
 
   // Open the piston.
   void openPiston() {
+    // TODO: mutex that
     _pcf.write(_armVars.v1, LOW);
     _pcf.write(_armVars.v2, HIGH);
   }
 
   // Make the elevator go up with the given step number.
   void goUp(int steps) {
+    // TODO: mutex that
     _pcf.write(_armVars.dir, _armVars.dir_elevator ? LOW : HIGH);
     _canElevatorMove = true;
     for (int k = 0; k < steps; k++) {
@@ -133,6 +138,7 @@ public:
 
   // Make the elevator go down with the given step number.
   void goDown(int steps) {
+    // TODO: mutex that
     _pcf.write(_armVars.dir, _armVars.dir_elevator ? HIGH : LOW);
     _canElevatorMove = true;
     _sns_read();
@@ -141,9 +147,9 @@ public:
         _makeStep();
         // TODO: transform into vTaskDelay
         delayMicroseconds(50);
-        if (IntDetected) {
+        if (_sensorInterruptBit) {
           _sns_read();
-          IntDetected = false;
+          _sensorInterruptBit = true;
         }
         if (_sns_status == HIGH) {
           break;
@@ -167,6 +173,7 @@ private:
   ArmVars _armVars;
 
   Servo _servo9G, _servo17G;
+  bool& _sensorInterruptBit;
   bool _canElevatorMove;
   int _sns_status;
   int _p17G_status;
@@ -189,6 +196,6 @@ private:
   }
 };
 
-void ARDUINO_ISR_ATTR IntEXTfct();
+void attachSensorInterruptSignals();
 
 #endif

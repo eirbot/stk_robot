@@ -12,3 +12,6 @@ test:
 
 upload:
   pio run -e ${PIO_ENV:-Actionneurs} -t upload 
+
+monitor:
+  pio run -e ${PIO_ENV:-Actionneurs} -t monitor 

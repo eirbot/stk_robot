@@ -1,10 +1,14 @@
 #include "Arm_Actuator.hpp"
 
 static PCF8575 static_pcf{0x20, &Wire};
-volatile bool IntDetected = false;
+static bool mustArmBeInterrupted[4] = {false, false, false, false};
 
 PCF8575& get_static_pcf() {
   return static_pcf;  
+}
+
+bool& armInterruptionStateRef(ArmActuatorId armId) {
+  return mustArmBeInterrupted[armId];
 }
 
 ArmVars per_arm_vars(ArmActuatorId arm_id) {
@@ -35,12 +39,21 @@ ArmVars per_arm_vars(ArmActuatorId arm_id) {
 
 TaskHandle_t Handle_TaskActionneurs = NULL;
 
-void ARDUINO_ISR_ATTR IntEXTfct() {
-  // IntDetected = true;
-  // BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+void ARDUINO_ISR_ATTR SensorExternalInterruptEvent() {
+  Serial.println("An interruption has been triggred.");
+  mustArmBeInterrupted[0] = true;
+  mustArmBeInterrupted[1] = true;
+  mustArmBeInterrupted[2] = true;
+  mustArmBeInterrupted[3] = true;
   // TODO: send interrupt notification to each freertos task
+  // BaseType_t xHigherPriorityTaskWoken = pdFALSE;
   // vTaskNotifyGiveFromISR(Handle_TaskActionneurs, &xHigherPriorityTaskWoken);
   // if (xHigherPriorityTaskWoken) {
   //   portYIELD_FROM_ISR();
   // }
+}
+
+void attachSensorInterruptSignals() {
+  pinMode(IntEXT, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(IntEXT), SensorExternalInterruptEvent, FALLING);
 }
