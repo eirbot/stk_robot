@@ -14,7 +14,7 @@ struct ArmTaskContext {
 
 void arm_task(void *pvParameters) {
    ArmTaskContext *ctx = (ArmTaskContext *) pvParameters; 
-   Arm_Actuator arm_actuator = init_arm_actuator(ctx->act_id, ctx->pcf);
+   Arm_Actuator arm_actuator{ctx->act_id, ctx->pcf};
    Arm arm{arm_actuator, ctx->act_id, ctx->arm_interface};
    while (!appState.timeout) {
      arm.loop();

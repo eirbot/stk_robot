@@ -3,46 +3,35 @@
 #include "Arduino.h"
 
 void Arm::triggerFirmwareForCommand(ArmTaskParam command) {
-      switch (command.cmd) {
-        case 'G':
-            idlog(this, "Closing piston !");
-            _actuator.closePiston();
-            break;
-        case 'R':
-            idlog(this, "Opening piston !");
-            _actuator.openPiston();
-            break;
-        case 'T':
-            {
-                idlog(this, "Command T inversing");
-                int angle = _actuator.p9G_status == 0 ? 180 : 0;
-                _actuator.servo_9G(angle);
-                _actuator.p9G_status = angle;
-            }
-            break;
-        case 'P':
-            idlog(this, "Command P soft servo");
-            _actuator.soft_servo(command.P_angleFlag ? *_pAngle0 : 90);
-            break;
-        case 'A':
-            {
-                idlog(this, "SetPos");
-                int mmToStep = 80;
-                int asked_height = command.A_param1* mmToStep;
-                if(asked_height >= _actuator.asc_height) {
-                  _actuator.goUp(asked_height - this->_actuator.asc_height);
-                } else {
-                  _actuator.goDown(_actuator.asc_height - asked_height);
-                };
-                _actuator.asc_height = asked_height;
-            }
-            break;
-        case 'I':
-            idlog(this, "Homming");
-            _actuator.homming();
-        default:
-            break;
-    }
+  switch (command.cmd) {
+    case 'G':
+      idlog(this, "Closing piston !");
+      _actuator.closePiston();
+      break;
+    case 'R':
+      idlog(this, "Opening piston !");
+      _actuator.openPiston();
+      break;
+    case 'T':
+      idlog(this, "Command T inversing");
+      _actuator.invert_servo9G();
+      break;
+    case 'P':
+      idlog(this, "Command P soft servo");
+      // TODO: document the soft_servo
+      _actuator.soft_servo(command.P_angleFlag ? *_pAngle0 : 90);
+      break;
+    case 'A':
+      idlog(this, "SetPos");
+      _actuator.setElevatorPosition(command.A_param1);
+      break;
+    case 'I':
+      idlog(this, "Homming");
+      _actuator.homming();
+      break;
+    default:
+      break;
+  }
 }
 
 void Arm::loop() {
@@ -67,4 +56,3 @@ void Arm::loop() {
     BaseType_t xResult = xTaskNotifyWait(pdFALSE, UINT32_MAX, &notify_result, xMaxBlockTime);
   }
 }
-
