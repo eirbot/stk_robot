@@ -87,17 +87,15 @@ int Stepper::set_steps(int steps){
     ESP_ERROR_CHECK(pcnt_unit_add_watch_point(_pcnt,steps));
     ESP_ERROR_CHECK(pcnt_unit_clear_count(_pcnt));
     ESP_ERROR_CHECK(pcnt_unit_start(_pcnt));
-
-    // TODO: start the steps
-
+    ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_START_NO_STOP));
     // TODO: return the correct time to be awaited
-    return 42;
+    return steps/_freq;
 }
 
 bool Stepper::interrupt() {
-    // TODO: stop the stepper
-    // TODO: stop the counter
     _is_busy = false;
+    ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_STOP_EMPTY)); // stop timer : no pwm is outputted 
+    ESP_ERROR_CHECK(pcnt_unit_stop(_pcnt)); //stop counter to prevent any trigger event unwanted (paranoia)
     return true;
 }
 
