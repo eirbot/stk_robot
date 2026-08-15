@@ -1,6 +1,7 @@
 #include "Stepper.hpp"
 
 bool on_reach_function(pcnt_unit_handle_t unit, const pcnt_watch_event_data_t *edata, void *user_ctx){
+    // TODO: pass the Stepper and call a public method to stop the stepper, the counter and
     bool *is_stepper_busy = (bool *)user_ctx;
     *is_stepper_busy = false;
     return 0;
@@ -69,6 +70,7 @@ bool Stepper::init(){
 bool Stepper::set_frequency(int frequency){
     uint32_t new_preriod = PWM_RESOLUTION / frequency;
     ESP_ERROR_CHECK(mcpwm_timer_set_period(_timer, new_preriod));
+    // TODO: fix the error code
     return 0;
 }
 
@@ -87,6 +89,12 @@ int Stepper::set_steps(int steps){
     return 42;
 }
 
+bool Stepper::interrupt() {
+    // TODO: stop the stepper
+    // TODO: stop the counter
+    _is_busy = false;
+    return true;
+}
 
 bool Stepper::is_available() {
     return !_is_busy;

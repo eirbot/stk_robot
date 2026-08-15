@@ -32,6 +32,14 @@ class Stepper{
          */
         int set_steps(int steps);
 
+        /** Stop the PWM, the PCnt, and set the stepper as available.
+         *
+         * Return true if the interrupt has been correctly achieved.
+         *
+         * This process does take in account the initially wanted step number.
+         */
+        bool interrupt();
+
         /** If true, then the previous stepper's task has been completely
          * achieved.
          */
