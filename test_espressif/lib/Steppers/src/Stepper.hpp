@@ -11,11 +11,16 @@ class Stepper{
         Stepper(int group_id,
                 int intr_priority,
                 int GPIO,
+                float gain_step,
                 mcpwm_timer_handle_t timer,
                 mcpwm_oper_handle_t oper,
                 mcpwm_cmpr_handle_t comparator,
-                mcpwm_gen_handle_t generator,  
-                float gain_step);
+                mcpwm_gen_handle_t generator,
+                pcnt_unit_config_t unit_config,
+                pcnt_chan_config_t chan_config,
+                pcnt_unit_handle_t pcnt_unit,
+                pcnt_channel_handle_t pcnt_chan,
+                int max_pcnt);
 
         /** Init all the resources of both the pulse counter and the mcpwm.
          *
@@ -73,7 +78,10 @@ class Stepper{
         mcpwm_cmpr_handle_t _comparator = NULL;
         mcpwm_gen_handle_t _generator = NULL;
 
-        pcnt_unit_handle_t _pcnt;
+        pcnt_unit_config_t _unit_config;
+        pcnt_chan_config_t _chan_config;
+
+        pcnt_unit_handle_t _pcnt_unit;
         pcnt_channel_handle_t _pcnt_chan;
 
         bool _is_busy = false;

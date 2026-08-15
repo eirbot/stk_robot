@@ -6,15 +6,23 @@ bool interrupt_stepper_when_steps_reached(pcnt_unit_handle_t unit, const pcnt_wa
     return 0;
 }
 
-Stepper::Stepper(   int group_id,
-                    int intr_priority,
-                    int GPIO,
-                    mcpwm_timer_handle_t timer,
-                    mcpwm_oper_handle_t oper,
-                    mcpwm_cmpr_handle_t comparator,
-                    mcpwm_gen_handle_t generator,
-                    float gain_step){
-    
+Stepper::Stepper(int group_id,
+                int intr_priority,
+                int GPIO,
+                float gain_step,
+                mcpwm_timer_handle_t timer,
+                mcpwm_oper_handle_t oper,
+                mcpwm_cmpr_handle_t comparator,
+                mcpwm_gen_handle_t generator,
+                pcnt_unit_config_t unit_config,
+                pcnt_chan_config_t chan_config,
+                pcnt_unit_handle_t pcnt_unit,
+                pcnt_channel_handle_t pcnt_chan,
+                int max_pcnt){
+        
+    _GPIO = GPIO;
+    _gain_step = gain_step;
+
     _timer_config = {
         .group_id = group_id,
         .clk_src = MCPWM_TIMER_CLK_SRC_DEFAULT,
@@ -43,8 +51,23 @@ Stepper::Stepper(   int group_id,
     _comparator = comparator;
     _generator = generator;
 
-    _GPIO = GPIO;
-    _gain_step = gain_step;
+    _chan_config = {.edge_gpio_num = _GPIO,
+                    .level_gpio_num = -1,
+                    .flags = {.invert_edge_input = 0,
+                        .invert_level_input = 0,
+                        .virt_edge_io_level = 0,
+                        .virt_level_io_level = 0}
+                    };
+    _unit_config = {.clk_src = PCNT_CLK_SRC_DEFAULT,
+                    .low_limit = -1,
+                    .high_limit = max_pcnt,
+                    .intr_priority = 0,
+                    .flags = {.accum_count = 1}
+                    };
+
+    _pcnt_unit = pcnt_unit;
+    _pcnt_chan = pcnt_chan;
+    
 }
 
 int Stepper::init(){
@@ -57,17 +80,16 @@ int Stepper::init(){
     ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(_generator,{.direction = MCPWM_TIMER_DIRECTION_UP,.comparator = _comparator,.action = MCPWM_GEN_ACTION_LOW,}));
     ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(_comparator,_timer_config.period_ticks / 2));
     
-    pcnt_unit_config_t unit_config = {.clk_src = PCNT_CLK_SRC_DEFAULT, .low_limit = -1, .high_limit = 1000, .intr_priority = 0, .flags = {.accum_count = 1}};
-    ESP_ERROR_CHECK(pcnt_new_unit(&unit_config,&_pcnt));
-    pcnt_chan_config_t chan_config = {.edge_gpio_num = _GPIO, .level_gpio_num = -1, .flags = {.invert_edge_input = 0, .invert_level_input = 0, .virt_edge_io_level = 0, .virt_level_io_level = 0}};
-    ESP_ERROR_CHECK(pcnt_new_channel(_pcnt,&chan_config,&_pcnt_chan));
+    ESP_ERROR_CHECK(pcnt_new_unit(&_unit_config,&_pcnt_unit));
+
+    ESP_ERROR_CHECK(pcnt_new_channel(_pcnt_unit,&_chan_config,&_pcnt_chan));
 
     ESP_ERROR_CHECK(pcnt_channel_set_edge_action(_pcnt_chan,PCNT_CHANNEL_EDGE_ACTION_INCREASE,PCNT_CHANNEL_EDGE_ACTION_HOLD));
 
     pcnt_event_callbacks_t my_callbacks{.on_reach = interrupt_stepper_when_steps_reached};
 
-    ESP_ERROR_CHECK(pcnt_unit_register_event_callbacks(_pcnt, &my_callbacks, this));
-    ESP_ERROR_CHECK(pcnt_unit_enable(_pcnt));
+    ESP_ERROR_CHECK(pcnt_unit_register_event_callbacks(_pcnt_unit, &my_callbacks, this));
+    ESP_ERROR_CHECK(pcnt_unit_enable(_pcnt_unit));
     return 0;
 }
 
@@ -82,9 +104,9 @@ int Stepper::set_steps(int steps, unsigned int &time_to_wait){
         return -1;
 
     _is_busy = true;
-    ESP_ERROR_CHECK(pcnt_unit_add_watch_point(_pcnt,steps));
-    ESP_ERROR_CHECK(pcnt_unit_clear_count(_pcnt));
-    ESP_ERROR_CHECK(pcnt_unit_start(_pcnt));
+    ESP_ERROR_CHECK(pcnt_unit_add_watch_point(_pcnt_unit,steps));
+    ESP_ERROR_CHECK(pcnt_unit_clear_count(_pcnt_unit));
+    ESP_ERROR_CHECK(pcnt_unit_start(_pcnt_unit));
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_START_NO_STOP));
     time_to_wait = steps/_freq;
 
@@ -94,7 +116,7 @@ int Stepper::set_steps(int steps, unsigned int &time_to_wait){
 int Stepper::interrupt() {
     _is_busy = false;
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_STOP_EMPTY)); // stop timer : no pwm is outputted 
-    ESP_ERROR_CHECK(pcnt_unit_stop(_pcnt)); //stop counter to prevent any trigger event unwanted (paranoia)
+    ESP_ERROR_CHECK(pcnt_unit_stop(_pcnt_unit)); //stop counter to prevent any trigger event unwanted (paranoia)
     return 0;
 }
 
