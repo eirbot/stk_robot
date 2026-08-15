@@ -84,6 +84,7 @@ class Stepper{
         pcnt_unit_handle_t _pcnt_unit;
         pcnt_channel_handle_t _pcnt_chan;
 
+        int _steps;
         bool _is_busy = false;
         
 
