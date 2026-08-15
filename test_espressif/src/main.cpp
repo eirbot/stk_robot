@@ -33,13 +33,18 @@ extern "C" void app_main() {
     /*SETUP*/
     stepper1.init();
     ESP_LOGI(TAG, "Stepper initialized");
-
+    
     /*LOOP*/
     while (true)
     {
-        stepper1.set_steps(100, time_to_wait);
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        ESP_LOGI(TAG, "loop completed");
+        stepper1.set_frequency(2000);
+        stepper1.set_steps(500, time_to_wait);
+        vTaskDelay(pdMS_TO_TICKS(500));
+        ESP_LOGI(TAG, "loop completed : freq = 2kHz");
+        stepper1.set_frequency(1000);
+        stepper1.set_steps(500, time_to_wait);
+        vTaskDelay(pdMS_TO_TICKS(500));
+        ESP_LOGI(TAG, "loop completed : freq = 1kHz");
     }
     
 }
