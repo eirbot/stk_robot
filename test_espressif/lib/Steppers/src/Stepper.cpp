@@ -102,8 +102,9 @@ int Stepper::init(){
 }
 
 int Stepper::set_frequency(int frequency){
-    uint32_t new_preriod = PWM_RESOLUTION / frequency;
-    ESP_ERROR_CHECK(mcpwm_timer_set_period(_timer, new_preriod));
+    uint32_t new_period = PWM_RESOLUTION / frequency;
+    ESP_ERROR_CHECK(mcpwm_timer_set_period(_timer, new_period));
+    ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(_comparator,new_period / 2));
     return 0;
 }
 
