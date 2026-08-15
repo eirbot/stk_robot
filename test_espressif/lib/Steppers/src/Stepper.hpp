@@ -19,8 +19,25 @@ class Stepper{
         bool init();
         //TODO: define min and max frequency
         bool set_frequency(int frequency); // set frequency e.g the speed of the motor
-        int set_steps(int steps); // set number of step for the stepper and returns the time requiered for the steps to be achieved
-    private:
+
+        /** Launch in the hardware the achievement of the asked step number.
+         *
+         * Return the minimum required time to be awaited for the stepper to
+         * end all its steps.
+         * With awaiting this time after having called this method, the
+         * stepper should be available again.
+         *
+         * If 0 is returned, then the launching has been rejected since the
+         * stepper is still busy.
+         */
+        int set_steps(int steps);
+
+        /** If true, then the previous stepper's task has been completely
+         * achieved.
+         */
+        bool is_available();
+
+      private:
         void stop();
 
         int _freq = DEFAULT_FREQ;
@@ -39,6 +56,8 @@ class Stepper{
 
         pcnt_unit_handle_t _pcnt;
         pcnt_channel_handle_t _pcnt_chan;
+
+        bool _is_busy = false;
         
 
 

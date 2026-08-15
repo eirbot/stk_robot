@@ -1,9 +1,8 @@
 #include "Stepper.hpp"
 
 bool on_reach_function(pcnt_unit_handle_t unit, const pcnt_watch_event_data_t *edata, void *user_ctx){
-    Stepper *stepper = (Stepper *)user_ctx;
-    //TODO
-    
+    bool *is_stepper_busy = (bool *)user_ctx;
+    *is_stepper_busy = false;
     return 0;
 }
 
@@ -62,7 +61,7 @@ bool Stepper::init(){
 
     pcnt_event_callbacks_t my_callbacks{.on_reach = on_reach_function};
 
-    ESP_ERROR_CHECK(pcnt_unit_register_event_callbacks(_pcnt, &my_callbacks, this));
+    ESP_ERROR_CHECK(pcnt_unit_register_event_callbacks(_pcnt, &my_callbacks, &_is_busy));
     ESP_ERROR_CHECK(pcnt_unit_enable(_pcnt));
     return 0;
 }
@@ -74,11 +73,21 @@ bool Stepper::set_frequency(int frequency){
 }
 
 int Stepper::set_steps(int steps){
+    if (_is_busy)
+        return 0;
 
+    _is_busy = true;
     ESP_ERROR_CHECK(pcnt_unit_add_watch_point(_pcnt,steps));
     ESP_ERROR_CHECK(pcnt_unit_clear_count(_pcnt));
     ESP_ERROR_CHECK(pcnt_unit_start(_pcnt));
 
-    return 0;
+    // TODO: start the steps
+
+    // TODO: return the correct time to be awaited
+    return 42;
 }
 
+
+bool Stepper::is_available() {
+    return !_is_busy;
+}
