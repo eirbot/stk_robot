@@ -88,7 +88,9 @@ int Stepper::set_steps(int steps, unsigned int &time_to_wait){
     ESP_ERROR_CHECK(pcnt_unit_start(_pcnt));
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_START_NO_STOP));
     // TODO: return the correct time to be awaited
-    return steps/_freq;
+    time_to_wait = steps/_freq;
+
+    return 0;
 }
 
 int Stepper::interrupt() {
