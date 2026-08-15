@@ -1,10 +1,9 @@
 #include "Stepper.hpp"
 
-bool on_reach_function(pcnt_unit_handle_t unit, const pcnt_watch_event_data_t *edata, void *user_ctx){
+bool interrupt_stepper_when_steps_reached(pcnt_unit_handle_t unit, const pcnt_watch_event_data_t *edata, void *user_ctx){
     // TODO: pass the Stepper and call a public method to stop the stepper, the counter and
-    bool *is_stepper_busy = (bool *)user_ctx;
-    
-    *is_stepper_busy = false;
+    Stepper *stepper = (Stepper *)user_ctx;
+    stepper->interrupt();
     return 0;
 }
 
@@ -66,9 +65,9 @@ bool Stepper::init(){
 
     ESP_ERROR_CHECK(pcnt_channel_set_edge_action(_pcnt_chan,PCNT_CHANNEL_EDGE_ACTION_INCREASE,PCNT_CHANNEL_EDGE_ACTION_HOLD));
 
-    pcnt_event_callbacks_t my_callbacks{.on_reach = on_reach_function};
+    pcnt_event_callbacks_t my_callbacks{.on_reach = interrupt_stepper_when_steps_reached};
 
-    ESP_ERROR_CHECK(pcnt_unit_register_event_callbacks(_pcnt, &my_callbacks, &_is_busy));
+    ESP_ERROR_CHECK(pcnt_unit_register_event_callbacks(_pcnt, &my_callbacks, this));
     ESP_ERROR_CHECK(pcnt_unit_enable(_pcnt));
     return 0;
 }
