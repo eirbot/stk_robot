@@ -1,0 +1,14 @@
+help:
+  @just --list
+
+build:
+  pio run -e ${PIO_ENV:-esp32dev}
+
+test:
+  pio test -e ${PIO_ENV:-esp32dev}
+
+upload:
+  pio run -e ${PIO_ENV:-esp32dev} -t upload 
+
+monitor:
+  pio run -e ${PIO_ENV:-esp32dev} -t monitor 
