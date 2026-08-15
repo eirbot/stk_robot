@@ -16,29 +16,40 @@ class Stepper{
                 mcpwm_cmpr_handle_t comparator,
                 mcpwm_gen_handle_t generator,  
                 float gain_step);
-        bool init();
-        //TODO: define min and max frequency
-        bool set_frequency(int frequency); // set frequency e.g the speed of the motor
+
+        /** Init all the resources of both the pulse counter and the mcpwm.
+         *
+         *  Return 0 on success.
+         */
+        int init();
+
+        // TODO: define min and max frequency
+        /** Set frequency, e.g. the speed of the motor
+         *
+         *  Return 0 on success.
+         */
+        int set_frequency(int frequency);
 
         /** Launch in the hardware the achievement of the asked step number.
          *
-         * Return the minimum required time to be awaited for the stepper to
-         * end all its steps.
+         * Return by referencing the minimum required time to be awaited for the
+         * stepper to end all its steps.
          * With awaiting this time after having called this method, the
          * stepper should be available again.
          *
-         * If 0 is returned, then the launching has been rejected since the
-         * stepper is still busy.
+         * Return 0 on success. If the stepper is still busy, reject the
+         * launching, do not edit time_to_wait and return -1.
+         *
          */
-        int set_steps(int steps);
+        int set_steps(int steps, unsigned int &time_to_wait);
 
         /** Stop the PWM, the PCnt, and set the stepper as available.
          *
-         * Return true if the interrupt has been correctly achieved.
+         * Return 0 if the interrupt has been correctly achieved.
          *
          * This process does take in account the initially wanted step number.
          */
-        bool interrupt();
+        int interrupt();
 
         /** If true, then the previous stepper's task has been completely
          * achieved.
