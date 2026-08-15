@@ -71,24 +71,32 @@ Stepper::Stepper(int group_id,
 }
 
 int Stepper::init(){
+    /* creates requiered mcpwm modules */
     ESP_ERROR_CHECK(mcpwm_new_timer(&_timer_config,&_timer));
     ESP_ERROR_CHECK(mcpwm_new_operator(&_operator_config,&_oper));
     ESP_ERROR_CHECK(mcpwm_operator_connect_timer(_oper, _timer));
     ESP_ERROR_CHECK(mcpwm_new_comparator(_oper,&_comparator_config,&_comparator));
     ESP_ERROR_CHECK(mcpwm_new_generator(_oper,&_generator_config,&_generator));
+
+    /* set pwm at 50% duty cycle ON then OFF */
     ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(_generator,{.direction = MCPWM_TIMER_DIRECTION_UP,.event = MCPWM_TIMER_EVENT_EMPTY,.action = MCPWM_GEN_ACTION_HIGH,}));
     ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(_generator,{.direction = MCPWM_TIMER_DIRECTION_UP,.comparator = _comparator,.action = MCPWM_GEN_ACTION_LOW,}));
     ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(_comparator,_timer_config.period_ticks / 2));
     
+    /* creates requiered pulse counter modules */
     ESP_ERROR_CHECK(pcnt_new_unit(&_unit_config,&_pcnt_unit));
-
     ESP_ERROR_CHECK(pcnt_new_channel(_pcnt_unit,&_chan_config,&_pcnt_chan));
 
+    /* counts only increase on rising edge (no actions on falling edge)*/
     ESP_ERROR_CHECK(pcnt_channel_set_edge_action(_pcnt_chan,PCNT_CHANNEL_EDGE_ACTION_INCREASE,PCNT_CHANNEL_EDGE_ACTION_HOLD));
 
-    pcnt_event_callbacks_t my_callbacks{.on_reach = interrupt_stepper_when_steps_reached};
 
-    ESP_ERROR_CHECK(pcnt_unit_register_event_callbacks(_pcnt_unit, &my_callbacks, this));
+    /* creates interrupt trigger for pcnt */
+    pcnt_event_callbacks_t steps_complete{.on_reach = interrupt_stepper_when_steps_reached};
+    ESP_ERROR_CHECK(pcnt_unit_register_event_callbacks(_pcnt_unit, &steps_complete, this));
+
+    /* enables pwm_timer and pcnt_unit */
+    ESP_ERROR_CHECK(mcpwm_timer_enable(_timer));
     ESP_ERROR_CHECK(pcnt_unit_enable(_pcnt_unit));
     return 0;
 }
