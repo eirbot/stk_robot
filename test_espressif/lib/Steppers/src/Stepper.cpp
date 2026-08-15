@@ -3,6 +3,7 @@
 bool on_reach_function(pcnt_unit_handle_t unit, const pcnt_watch_event_data_t *edata, void *user_ctx){
     // TODO: pass the Stepper and call a public method to stop the stepper, the counter and
     bool *is_stepper_busy = (bool *)user_ctx;
+    
     *is_stepper_busy = false;
     return 0;
 }
@@ -22,16 +23,21 @@ Stepper::Stepper(   int group_id,
         .resolution_hz = PWM_RESOLUTION,
         .count_mode = MCPWM_TIMER_COUNT_MODE_UP,
         .period_ticks = PWM_RESOLUTION/DEFAULT_FREQ,
+        .intr_priority = intr_priority,
+        .flags = {}
     };
     _operator_config = {
         .group_id = group_id,
-        .intr_priority = intr_priority
+        .intr_priority = intr_priority,
+        .flags = {}
     };
     _comparator_config = {
-        .intr_priority = intr_priority
+        .intr_priority = intr_priority,
+        .flags = {}
     };
     _generator_config = {
-        .gen_gpio_num = GPIO
+        .gen_gpio_num = GPIO,
+        .flags = {}
     };
     
     _timer = timer;
