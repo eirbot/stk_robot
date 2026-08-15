@@ -71,3 +71,80 @@
 .btn-toggle-active:active {
     transform: translateY(1px);
 }
+
+/* CONNECTION TEST CARD */
+.test-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.test-stat-box {
+    text-align: center;
+    flex: 1;
+    min-width: 140px;
+    background: rgba(17, 20, 24, 0.6);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.test-stat-box:hover {
+    border-color: #555;
+    transform: translateY(-2px);
+}
+
+.test-stat-title {
+    font-size: 0.85em;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.test-stat-value {
+    font-size: 1.8em;
+    font-weight: bold;
+    margin-top: 8px;
+    transition: color 0.3s ease;
+}
+
+.test-stat-value span {
+    font-size: 0.55em;
+    font-weight: normal;
+    color: #888;
+    margin-left: 2px;
+}
+
+.test-stat-status {
+    font-size: 0.8em;
+    margin-top: 6px;
+    font-weight: bold;
+}
+
+/* Status colors */
+.status-text-excellent { color: #2ecc71; text-shadow: 0 0 5px rgba(46, 204, 113, 0.3); }
+.status-text-good { color: #3498db; text-shadow: 0 0 5px rgba(52, 152, 219, 0.3); }
+.status-text-fair { color: #f1c40f; text-shadow: 0 0 5px rgba(241, 196, 15, 0.3); }
+.status-text-poor { color: #e74c3c; text-shadow: 0 0 5px rgba(231, 76, 60, 0.3); }
+
+/* Progress Bar */
+.progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background: #111;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 15px;
+    border: 1px solid #222;
+}
+
+.progress-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #00bcd4, #2ecc71, #f1c40f);
+    transition: width 0.15s ease-out;
+}

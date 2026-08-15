@@ -151,6 +151,41 @@
             </div>
         </div>
 
+        <div class="card" style="grid-column: span 2;">
+            <h3>⚡ Diagnostic Réseau & Connexion</h3>
+            <div class="test-grid">
+                <div class="test-stat-box">
+                    <div class="test-stat-title">Latence</div>
+                    <div id="test-latency" class="test-stat-value">-- <span>ms</span></div>
+                    <div id="test-latency-status" class="test-stat-status">-</div>
+                </div>
+                <div class="test-stat-box">
+                    <div class="test-stat-title">Débit Descendant</div>
+                    <div id="test-download" class="test-stat-value">-- <span>Mbps</span></div>
+                    <div id="test-download-status" class="test-stat-status">-</div>
+                </div>
+                <div class="test-stat-box">
+                    <div class="test-stat-title">Débit Montant</div>
+                    <div id="test-upload" class="test-stat-value">-- <span>Mbps</span></div>
+                    <div id="test-upload-status" class="test-stat-status">-</div>
+                </div>
+            </div>
+            
+            <div class="progress-bar-container" id="test-progress-container" style="display: none;">
+                <div class="progress-bar-fill" id="test-progress-bar"></div>
+            </div>
+            
+            <div style="margin-top: 15px; text-align: center;">
+                <span id="test-status-msg" style="font-size: 0.9em; color: #888;">Prêt pour le diagnostic.</span>
+            </div>
+            
+            <div style="margin-top: 15px; display: flex; justify-content: center;">
+                <button id="btn-run-speedtest" onclick="runDiagnosticTest()" class="btn-toggle-active state-on" style="background: linear-gradient(135deg, #00bcd4, #0097a7); box-shadow: 0 0 10px rgba(0, 188, 212, 0.4); max-width: 400px;">
+                    Lancer le test de connexion
+                </button>
+            </div>
+        </div>
+
     </div>
 </body>
 

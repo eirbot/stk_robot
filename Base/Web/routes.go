@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -26,7 +28,8 @@ func broadcastState() {
 func saveConfigToFile(cfg map[string]interface{}) {
 	configData, err := json.MarshalIndent(cfg, "", "    ")
 	if err == nil {
-		_ = os.WriteFile("../../Rasp/config.json", configData, 0644)
+		path := findRaspPath() + "/config.json"
+		_ = os.WriteFile(path, configData, 0644)
 	}
 }
 
@@ -167,7 +170,8 @@ func setupRoutes(app *fiber.App) {
 	})
 
 	app.Get("/api/list_blockly_strats", func(c *fiber.Ctx) error {
-		files, err := os.ReadDir("../../Rasp/strat/strategies")
+		path := findRaspPath() + "/strat/strategies"
+		files, err := os.ReadDir(path)
 		if err != nil {
 			return c.JSON([]string{})
 		}
@@ -182,7 +186,8 @@ func setupRoutes(app *fiber.App) {
 
 	app.Get("/api/load_strat/:name", func(c *fiber.Ctx) error {
 		name := c.Params("name")
-		content, err := os.ReadFile("../../Rasp/strat/strategies/" + name + ".xml")
+		path := findRaspPath() + "/strat/strategies/" + name + ".xml"
+		content, err := os.ReadFile(path)
 		if err != nil {
 			return c.Status(404).JSON(fiber.Map{"status": "error"})
 		}
@@ -197,8 +202,9 @@ func setupRoutes(app *fiber.App) {
 		name := strings.ReplaceAll(body["filename"], ".xml", "")
 		name = strings.ReplaceAll(name, ".py", "")
 		
-		err1 := os.WriteFile("../../Rasp/strat/strategies/"+name+".xml", []byte(body["xml"]), 0644)
-		err2 := os.WriteFile("../../Rasp/strat/strategies/"+name+".py", []byte(body["code"]), 0644)
+		basePath := findRaspPath() + "/strat/strategies/" + name
+		err1 := os.WriteFile(basePath+".xml", []byte(body["xml"]), 0644)
+		err2 := os.WriteFile(basePath+".py", []byte(body["code"]), 0644)
 		if err1 != nil || err2 != nil {
 			return c.Status(500).JSON(fiber.Map{"status": "error"})
 		}
@@ -211,6 +217,45 @@ func setupRoutes(app *fiber.App) {
 			{1950, 1550},
 			{1000, -1550},
 			{-125, 225},
+		})
+	})
+
+	// Routes de diagnostic pour le test de connexion (latence et débit)
+	app.Get("/api/ping", func(c *fiber.Ctx) error {
+		return c.SendStatus(200)
+	})
+
+	app.Get("/api/speedtest/download", func(c *fiber.Ctx) error {
+		c.Set("Content-Type", "application/octet-stream")
+		c.Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		c.Set("Content-Encoding", "identity")
+		
+		c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+			buffer := make([]byte, 64*1024) // 64 KB chunk
+			_, _ = rand.Read(buffer)
+			
+			total := 0
+			limit := 500 * 1024 * 1024 // 500 MB limit (largement suffisant pour 2 secondes à des débits multi-gigabits)
+			for total < limit {
+				n, err := w.Write(buffer)
+				if err != nil {
+					break
+				}
+				err = w.Flush()
+				if err != nil {
+					break
+				}
+				total += n
+			}
+		})
+		return nil
+	})
+
+	app.Post("/api/speedtest/upload", func(c *fiber.Ctx) error {
+		body := c.Body()
+		return c.JSON(fiber.Map{
+			"status": "ok",
+			"bytes":  len(body),
 		})
 	})
 

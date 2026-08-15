@@ -10,10 +10,24 @@ import (
 	zmq "github.com/pebbe/zmq4"
 )
 
+func findRaspPath() string {
+	paths := []string{
+		"../../Rasp", // Si exécuté depuis Base/Web/
+		"Rasp",       // Si exécuté depuis la racine du projet
+	}
+	for _, p := range paths {
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	return "../../Rasp" // Par défaut
+}
+
 func loadConfig() map[string]interface{} {
-	content, err := os.ReadFile("../../Rasp/config.json")
+	path := findRaspPath() + "/config.json"
+	content, err := os.ReadFile(path)
 	if err != nil {
-		log.Printf("Impossible de lire config.json : %v", err)
+		log.Printf("Impossible de lire config.json à l'adresse %s : %v", path, err)
 		return make(map[string]interface{})
 	}
 	var cfg map[string]interface{}
@@ -50,7 +64,9 @@ func main() {
 	// Lancement de l'écoute du robot en tâche de fond
 	go pipelineReceptionRobot()
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		BodyLimit: 20 * 1024 * 1024, // Limite de 20 Mo pour le téléversement
+	})
 
 	// Configuration des routes (définies dans routes.go)
 	setupRoutes(app)

@@ -145,3 +145,28 @@ def update_config_from_server(new_cfg):
             audio.load_config(cfg.get('audio', {}))
         except Exception as e:
             print(f"[CONFIG] Erreur rechargement audio : {e}")
+            
+    # 10. Gestion dynamique de la caméra
+    global camera
+    if "camera" in new_cfg:
+        cam_info = new_cfg["camera"]
+        new_enabled = True
+        if isinstance(cam_info, dict):
+            new_enabled = cam_info.get("enabled", True)
+        else:
+            new_enabled = bool(cam_info)
+            
+        if new_enabled and camera is None:
+            try:
+                print("[CONFIG] 📷 Initialisation dynamique de la caméra...")
+                camera = LibCamera(resolution=(1640, 1232), framerate=10).start()
+            except Exception as e:
+                print(f"[CAM] Erreur initialisation dynamique : {e}")
+                camera = None
+        elif not new_enabled and camera is not None:
+            print("[CONFIG] 📷 Arrêt dynamique de la caméra...")
+            try:
+                camera.stop()
+            except Exception as e:
+                print(f"[CAM] Erreur lors de l'arrêt de la caméra : {e}")
+            camera = None
