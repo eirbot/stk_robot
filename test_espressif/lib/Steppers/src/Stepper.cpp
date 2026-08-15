@@ -1,9 +1,9 @@
 #include "Stepper.hpp"
 
 bool interrupt_stepper_when_steps_reached(pcnt_unit_handle_t unit, const pcnt_watch_event_data_t *edata, void *user_ctx){
-    // TODO: pass the Stepper and call a public method to stop the stepper, the counter and
     Stepper *stepper = (Stepper *)user_ctx;
     stepper->interrupt();
+    // TODO: check this variable
     return 0;
 }
 
@@ -48,7 +48,7 @@ Stepper::Stepper(   int group_id,
     _gain_step = gain_step;
 }
 
-bool Stepper::init(){
+int Stepper::init(){
     ESP_ERROR_CHECK(mcpwm_new_timer(&_timer_config,&_timer));
     ESP_ERROR_CHECK(mcpwm_new_operator(&_operator_config,&_oper));
     ESP_ERROR_CHECK(mcpwm_operator_connect_timer(_oper, _timer));
@@ -72,16 +72,15 @@ bool Stepper::init(){
     return 0;
 }
 
-bool Stepper::set_frequency(int frequency){
+int Stepper::set_frequency(int frequency){
     uint32_t new_preriod = PWM_RESOLUTION / frequency;
     ESP_ERROR_CHECK(mcpwm_timer_set_period(_timer, new_preriod));
-    // TODO: fix the error code
     return 0;
 }
 
-int Stepper::set_steps(int steps){
+int Stepper::set_steps(int steps, unsigned int &time_to_wait){
     if (_is_busy)
-        return 0;
+        return -1;
 
     _is_busy = true;
     ESP_ERROR_CHECK(pcnt_unit_add_watch_point(_pcnt,steps));
@@ -92,11 +91,11 @@ int Stepper::set_steps(int steps){
     return steps/_freq;
 }
 
-bool Stepper::interrupt() {
+int Stepper::interrupt() {
     _is_busy = false;
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_STOP_EMPTY)); // stop timer : no pwm is outputted 
     ESP_ERROR_CHECK(pcnt_unit_stop(_pcnt)); //stop counter to prevent any trigger event unwanted (paranoia)
-    return true;
+    return 0;
 }
 
 bool Stepper::is_available() {
