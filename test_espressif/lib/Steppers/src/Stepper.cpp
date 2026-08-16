@@ -108,14 +108,12 @@ int Stepper::set_frequency(int frequency){
 
 int Stepper::set_steps(float target, unsigned int &time_to_wait){
     /* reject concurrencing orders */
-    if (_is_busy)
+    if (!is_available())
         return -1;
 
-    _is_busy = true;
+    /* compute the number of steps according to the target */
+    _steps = abs((int)target/_gain_step);
 
-    target = target/_gain_step;
-
-    _steps = abs((int)target);
     /* sets direction */
     if (target < 0)
     {
@@ -138,10 +136,11 @@ int Stepper::set_steps(float target, unsigned int &time_to_wait){
 }
 
 int Stepper::interrupt() {
-    _is_busy = false;
+    unsigned initially_wanted_steps = _steps;
+    _steps = 0;
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_STOP_EMPTY)); // stop timer : no pwm is outputted 
     ESP_ERROR_CHECK(pcnt_unit_stop(_pcnt_unit)); //stop counter to prevent any trigger event unwanted (paranoia)
-    ESP_ERROR_CHECK(pcnt_unit_remove_watch_point(_pcnt_unit, _steps)); // remove interrupt trigger (will be set by next set_step)
+    ESP_ERROR_CHECK(pcnt_unit_remove_watch_point(_pcnt_unit, initially_wanted_steps)); // remove interrupt trigger (will be set by next set_step)
 
     ESP_ERROR_CHECK(mcpwm_generator_set_force_level(_generator, 0, true)); // force output at 0 (else is at 1 don't know why)
     ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 0)); // dir GPIO returns to default state
@@ -149,12 +148,16 @@ int Stepper::interrupt() {
 }
 
 bool Stepper::is_available() {
-    return !_is_busy;
+    return _steps != 0;
 }
 
 int Stepper::get_steps(int &remaining_steps){
+    if (is_available()) {
+        remaining_steps = 0;
+        return 0;
+    }
     int steps_done;
     pcnt_unit_get_count(_pcnt_unit, &steps_done);
-    remaining_steps = _steps-steps_done;
+    remaining_steps = _steps - steps_done;
     return 0;
 }

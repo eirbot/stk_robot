@@ -52,15 +52,20 @@ class Stepper{
          */
         bool is_available();
 
+        /** Mutate the remaining_steps with the remaining step number.
+         *
+         * If the stepper is idle, then set remaining_steps with 0.
+         *
+         * Return 0 on a successfull pulse counter reading.
+         */
         int get_steps(int &remaining_steps);
 
-        private:
+      private:
         /** Init all the resources of both the pulse counter and the mcpwm.
          *
          *  Return 0 on success.
          */
         int _init();
-
 
         int _freq = DEFAULT_FREQ;
         int _pwmGPIO;
@@ -83,11 +88,7 @@ class Stepper{
         pcnt_unit_handle_t _pcnt_unit;
         pcnt_channel_handle_t _pcnt_chan;
 
-        int _steps;
-        bool _is_busy = false;
-        
-
-
+        unsigned int _steps;
 };
 
 #endif
