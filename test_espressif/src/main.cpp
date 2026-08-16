@@ -7,49 +7,19 @@
 // int pwmGPIO,
 // gpio_num_t dirGPIO
 // float gain_step,
-// mcpwm_timer_handle_t timer,
-// mcpwm_oper_handle_t oper,
-// mcpwm_cmpr_handle_t comparator,
-// mcpwm_gen_handle_t generator,
-// pcnt_unit_config_t unit_config,
-// pcnt_chan_config_t chan_config,
-// pcnt_unit_handle_t pcnt_unit,
-// pcnt_channel_handle_t pcnt_chan,
 // int max_pcnt
 
-// First stepper
-mcpwm_timer_handle_t timer;
-mcpwm_oper_handle_t oper;
-mcpwm_cmpr_handle_t comparator;
-mcpwm_gen_handle_t generator;
-pcnt_unit_config_t unit_config;
-pcnt_chan_config_t chan_config;
-pcnt_unit_handle_t pcnt_unit;
-pcnt_channel_handle_t pcnt_chan;
 
 int pwmGPIO = 18;
 gpio_num_t dirGPIO = GPIO_NUM_25;
 
-Stepper stepper1(0, 1, pwmGPIO, dirGPIO, 1.0, timer, oper, comparator,
-                 generator, unit_config, chan_config, pcnt_unit, pcnt_chan,
-                 1000);
+Stepper stepper1(0, 1, pwmGPIO, dirGPIO, 1.0,1000);
 
 // Second stepper
-mcpwm_timer_handle_t timer_2;
-mcpwm_oper_handle_t oper_2;
-mcpwm_cmpr_handle_t comparator_2;
-mcpwm_gen_handle_t generator_2;
-pcnt_unit_config_t unit_config_2;
-pcnt_chan_config_t chan_config_2;
-pcnt_unit_handle_t pcnt_unit_2;
-pcnt_channel_handle_t pcnt_chan_2;
-
 int pwmGPIO_2 = 23;
 gpio_num_t dirGPIO_2 = GPIO_NUM_17;
 
-Stepper stepper2(0, 1, pwmGPIO_2, dirGPIO_2, 1.0, timer_2, oper_2, comparator_2,
-                 generator_2, unit_config_2, chan_config_2, pcnt_unit_2,
-                 pcnt_chan_2, 1000);
+Stepper stepper2(0, 1, pwmGPIO_2, dirGPIO_2, 1.0, 1000);
 
 unsigned int time_to_wait;
 

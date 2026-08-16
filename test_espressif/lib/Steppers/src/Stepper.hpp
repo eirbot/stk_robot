@@ -14,14 +14,6 @@ class Stepper{
                 int pwmGPIO,
                 gpio_num_t dirGPIO,
                 float gain_step,
-                mcpwm_timer_handle_t timer,
-                mcpwm_oper_handle_t oper,
-                mcpwm_cmpr_handle_t comparator,
-                mcpwm_gen_handle_t generator,
-                pcnt_unit_config_t unit_config,
-                pcnt_chan_config_t chan_config,
-                pcnt_unit_handle_t pcnt_unit,
-                pcnt_channel_handle_t pcnt_chan,
                 int max_pcnt);
 
         /** Init all the resources of both the pulse counter and the mcpwm.
@@ -76,10 +68,10 @@ class Stepper{
         mcpwm_comparator_config_t _comparator_config;
         mcpwm_generator_config_t _generator_config;
 
-        mcpwm_timer_handle_t _timer = NULL;
-        mcpwm_oper_handle_t _oper = NULL;
-        mcpwm_cmpr_handle_t _comparator = NULL;
-        mcpwm_gen_handle_t _generator = NULL;
+        mcpwm_timer_handle_t _timer;
+        mcpwm_oper_handle_t _oper;
+        mcpwm_cmpr_handle_t _comparator;
+        mcpwm_gen_handle_t _generator;
 
         pcnt_unit_config_t _unit_config;
         pcnt_chan_config_t _chan_config;

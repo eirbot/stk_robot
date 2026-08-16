@@ -13,14 +13,6 @@ Stepper::Stepper(int group_id,
                 int pwmGPIO,
                 gpio_num_t dirGPIO,
                 float gain_step,
-                mcpwm_timer_handle_t timer,
-                mcpwm_oper_handle_t oper,
-                mcpwm_cmpr_handle_t comparator,
-                mcpwm_gen_handle_t generator,
-                pcnt_unit_config_t unit_config,
-                pcnt_chan_config_t chan_config,
-                pcnt_unit_handle_t pcnt_unit,
-                pcnt_channel_handle_t pcnt_chan,
                 int max_pcnt){
     
     /* GPIO assignement and stepper gain */                
@@ -52,11 +44,6 @@ Stepper::Stepper(int group_id,
         .gen_gpio_num = pwmGPIO,
         .flags = {}
     };
-    /* mcpwm handles */
-    _timer = timer;
-    _oper = oper;
-    _comparator = comparator;
-    _generator = generator;
 
     /* pcnt configs */
     _chan_config = {.edge_gpio_num = _pwmGPIO,
@@ -72,9 +59,6 @@ Stepper::Stepper(int group_id,
                     .intr_priority = 0,
                     .flags = {.accum_count = 1}
                     };
-    /* pcnt handles */
-    _pcnt_unit = pcnt_unit;
-    _pcnt_chan = pcnt_chan;
     
 }
 
