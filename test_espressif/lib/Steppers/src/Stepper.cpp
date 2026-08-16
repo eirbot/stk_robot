@@ -8,7 +8,8 @@ bool interrupt_stepper_when_steps_reached(pcnt_unit_handle_t unit, const pcnt_wa
 
 Stepper::Stepper(int group_id,
                 int intr_priority,
-                int GPIO,
+                int pwmGPIO,
+                gpio_num_t dirGPIO,
                 float gain_step,
                 mcpwm_timer_handle_t timer,
                 mcpwm_oper_handle_t oper,
@@ -20,8 +21,11 @@ Stepper::Stepper(int group_id,
                 pcnt_channel_handle_t pcnt_chan,
                 int max_pcnt){
         
-    _GPIO = GPIO;
+    _pwmGPIO = pwmGPIO;
+    _dirGPIO = dirGPIO;
     _gain_step = gain_step;
+
+    ESP_ERROR_CHECK(gpio_set_direction(_dirGPIO, GPIO_MODE_OUTPUT));
 
     _timer_config = {
         .group_id = group_id,
@@ -42,7 +46,7 @@ Stepper::Stepper(int group_id,
         .flags = {}
     };
     _generator_config = {
-        .gen_gpio_num = GPIO,
+        .gen_gpio_num = pwmGPIO,
         .flags = {}
     };
     
@@ -51,7 +55,7 @@ Stepper::Stepper(int group_id,
     _comparator = comparator;
     _generator = generator;
 
-    _chan_config = {.edge_gpio_num = _GPIO,
+    _chan_config = {.edge_gpio_num = _pwmGPIO,
                     .level_gpio_num = -1,
                     .flags = {.invert_edge_input = 0,
                         .invert_level_input = 0,
@@ -98,6 +102,8 @@ int Stepper::init(){
     /* enables pwm_timer and pcnt_unit */
     ESP_ERROR_CHECK(mcpwm_timer_enable(_timer));
     ESP_ERROR_CHECK(pcnt_unit_enable(_pcnt_unit));
+
+    ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 0));
     return 0;
 }
 
@@ -113,9 +119,19 @@ int Stepper::set_steps(int steps, unsigned int &time_to_wait){
         return -1;
 
     _is_busy = true;
-    _steps = steps;
+    _steps = abs(steps);
+    if (steps < 0)
+    {
+        ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 0));
+    }
+    else
+    {
+        ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 1));
+    }
+    
+    
     ESP_ERROR_CHECK(mcpwm_generator_set_force_level(_generator, -1, true));
-    ESP_ERROR_CHECK(pcnt_unit_add_watch_point(_pcnt_unit,steps));
+    ESP_ERROR_CHECK(pcnt_unit_add_watch_point(_pcnt_unit,_steps));
     ESP_ERROR_CHECK(pcnt_unit_clear_count(_pcnt_unit));
     ESP_ERROR_CHECK(pcnt_unit_start(_pcnt_unit));
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_START_NO_STOP));
@@ -131,6 +147,7 @@ int Stepper::interrupt() {
     ESP_ERROR_CHECK(pcnt_unit_remove_watch_point(_pcnt_unit, _steps));
 
     ESP_ERROR_CHECK(mcpwm_generator_set_force_level(_generator, 0, true));
+    ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 0));
     return 0;
 }
 

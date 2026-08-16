@@ -3,6 +3,7 @@
 
 #include "driver/mcpwm_prelude.h"
 #include "driver/pulse_cnt.h"
+#include "driver/gpio.h"
 
 #define DEFAULT_FREQ 1000 // in Hertz
 #define PWM_RESOLUTION 10000
@@ -10,7 +11,8 @@ class Stepper{
     public:
         Stepper(int group_id,
                 int intr_priority,
-                int GPIO,
+                int pwmGPIO,
+                gpio_num_t dirGPIO,
                 float gain_step,
                 mcpwm_timer_handle_t timer,
                 mcpwm_oper_handle_t oper,
@@ -65,7 +67,8 @@ class Stepper{
         void stop();
 
         int _freq = DEFAULT_FREQ;
-        int _GPIO;
+        int _pwmGPIO;
+        gpio_num_t _dirGPIO;
         float _gain_step;
 
         mcpwm_timer_config_t _timer_config;
