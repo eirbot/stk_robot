@@ -3,7 +3,7 @@
 bool interrupt_stepper_when_steps_reached(pcnt_unit_handle_t unit, const pcnt_watch_event_data_t *edata, void *user_ctx){
     Stepper *stepper = (Stepper *)user_ctx;
     stepper->interrupt();
-    return 0;
+    return false;
 }
 
 Stepper::Stepper(int group_id,
