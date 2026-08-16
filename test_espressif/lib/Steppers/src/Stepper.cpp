@@ -98,17 +98,18 @@ int Stepper::_init(){
     return 0;
 }
 
-int Stepper::set_frequency(int frequency){
+int Stepper::set_frequency(unsigned int frequency){
     /* sets new period (mcpwm works in time not freq)
     *  WARNING: change in frequency is not done if set_compare_value is not called
     */
     uint32_t new_period = PWM_RESOLUTION / frequency;
     ESP_ERROR_CHECK(mcpwm_timer_set_period(_timer, new_period));
     ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(_comparator,new_period / 2));
+    _freq = frequency;
     return 0;
 }
 
-int Stepper::set_steps(float target, unsigned int &time_to_wait){
+int Stepper::set_steps(float target, unsigned int &ms_to_wait){
     /* reject concurrencing orders */
     if (!is_available())
         return -1;
@@ -134,7 +135,7 @@ int Stepper::set_steps(float target, unsigned int &time_to_wait){
     ESP_ERROR_CHECK(pcnt_unit_clear_count(_pcnt_unit));
     ESP_ERROR_CHECK(pcnt_unit_start(_pcnt_unit));
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_START_NO_STOP));
-    time_to_wait = _steps/_freq;
+    ms_to_wait = (_steps*1000)/_freq;
 
     return 0;
 }

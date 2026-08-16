@@ -20,7 +20,8 @@ void test_stepper_limit() {
       assert(stepper.set_frequency(frequencies[k]) == 0);
       unsigned int time_to_wait;
       assert(stepper.set_steps(360, time_to_wait) == 0);
-      vTaskDelay(pdMS_TO_TICKS(time_to_wait*1000 + 500));
+      ESP_LOGI(TAG, "Time to wait in: %u ms", time_to_wait);
+      vTaskDelay(pdMS_TO_TICKS(time_to_wait + 500));
     }
   }
 }

@@ -5,8 +5,11 @@
 #include "driver/pulse_cnt.h"
 #include "driver/gpio.h"
 
-#define DEFAULT_FREQ 1000 // in Hertz
+// In Hertz
+#define DEFAULT_FREQ 1000
+
 #define PWM_RESOLUTION 10000
+
 class Stepper{
     public:
         Stepper(int group_id,
@@ -21,15 +24,15 @@ class Stepper{
          *
          *  Return 0 on success.
          */
-        int set_frequency(int frequency);
+        int set_frequency(unsigned int frequency);
 
         /** Launch in the hardware the achievement of the asked step number.
          *
-         * target is a travel value (mm,°) that will be converted into the corresponding 
-         * step value using _gain_steps.
-         * 
+         * target is a travel value (mm,°) that will be converted into the
+         * corresponding step value using _gain_steps.
+         *
          * Return by referencing the minimum required time to be awaited for the
-         * stepper to end all its steps.
+         * stepper to end all its steps. This time is in ms.
          * With awaiting this time after having called this method, the
          * stepper should be available again.
          *
@@ -37,7 +40,7 @@ class Stepper{
          * launching, do not edit time_to_wait and return -1.
          *
          */
-        int set_steps(float target, unsigned int &time_to_wait);
+        int set_steps(float target, unsigned int &ms_to_wait);
 
         /** Stop the PWM, the PCnt, and set the stepper as available.
          *
@@ -69,7 +72,7 @@ class Stepper{
          */
         int _init();
 
-        int _freq = DEFAULT_FREQ;
+        unsigned int _freq = DEFAULT_FREQ;
         int _pwmGPIO;
         gpio_num_t _dirGPIO;
         float _gain_step;
