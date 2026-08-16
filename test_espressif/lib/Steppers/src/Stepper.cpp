@@ -1,5 +1,7 @@
 #include "Stepper.hpp"
 
+// TODO: est ce que les handles peuvent etre sortie des args du constructeurs ?
+
 bool interrupt_stepper_when_steps_reached(pcnt_unit_handle_t unit, const pcnt_watch_event_data_t *edata, void *user_ctx){
     Stepper *stepper = (Stepper *)user_ctx;
     stepper->interrupt();
@@ -20,13 +22,14 @@ Stepper::Stepper(int group_id,
                 pcnt_unit_handle_t pcnt_unit,
                 pcnt_channel_handle_t pcnt_chan,
                 int max_pcnt){
-        
+    
+    /* GPIO assignement and stepper gain */                
     _pwmGPIO = pwmGPIO;
     _dirGPIO = dirGPIO;
+    ESP_ERROR_CHECK(gpio_set_direction(_dirGPIO, GPIO_MODE_OUTPUT));
     _gain_step = gain_step;
 
-    ESP_ERROR_CHECK(gpio_set_direction(_dirGPIO, GPIO_MODE_OUTPUT));
-
+    /* mcpwm configs */
     _timer_config = {
         .group_id = group_id,
         .clk_src = MCPWM_TIMER_CLK_SRC_DEFAULT,
@@ -49,12 +52,13 @@ Stepper::Stepper(int group_id,
         .gen_gpio_num = pwmGPIO,
         .flags = {}
     };
-    
+    /* mcpwm handles */
     _timer = timer;
     _oper = oper;
     _comparator = comparator;
     _generator = generator;
 
+    /* pcnt configs */
     _chan_config = {.edge_gpio_num = _pwmGPIO,
                     .level_gpio_num = -1,
                     .flags = {.invert_edge_input = 0,
@@ -68,7 +72,7 @@ Stepper::Stepper(int group_id,
                     .intr_priority = 0,
                     .flags = {.accum_count = 1}
                     };
-
+    /* pcnt handles */
     _pcnt_unit = pcnt_unit;
     _pcnt_chan = pcnt_chan;
     
@@ -103,11 +107,15 @@ int Stepper::init(){
     ESP_ERROR_CHECK(mcpwm_timer_enable(_timer));
     ESP_ERROR_CHECK(pcnt_unit_enable(_pcnt_unit));
 
+    /* default direction state is 0 */
     ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 0));
     return 0;
 }
 
 int Stepper::set_frequency(int frequency){
+    /* sets new period (mcpwm works in time not freq)
+    *  WARNING: change in frequency is not done if set_compare_value is not called
+    */
     uint32_t new_period = PWM_RESOLUTION / frequency;
     ESP_ERROR_CHECK(mcpwm_timer_set_period(_timer, new_period));
     ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(_comparator,new_period / 2));
@@ -115,11 +123,13 @@ int Stepper::set_frequency(int frequency){
 }
 
 int Stepper::set_steps(int steps, unsigned int &time_to_wait){
+    /* reject concurrencing orders */
     if (_is_busy)
         return -1;
 
     _is_busy = true;
     _steps = abs(steps);
+    /* sets direction */
     if (steps < 0)
     {
         ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 0));
@@ -129,7 +139,7 @@ int Stepper::set_steps(int steps, unsigned int &time_to_wait){
         ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 1));
     }
     
-    
+    /* free output, prep counter, starts pwm */
     ESP_ERROR_CHECK(mcpwm_generator_set_force_level(_generator, -1, true));
     ESP_ERROR_CHECK(pcnt_unit_add_watch_point(_pcnt_unit,_steps));
     ESP_ERROR_CHECK(pcnt_unit_clear_count(_pcnt_unit));
@@ -144,10 +154,10 @@ int Stepper::interrupt() {
     _is_busy = false;
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_STOP_EMPTY)); // stop timer : no pwm is outputted 
     ESP_ERROR_CHECK(pcnt_unit_stop(_pcnt_unit)); //stop counter to prevent any trigger event unwanted (paranoia)
-    ESP_ERROR_CHECK(pcnt_unit_remove_watch_point(_pcnt_unit, _steps));
+    ESP_ERROR_CHECK(pcnt_unit_remove_watch_point(_pcnt_unit, _steps)); // remove interrupt trigger (will be set by next set_step)
 
-    ESP_ERROR_CHECK(mcpwm_generator_set_force_level(_generator, 0, true));
-    ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 0));
+    ESP_ERROR_CHECK(mcpwm_generator_set_force_level(_generator, 0, true)); // force output at 0 (else is at 1 don't know why)
+    ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 0)); // dir GPIO returns to default state
     return 0;
 }
 
