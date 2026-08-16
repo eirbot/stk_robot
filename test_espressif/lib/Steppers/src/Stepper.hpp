@@ -90,7 +90,7 @@ class Stepper{
         pcnt_unit_handle_t _pcnt_unit;
         pcnt_channel_handle_t _pcnt_chan;
 
-        unsigned int _steps;
+        unsigned int _steps = 0;
         bool _direction =
             true; // true => positive target; false => negative target
 };
