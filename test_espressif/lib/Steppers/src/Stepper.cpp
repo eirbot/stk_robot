@@ -114,6 +114,7 @@ int Stepper::set_steps(int steps, unsigned int &time_to_wait){
 
     _is_busy = true;
     _steps = steps;
+    ESP_ERROR_CHECK(mcpwm_generator_set_force_level(_generator, -1, true));
     ESP_ERROR_CHECK(pcnt_unit_add_watch_point(_pcnt_unit,steps));
     ESP_ERROR_CHECK(pcnt_unit_clear_count(_pcnt_unit));
     ESP_ERROR_CHECK(pcnt_unit_start(_pcnt_unit));
@@ -128,6 +129,8 @@ int Stepper::interrupt() {
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_STOP_EMPTY)); // stop timer : no pwm is outputted 
     ESP_ERROR_CHECK(pcnt_unit_stop(_pcnt_unit)); //stop counter to prevent any trigger event unwanted (paranoia)
     ESP_ERROR_CHECK(pcnt_unit_remove_watch_point(_pcnt_unit, _steps));
+
+    ESP_ERROR_CHECK(mcpwm_generator_set_force_level(_generator, 0, true));
     return 0;
 }
 
