@@ -25,6 +25,9 @@ class Stepper{
 
         /** Launch in the hardware the achievement of the asked step number.
          *
+         * target is a travel value (mm,°) that will be converted into the corresponding 
+         * step value using _gain_steps.
+         * 
          * Return by referencing the minimum required time to be awaited for the
          * stepper to end all its steps.
          * With awaiting this time after having called this method, the
@@ -34,7 +37,7 @@ class Stepper{
          * launching, do not edit time_to_wait and return -1.
          *
          */
-        int set_steps(int steps, unsigned int &time_to_wait);
+        int set_steps(float target, unsigned int &time_to_wait);
 
         /** Stop the PWM, the PCnt, and set the stepper as available.
          *

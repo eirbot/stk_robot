@@ -106,15 +106,18 @@ int Stepper::set_frequency(int frequency){
     return 0;
 }
 
-int Stepper::set_steps(int steps, unsigned int &time_to_wait){
+int Stepper::set_steps(float target, unsigned int &time_to_wait){
     /* reject concurrencing orders */
     if (_is_busy)
         return -1;
 
     _is_busy = true;
-    _steps = abs(steps);
+
+    target = target/_gain_step;
+
+    _steps = abs((int)target);
     /* sets direction */
-    if (steps < 0)
+    if (target < 0)
     {
         ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 0));
     }
