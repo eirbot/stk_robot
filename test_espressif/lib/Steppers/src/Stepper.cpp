@@ -114,7 +114,7 @@ int Stepper::set_steps(float target, unsigned int &time_to_wait){
         return -1;
 
     /* compute the number of steps according to the target */
-    _steps = abs((int)target/_gain_step);
+    _steps = (unsigned) abs((int)target/_gain_step);
 
     /* sets direction */
     if (target < 0)
@@ -130,7 +130,7 @@ int Stepper::set_steps(float target, unsigned int &time_to_wait){
     
     /* free output, prep counter, starts pwm */
     ESP_ERROR_CHECK(mcpwm_generator_set_force_level(_generator, -1, true));
-    ESP_ERROR_CHECK(pcnt_unit_add_watch_point(_pcnt_unit,_steps));
+    ESP_ERROR_CHECK(pcnt_unit_add_watch_point(_pcnt_unit, _steps));
     ESP_ERROR_CHECK(pcnt_unit_clear_count(_pcnt_unit));
     ESP_ERROR_CHECK(pcnt_unit_start(_pcnt_unit));
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_START_NO_STOP));
@@ -159,7 +159,7 @@ int Stepper::interrupt(float &remaining_target) {
 }
 
 bool Stepper::is_available() {
-    return _steps != 0;
+    return _steps == 0;
 }
 
 int Stepper::get_steps(unsigned int &remaining_steps){
