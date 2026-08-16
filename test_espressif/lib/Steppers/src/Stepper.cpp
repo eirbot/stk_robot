@@ -2,7 +2,9 @@
 
 bool interrupt_stepper_when_steps_reached(pcnt_unit_handle_t unit, const pcnt_watch_event_data_t *edata, void *user_ctx){
     Stepper *stepper = (Stepper *)user_ctx;
-    stepper->interrupt();
+    float remaining_target;
+    assert(!stepper->interrupt(remaining_target));
+    // here, remaining_target always equals .0
     return false;
 }
 
@@ -117,10 +119,12 @@ int Stepper::set_steps(float target, unsigned int &time_to_wait){
     /* sets direction */
     if (target < 0)
     {
+        _direction = false;
         ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 0));
     }
     else
     {
+        _direction = true;
         ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 1));
     }
     
@@ -135,15 +139,22 @@ int Stepper::set_steps(float target, unsigned int &time_to_wait){
     return 0;
 }
 
-int Stepper::interrupt() {
-    unsigned initially_wanted_steps = _steps;
-    _steps = 0;
+int Stepper::interrupt(float &remaining_target) {
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_STOP_EMPTY)); // stop timer : no pwm is outputted 
+
     ESP_ERROR_CHECK(pcnt_unit_stop(_pcnt_unit)); //stop counter to prevent any trigger event unwanted (paranoia)
-    ESP_ERROR_CHECK(pcnt_unit_remove_watch_point(_pcnt_unit, initially_wanted_steps)); // remove interrupt trigger (will be set by next set_step)
+    unsigned int remaining_steps;
+    get_steps(remaining_steps); // Get the remaining step count
+    ESP_ERROR_CHECK(pcnt_unit_remove_watch_point(_pcnt_unit, _steps)); // remove interrupt trigger (will be set by next set_step)
 
     ESP_ERROR_CHECK(mcpwm_generator_set_force_level(_generator, 0, true)); // force output at 0 (else is at 1 don't know why)
     ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 0)); // dir GPIO returns to default state
+
+    remaining_target =
+        (remaining_steps > 0)
+            ? (_direction ? remaining_steps : -remaining_steps) * _gain_step
+            : .0;
+    _steps = 0;
     return 0;
 }
 
@@ -151,13 +162,14 @@ bool Stepper::is_available() {
     return _steps != 0;
 }
 
-int Stepper::get_steps(int &remaining_steps){
+int Stepper::get_steps(unsigned int &remaining_steps){
     if (is_available()) {
         remaining_steps = 0;
         return 0;
     }
     int steps_done;
     pcnt_unit_get_count(_pcnt_unit, &steps_done);
-    remaining_steps = _steps - steps_done;
+    unsigned int abs_steps_done = abs(steps_done);
+    remaining_steps = (_steps >= abs_steps_done) ? _steps - abs_steps_done : 0;
     return 0;
 }

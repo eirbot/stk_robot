@@ -41,11 +41,13 @@ class Stepper{
 
         /** Stop the PWM, the PCnt, and set the stepper as available.
          *
-         * Return 0 if the interrupt has been correctly achieved.
+         * Return 0 if the interrupt has been correctly achieved. Mutate the
+         * remaining_target with 0.0 if the initially wanted step number has
+         * been completely carried out, else a signed target value according to
+         * the remaining unachieved steps and the stepper's current direction.
          *
-         * This process does take in account the initially wanted step number.
          */
-        int interrupt();
+        int interrupt(float &remaining_target);
 
         /** If true, then the previous stepper's task has been completely
          * achieved.
@@ -58,7 +60,7 @@ class Stepper{
          *
          * Return 0 on a successfull pulse counter reading.
          */
-        int get_steps(int &remaining_steps);
+        int get_steps(unsigned int &remaining_steps);
 
       private:
         /** Init all the resources of both the pulse counter and the mcpwm.
@@ -89,6 +91,8 @@ class Stepper{
         pcnt_channel_handle_t _pcnt_chan;
 
         unsigned int _steps;
+        bool _direction =
+            true; // true => positive target; false => negative target
 };
 
 #endif
