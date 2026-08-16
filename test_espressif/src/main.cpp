@@ -43,9 +43,8 @@ pcnt_chan_config_t chan_config_2;
 pcnt_unit_handle_t pcnt_unit_2;
 pcnt_channel_handle_t pcnt_chan_2;
 
-// TODO: set to a new value
-int pwmGPIO_2 = 25;
-gpio_num_t dirGPIO_2 = GPIO_NUM_18;
+int pwmGPIO_2 = 24;
+gpio_num_t dirGPIO_2 = GPIO_NUM_17;
 
 Stepper stepper2(0, 1, pwmGPIO_2, dirGPIO_2, 1.0, timer_2, oper_2, comparator_2,
                  generator_2, unit_config_2, chan_config_2, pcnt_unit_2,
