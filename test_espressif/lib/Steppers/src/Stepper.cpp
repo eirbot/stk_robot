@@ -2,9 +2,7 @@
 
 bool interrupt_stepper_when_steps_reached(pcnt_unit_handle_t unit, const pcnt_watch_event_data_t *edata, void *user_ctx){
     Stepper *stepper = (Stepper *)user_ctx;
-    float remaining_target;
-    assert(!stepper->interrupt(remaining_target));
-    // here, remaining_target always equals .0
+    assert(!stepper->interrupt_ISR());
     return false;
 }
 
@@ -140,7 +138,21 @@ int Stepper::set_steps(float target, unsigned int &ms_to_wait){
     return 0;
 }
 
+int Stepper::interrupt_ISR() {
+    // TODO: refactor both interrupt functions
+    ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_STOP_EMPTY)); // stop timer : no pwm is outputted 
+
+    ESP_ERROR_CHECK(pcnt_unit_stop(_pcnt_unit)); //stop counter to prevent any trigger event unwanted (paranoia)
+    ESP_ERROR_CHECK(pcnt_unit_remove_watch_point(_pcnt_unit, _steps)); // remove interrupt trigger (will be set by next set_step)
+
+    ESP_ERROR_CHECK(mcpwm_generator_set_force_level(_generator, 0, true)); // force output at 0 (else is at 1 don't know why)
+    ESP_ERROR_CHECK(gpio_set_level(_dirGPIO, 0)); // dir GPIO returns to default state
+    _steps = 0;
+    return 0;
+}
+
 int Stepper::interrupt(float &remaining_target) {
+    // TODO: refactor both interrupt functions
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_STOP_EMPTY)); // stop timer : no pwm is outputted 
 
     ESP_ERROR_CHECK(pcnt_unit_stop(_pcnt_unit)); //stop counter to prevent any trigger event unwanted (paranoia)

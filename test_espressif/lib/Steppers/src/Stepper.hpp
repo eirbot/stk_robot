@@ -44,6 +44,13 @@ class Stepper{
 
         /** Stop the PWM, the PCnt, and set the stepper as available.
          *
+         * Return 0 if the interrupt has been correctly achieved.
+         *
+         */
+        int interrupt_ISR();
+
+        /** Stop the PWM, the PCnt, and set the stepper as available.
+         *
          * Return 0 if the interrupt has been correctly achieved. Mutate the
          * remaining_target with 0.0 if the initially wanted step number has
          * been completely carried out, else a signed target value according to
