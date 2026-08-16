@@ -60,7 +60,7 @@ Stepper::Stepper(int group_id,
                     .flags = {.accum_count = 1}
                     };
     
-    int init_success = !_init();
+    bool init_success = !_init();
     assert (init_success);
 }
 
