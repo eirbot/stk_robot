@@ -17,9 +17,9 @@ void test_stepper_limit() {
   while (true) {
     for (int k=0; k < 7; k++) {
       ESP_LOGI(TAG, "Frequency: %u Hz", frequencies[k]);
-      stepper.set_frequency(frequencies[k]);
+      assert(stepper.set_frequency(frequencies[k]) == 0);
       unsigned int time_to_wait;
-      stepper.set_steps(360, time_to_wait);
+      assert(stepper.set_steps(360, time_to_wait) == 0);
       vTaskDelay(pdMS_TO_TICKS(time_to_wait*1000 + 500));
     }
   }
