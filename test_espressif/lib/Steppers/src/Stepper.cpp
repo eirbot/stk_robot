@@ -58,9 +58,11 @@ Stepper::Stepper(int group_id,
                     .flags = {.accum_count = 1}
                     };
     
+    int init_success = !_init();
+    assert (init_success);
 }
 
-int Stepper::init(){
+int Stepper::_init(){
     /* creates requiered mcpwm modules */
     ESP_ERROR_CHECK(mcpwm_new_timer(&_timer_config,&_timer));
     ESP_ERROR_CHECK(mcpwm_new_operator(&_operator_config,&_oper));
