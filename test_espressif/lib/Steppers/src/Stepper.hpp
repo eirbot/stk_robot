@@ -55,8 +55,11 @@ class Stepper{
          */
         bool is_available();
 
-      private:
+        int get_steps(int &remaining_steps);
+
+        private:
         void stop();
+
 
         int _freq = DEFAULT_FREQ;
         int _pwmGPIO;

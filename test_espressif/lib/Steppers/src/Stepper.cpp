@@ -127,7 +127,7 @@ int Stepper::set_steps(int steps, unsigned int &time_to_wait){
     ESP_ERROR_CHECK(pcnt_unit_clear_count(_pcnt_unit));
     ESP_ERROR_CHECK(pcnt_unit_start(_pcnt_unit));
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(_timer,MCPWM_TIMER_START_NO_STOP));
-    time_to_wait = steps/_freq;
+    time_to_wait = _steps/_freq;
 
     return 0;
 }
@@ -145,4 +145,11 @@ int Stepper::interrupt() {
 
 bool Stepper::is_available() {
     return !_is_busy;
+}
+
+int Stepper::get_steps(int &remaining_steps){
+    int steps_done;
+    pcnt_unit_get_count(_pcnt_unit, &steps_done);
+    remaining_steps = _steps-steps_done;
+    return 0;
 }
