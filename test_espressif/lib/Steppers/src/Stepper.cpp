@@ -6,60 +6,43 @@ bool interrupt_stepper_when_steps_reached(pcnt_unit_handle_t unit, const pcnt_wa
     return false;
 }
 
-Stepper::Stepper(int group_id,
-                int intr_priority,
-                int pwmGPIO,
-                gpio_num_t dirGPIO,
-                float gain_step,
-                int max_pcnt){
-    
-    /* GPIO assignement and stepper gain */                
-    _pwmGPIO = pwmGPIO;
-    _dirGPIO = dirGPIO;
-    ESP_ERROR_CHECK(gpio_set_direction(_dirGPIO, GPIO_MODE_OUTPUT));
-    _gain_step = gain_step;
+Stepper::Stepper(int group_id, int intr_priority, int pwmGPIO,
+                 gpio_num_t dirGPIO, float gain_step, int max_pcnt) {
 
-    /* mcpwm configs */
-    _timer_config = {
-        .group_id = group_id,
-        .clk_src = MCPWM_TIMER_CLK_SRC_DEFAULT,
-        .resolution_hz = PWM_RESOLUTION,
-        .count_mode = MCPWM_TIMER_COUNT_MODE_UP,
-        .period_ticks = PWM_RESOLUTION/DEFAULT_FREQ,
-        .intr_priority = intr_priority,
-        .flags = {}
-    };
-    _operator_config = {
-        .group_id = group_id,
-        .intr_priority = intr_priority,
-        .flags = {}
-    };
-    _comparator_config = {
-        .intr_priority = intr_priority,
-        .flags = {}
-    };
-    _generator_config = {
-        .gen_gpio_num = pwmGPIO,
-        .flags = {}
-    };
+  /* GPIO assignement and stepper gain */
+  _pwmGPIO = pwmGPIO;
+  _dirGPIO = dirGPIO;
+  ESP_ERROR_CHECK(gpio_set_direction(_dirGPIO, GPIO_MODE_OUTPUT));
+  _gain_step = gain_step;
 
-    /* pcnt configs */
-    _chan_config = {.edge_gpio_num = _pwmGPIO,
-                    .level_gpio_num = -1,
-                    .flags = {.invert_edge_input = 0,
-                        .invert_level_input = 0,
-                        .virt_edge_io_level = 0,
-                        .virt_level_io_level = 0}
-                    };
-    _unit_config = {.clk_src = PCNT_CLK_SRC_DEFAULT,
-                    .low_limit = -1,
-                    .high_limit = max_pcnt,
-                    .intr_priority = 0,
-                    .flags = {.accum_count = 1}
-                    };
-    
-    bool init_success = !_init();
-    assert (init_success);
+  /* mcpwm configs */
+  _timer_config = {.group_id = group_id,
+                   .clk_src = MCPWM_TIMER_CLK_SRC_DEFAULT,
+                   .resolution_hz = PWM_RESOLUTION,
+                   .count_mode = MCPWM_TIMER_COUNT_MODE_UP,
+                   .period_ticks = PWM_RESOLUTION / DEFAULT_FREQ,
+                   .intr_priority = intr_priority,
+                   .flags = {}};
+  _operator_config = {
+      .group_id = group_id, .intr_priority = intr_priority, .flags = {}};
+  _comparator_config = {.intr_priority = intr_priority, .flags = {}};
+  _generator_config = {.gen_gpio_num = pwmGPIO, .flags = {}};
+
+  /* pcnt configs */
+  _chan_config = {.edge_gpio_num = _pwmGPIO,
+                  .level_gpio_num = -1,
+                  .flags = {.invert_edge_input = 0,
+                            .invert_level_input = 0,
+                            .virt_edge_io_level = 0,
+                            .virt_level_io_level = 0}};
+  _unit_config = {.clk_src = PCNT_CLK_SRC_DEFAULT,
+                  .low_limit = -1,
+                  .high_limit = max_pcnt,
+                  .intr_priority = 0,
+                  .flags = {.accum_count = 1}};
+
+  bool init_success = !_init();
+  assert(init_success);
 }
 
 int Stepper::_init(){
@@ -116,6 +99,7 @@ int Stepper::set_steps(float target, unsigned int &ms_to_wait){
     _steps = (unsigned) abs((int)target/_gain_step);
 
     /* sets direction */
+    // TODO: define according to the default base direction
     if (target < 0)
     {
         _direction = false;
