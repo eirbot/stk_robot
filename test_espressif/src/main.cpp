@@ -2,24 +2,14 @@
 #include "Stepper.hpp"
 #include "freertos/FreeRTOS.h"
 #include "freertos/idf_additions.h"
-// int group_id,
-// int intr_priority,
-// int pwmGPIO,
-// gpio_num_t dirGPIO
-// float gain_step,
-// int max_pcnt
 
-
+// First stepper
 int pwmGPIO = 18;
 gpio_num_t dirGPIO = GPIO_NUM_25;
-
-Stepper stepper1(0, 1, pwmGPIO, dirGPIO, 1.0,1000);
 
 // Second stepper
 int pwmGPIO_2 = 23;
 gpio_num_t dirGPIO_2 = GPIO_NUM_17;
-
-Stepper stepper2(0, 1, pwmGPIO_2, dirGPIO_2, 1.0, 1000);
 
 unsigned int time_to_wait;
 
@@ -34,7 +24,8 @@ static TaskHandle_t tasks[STEPPER_NUMBER];
 static const char *TAG = "Stepper";
 
 void stepper_one_task(void *pvParameters) {
-    stepper1.init();
+    Stepper stepper1(0, 1, pwmGPIO, dirGPIO, 1.0,1000);
+
     stepper1.set_frequency(500);
     
     while (1) {
@@ -44,7 +35,8 @@ void stepper_one_task(void *pvParameters) {
 }
 
 void stepper_two_task(void *pvParameters) {
-    stepper2.init();
+    Stepper stepper2(0, 1, pwmGPIO_2, dirGPIO_2, 1.0, 1000);
+
     stepper2.set_frequency(500);
     
     while (1) {

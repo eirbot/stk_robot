@@ -16,12 +16,6 @@ class Stepper{
                 float gain_step,
                 int max_pcnt);
 
-        /** Init all the resources of both the pulse counter and the mcpwm.
-         *
-         *  Return 0 on success.
-         */
-        int init();
-
         // TODO: define min and max frequency
         /** Set frequency, e.g. the speed of the motor
          *
@@ -56,7 +50,11 @@ class Stepper{
         bool is_available();
 
       private:
-        void stop();
+        /** Init all the resources of both the pulse counter and the mcpwm.
+         *
+         *  Return 0 on success.
+         */
+        int _init();
 
         int _freq = DEFAULT_FREQ;
         int _pwmGPIO;
