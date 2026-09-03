@@ -1,0 +1,10 @@
+root:x:0:root
+wheel:x:998:stk
+video:x:985:stk
+audio:x:995:stk
+input:x:988:stk
+seat:x:989:stk
+tty:x:5:stk
+storage:x:993:stk
+uucp:x:987:stk
+stk:x:1000:

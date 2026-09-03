@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# STKbtw - Script de lancement automatique du Backend Go et Dashboard Chromium
+# ==============================================================================
+
+set -u
+
+LOG_FILE="/tmp/stk_dashboard.log"
+exec >> "${LOG_FILE}" 2>&1
+
+echo "================================================="
+echo "[STKbtw] Démarrage des services robotiques..."
+echo "[STKbtw] Utilisateur courant : $(whoami)"
+echo "[STKbtw] Date : $(date)"
+echo "================================================="
+
+# 1. S'assurer des droits d'exécution sur base_stk
+chmod +x /opt/eirbot/Base/Web/base_stk 2>/dev/null || true
+
+# 2. Démarrage du serveur Web Go s'il n'est pas déjà actif
+if ! pgrep -f "base_stk" >/dev/null; then
+    echo "[STKbtw] Lancement du serveur Web dans /opt/eirbot/Base/Web..."
+    cd /opt/eirbot/Base/Web || exit 1
+    if [[ -x "./base_stk" ]]; then
+        ./base_stk >> /tmp/base_web.log 2>&1 &
+        echo "[STKbtw] Binaire base_stk lancé en arrière-plan (PID: $!)."
+    elif command -v go &>/dev/null; then
+        go run . >> /tmp/base_web.log 2>&1 &
+        echo "[STKbtw] 'go run .' lancé en arrière-plan (PID: $!)."
+    else
+        echo "[STKbtw][ERREUR] Ni base_stk exécutable ni go n'ont été trouvés !"
+    fi
+else
+    echo "[STKbtw] base_stk est déjà en cours d'exécution."
+fi
+
+# 3. Attente active de la disponibilité du port 8080 (jusqu'à 15 secondes)
+echo "[STKbtw] En attente de la disponibilité de http://127.0.0.1:8080..."
+SERVER_READY=0
+for i in {1..75}; do
+    if curl -s http://127.0.0.1:8080 >/dev/null 2>&1; then
+        SERVER_READY=1
+        echo "[STKbtw] Le serveur Web répond avec succès sur http://127.0.0.1:8080 !"
+        break
+    fi
+    sleep 0.2
+done
+
+if [[ ${SERVER_READY} -eq 0 ]]; then
+    echo "[STKbtw][AVERTISSEMENT] Le serveur n'a pas répondu à temps !"
+    echo "[STKbtw][DEBUG] Contenu de /tmp/base_web.log :"
+    cat /tmp/base_web.log 2>/dev/null || true
+fi
+
+# 4. Lancement de Chromium Kiosk
+echo "[STKbtw] Lancement de Chromium Kiosk..."
+exec chromium \
+    --no-first-run \
+    --no-default-browser-check \
+    --disable-translate \
+    --disable-dev-shm-usage \
+    --no-sandbox \
+    --ozone-platform-hint=auto \
+    --kiosk \
+    http://127.0.0.1:8080

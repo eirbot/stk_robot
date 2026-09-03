@@ -1,0 +1,12 @@
+# /etc/fstab: static file system information.
+#
+# <file system>             <mount point>           <type>  <options>                                                               <dump>  <pass>
+
+# Système Live en RAM (Squashfs monté par archiso sur /)
+
+# Partition de persistance externe (USB ou SSD avec label STK_DATA)
+# - nofail : n'interrompt pas le démarrage si le support n'est pas branché
+# - noatime : économise les cycles d'écriture flash
+# - x-systemd.device-timeout=3s : délai d'attente court au boot si absent
+# - x-systemd.automount : monte à la demande dès l'accès au répertoire
+LABEL=STK_DATA              /home/stk/Base_Data     auto    defaults,nofail,noatime,x-systemd.device-timeout=3s,x-systemd.automount  0       2

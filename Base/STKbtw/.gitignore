@@ -1,0 +1,8 @@
+# STKbtw archiso gitignore
+out/
+/tmp/archiso-tmp/
+airootfs/opt/eirbot/Base/Vision/
+airootfs/opt/eirbot/Base/Web/
+airootfs/home/stk/Base_Data/*
+!airootfs/home/stk/Base_Data/.gitkeep
+!airootfs/opt/eirbot/Base/.gitkeep

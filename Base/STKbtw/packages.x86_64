@@ -1,0 +1,100 @@
+# ==============================================================================
+# STKbtw - packages.x86_64
+# Liste des paquets pour l'environnement Live OS STKbtw (Hyprland + Robotique)
+# ==============================================================================
+
+# --- Système de base & Kernel ---
+base
+base-devel
+linux
+linux-headers
+linux-firmware
+mkinitcpio-archiso
+archiso
+sudo
+
+# --- Bootloader & Partitions ---
+syslinux
+efibootmgr
+dosfstools
+mtools
+e2fsprogs
+exfatprogs
+ntfs-3g
+parted
+
+# --- Pilotes Graphiques & Accélération Matérielle ---
+mesa
+vulkan-intel
+vulkan-radeon
+libva
+intel-media-driver
+seatd
+
+# --- Environnement Wayland & Hyprland ---
+hyprland
+waybar
+kitty
+foot
+wofi
+xdg-desktop-portal-hyprland
+xdg-desktop-portal
+qt5-wayland
+qt6-wayland
+xorg-xwayland
+swaybg
+wl-clipboard
+polkit
+
+# --- Navigateur Web & Dashboard Télémétrie ---
+chromium
+
+# --- Polices & Glyphes (Crucial pour Kitty & Waybar) ---
+ttf-jetbrains-mono-nerd
+ttf-nerd-fonts-symbols
+otf-font-awesome
+noto-fonts
+noto-fonts-cjk
+noto-fonts-emoji
+
+# --- Réseau & Télémétrie ---
+networkmanager
+network-manager-applet
+wireless_tools
+wpa_supplicant
+iproute2
+ethtool
+openssh
+curl
+wget
+rsync
+
+# --- Dépendances Code Embarqué & Robotique (Vision / Web) ---
+python
+python-pip
+python-opencv
+python-numpy
+python-pyzmq
+python-pillow
+python-pyserial
+python-flask
+python-flask-socketio
+zeromq
+go
+
+# --- Matériel & Périphériques Caméras / USB ---
+v4l-utils
+usbutils
+pciutils
+
+# --- Outils CLI, Système & Debug ---
+git
+htop
+btop
+nano
+vim
+neovim
+tmux
+jq
+socat
+bash-completion
