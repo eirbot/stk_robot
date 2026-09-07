@@ -34,7 +34,8 @@ declare -A file_permissions=(
     ["/home/stk/"]="1000:1000:755"
     ["/home/stk/.bash_profile"]="1000:1000:644"
     ["/home/stk/Base_Data/"]="1000:1000:755"
-    ["/opt/eirbot/"]="0:0:755"
+    ["/opt/eirbot/"]="1000:1000:755"
+    ["/opt/eirbot/Base/Web/base_stk"]="1000:1000:755"
     ["/usr/local/bin/"]="0:0:755"
     ["/usr/local/bin/stk-dashboard"]="0:0:755"
 )

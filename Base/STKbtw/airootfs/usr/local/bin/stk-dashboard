@@ -14,21 +14,24 @@ echo "[STKbtw] Utilisateur courant : $(whoami)"
 echo "[STKbtw] Date : $(date)"
 echo "================================================="
 
-# 1. S'assurer des droits d'exécution sur base_stk
-chmod +x /opt/eirbot/Base/Web/base_stk 2>/dev/null || true
+# 1. S'assurer des droits d'exécution sur base_stk (avec sudo si nécessaire)
+if [[ -f /opt/eirbot/Base/Web/base_stk ]]; then
+    sudo chmod +x /opt/eirbot/Base/Web/base_stk 2>/dev/null || chmod +x /opt/eirbot/Base/Web/base_stk 2>/dev/null || true
+fi
 
 # 2. Démarrage du serveur Web Go s'il n'est pas déjà actif
-if ! pgrep -f "base_stk" >/dev/null; then
+if ! pgrep -x "base_stk" >/dev/null; then
     echo "[STKbtw] Lancement du serveur Web dans /opt/eirbot/Base/Web..."
     cd /opt/eirbot/Base/Web || exit 1
     if [[ -x "./base_stk" ]]; then
         ./base_stk >> /tmp/base_web.log 2>&1 &
         echo "[STKbtw] Binaire base_stk lancé en arrière-plan (PID: $!)."
     elif command -v go &>/dev/null; then
+        echo "[STKbtw] Binaire non exécutable, tentative de compilation/lancement avec 'go run .'..."
         go run . >> /tmp/base_web.log 2>&1 &
         echo "[STKbtw] 'go run .' lancé en arrière-plan (PID: $!)."
     else
-        echo "[STKbtw][ERREUR] Ni base_stk exécutable ni go n'ont été trouvés !"
+        echo "[STKbtw][ERREUR] Ni base_stk exécutable ni compilateur go n'ont pu être lancés !"
     fi
 else
     echo "[STKbtw] base_stk est déjà en cours d'exécution."
@@ -47,12 +50,12 @@ for i in {1..75}; do
 done
 
 if [[ ${SERVER_READY} -eq 0 ]]; then
-    echo "[STKbtw][AVERTISSEMENT] Le serveur n'a pas répondu à temps !"
+    echo "[STKbtw][AVERTISSEMENT] Le serveur n'a pas répondu à temps sur http://127.0.0.1:8080 !"
     echo "[STKbtw][DEBUG] Contenu de /tmp/base_web.log :"
     cat /tmp/base_web.log 2>/dev/null || true
 fi
 
-# 4. Lancement de Chromium Kiosk
+# 4. Lancement de Chromium en mode Kiosk (optimisé Wayland sans conflits Vulkan)
 echo "[STKbtw] Lancement de Chromium Kiosk..."
 exec chromium \
     --no-first-run \
@@ -60,6 +63,9 @@ exec chromium \
     --disable-translate \
     --disable-dev-shm-usage \
     --no-sandbox \
-    --ozone-platform-hint=auto \
+    --ozone-platform=wayland \
+    --enable-features=UseOzonePlatform \
+    --disable-features=Vulkan,Translate,OptimizationHints,MediaRouter \
+    --password-store=basic \
     --kiosk \
     http://127.0.0.1:8080
