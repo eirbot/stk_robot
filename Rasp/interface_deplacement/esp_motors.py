@@ -71,9 +71,19 @@ class ESPMotors:
         
         return not self.cmd_aborted
 
+    def set_speed(self, vx, vtheta):
+        """
+        Envoie une consigne de vitesse au robot.
+        :param vx: Vitesse linéaire en mm/s (-1000 à 1000)
+        :param vtheta: Vitesse angulaire en deg/s (-360 à 360)
+        """
+        vx_int = int(round(vx))
+        vtheta_int = int(round(vtheta))
+        self.send(f"V {vx_int} {vtheta_int}")
+
     def stop_robot(self):
         """Arrête immédiatement les moteurs de l'ESP."""
-        self.send("H") # On va implémenter H (Halt) côté ESP
+        self.send("H")
 
     def set_pos(self, x, y, theta):
         self.send(f"S {x} {y} {theta}")

@@ -100,6 +100,9 @@ func pipelineReceptionRobot() {
 						if update.IMUYaw != nil {
 							globalState.Telemetry.IMUYaw = *update.IMUYaw
 						}
+						if update.RaspIP != nil {
+							globalState.Telemetry.RaspIP = *update.RaspIP
+						}
 					}
 
 					// Si la tirette est tirée physiquement sur le robot, on déclenche le départ côté PC

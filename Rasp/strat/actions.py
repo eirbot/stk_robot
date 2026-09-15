@@ -120,10 +120,17 @@ class RobotActions:
         else:
             print("[SIMU] GOTO virtuel (Pas de com)")
         
+    def set_speed(self, vx, vtheta):
+        """Consigne de vitesse pour contrôle joystick."""
+        if esp:
+            esp.set_speed(vx, vtheta)
+        else:
+            print(f"[SIMU] SET_SPEED ({vx}, {vtheta}) virtuel")
+
     def stop(self):
         print("[ACTION] STOP")
         if esp:
-            esp.stop()
+            esp.stop_robot()
         else:
             print("[SIMU] STOP virtuel (Pas de com)")
 

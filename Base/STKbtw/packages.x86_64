@@ -60,6 +60,8 @@ noto-fonts-emoji
 # --- Réseau & Télémétrie ---
 networkmanager
 network-manager-applet
+dnsmasq
+iptables-nft
 wireless_tools
 wpa_supplicant
 iproute2

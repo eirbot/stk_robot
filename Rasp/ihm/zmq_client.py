@@ -66,6 +66,12 @@ class ZmqClient(threading.Thread):
                     shared.state["match_running"] = False
                     shared.state["fsm_state"] = "STOPPED"
                     shared.state["tirette"] = "WAIT_INSERT"
+                    try:
+                        from strat.actions import esp
+                        if esp:
+                            esp.stop_robot()
+                    except Exception as e:
+                        pass
                 elif act == "reset":
                     shared.state["fsm_state"] = "WAIT_START"
                     shared.state["score_current"] = 0
@@ -81,6 +87,16 @@ class ZmqClient(threading.Thread):
             elif cmd_type == "update_score":
                 score = payload.get("score_current", 0)
                 shared.state["score_current"] = score
+
+            elif cmd_type == "cmd_vel":
+                try:
+                    vx = float(payload.get("vx", payload.get("v", 0.0)))
+                    vtheta = float(payload.get("vtheta", payload.get("w", 0.0)))
+                    from strat.actions import esp
+                    if esp:
+                        esp.set_speed(vx, vtheta)
+                except Exception as e:
+                    print(f"[ZMQ CLIENT] Erreur cmd_vel : {e}")
 
             elif cmd_type == "goto":
                 try:
@@ -156,11 +172,12 @@ class ZmqClient(threading.Thread):
                     "imu_yaw": 0.0
                 }
                 try:
-                    from utils.system_info import get_voltage_float, get_battery_current
+                    from utils.system_info import get_voltage_float, get_battery_current, get_ip
                     telemetry_data["voltage"] = get_voltage_float()
                     telemetry_data["current"] = get_battery_current()
+                    telemetry_data["rasp_ip"] = get_ip()
                 except Exception as e:
-                    pass
+                    telemetry_data["rasp_ip"] = "Err"
 
                 self.send_event("telemetry", telemetry_data)
 

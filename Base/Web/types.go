@@ -14,6 +14,7 @@ type RobotTelemetry struct {
 	Current float64 `json:"current"`
 	Tirette string  `json:"tirette"` // "WAIT_INSERT", "TRIGGERED"
 	IMUYaw  float64 `json:"imu_yaw"`
+	RaspIP  string  `json:"rasp_ip"`
 }
 
 // État Global Unifié (fusion de l'IHM et du matériel)
@@ -29,6 +30,7 @@ type FullState struct {
 	ObstacleType     int                    `json:"obstacle_type"`
 	Telemetry        RobotTelemetry         `json:"telemetry"`
 	Config           map[string]interface{} `json:"config"`
+	ServerIP         string                 `json:"server_ip"`
 }
 
 type RobotMessage struct {
@@ -52,6 +54,7 @@ type StateUpdate struct {
 	Current          *float64                `json:"current"`
 	Tirette          *string                 `json:"tirette"`
 	IMUYaw           *float64                `json:"imu_yaw"`
+	RaspIP           *string                 `json:"rasp_ip"`
 	Telemetry        *RobotTelemetry         `json:"telemetry"`
 	Config           *map[string]interface{} `json:"config"`
 }

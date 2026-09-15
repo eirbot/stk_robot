@@ -160,6 +160,7 @@ void ClassMotors::WaitUntilDone() {
 }
 
 void ClassMotors::Stop() {
+  StopVelocity();
   StopStepper(moteurGauche, moteurDroit, this);
   if (GetCurrentStep() != 0) {
     stepDid = moteurGauche->getCurrentPosition() - GetCurrentStep();
@@ -189,12 +190,12 @@ void ClassMotors::RestartMotors() {
 void StopStepper(FastAccelStepper *moteur1, FastAccelStepper *moteur2,
                  ClassMotors *instance) {
   // Déclenche une décélération matérielle propre jusqu'à l'arrêt
-  moteur1->stopMove();
-  moteur2->stopMove();
+  if (moteur1) moteur1->stopMove();
+  if (moteur2) moteur2->stopMove();
 
   TickType_t lastOdoUpdate = xTaskGetTickCount();
 
-  while (moteur1->isRunning() || moteur2->isRunning()) {
+  while ((moteur1 && moteur1->isRunning()) || (moteur2 && moteur2->isRunning())) {
     if (instance != nullptr &&
         (xTaskGetTickCount() - lastOdoUpdate) >= odoInterval) {
       instance->UpdateOdometry();
@@ -227,34 +228,133 @@ void ClassMotors::SetPosition(float x, float y, float angle) {
 }
 
 void ClassMotors::UpdateOdometry() {
-  long currentStepGauche = moteurGauche->getCurrentPosition();
-  long currentStepDroit = moteurDroit->getCurrentPosition();
-  long deltaStepGauche = currentStepGauche - lastStepGauche;
-  long deltaStepDroit = currentStepDroit - lastStepDroit;
-
-  if (deltaStepGauche == 0 && deltaStepDroit == 0)
-    return;
-
-  lastStepGauche = currentStepGauche;
-  lastStepDroit = currentStepDroit;
-
-  float distanceParStep = (M_PI * dRoues) / stepPerRev;
-  float s_L = deltaStepGauche * distanceParStep;
-  float s_R = deltaStepDroit * distanceParStep;
-  float delta_s = (s_R + s_L) / 2.0;
-  float delta_theta = (s_L - s_R) / ecartRoues; // Inversion L/R
-
   if (xSemaphoreTake(xPositionMutex, portMAX_DELAY) == pdTRUE) {
-    orientation += delta_theta;
-    if (orientation > M_PI)
-      orientation -= 2 * M_PI;
-    if (orientation < -M_PI)
-      orientation += 2 * M_PI;
+    long currentStepGauche = (moteurGauche != nullptr) ? moteurGauche->getCurrentPosition() : 0;
+    long currentStepDroit = (moteurDroit != nullptr) ? moteurDroit->getCurrentPosition() : 0;
+    long deltaStepGauche = currentStepGauche - lastStepGauche;
+    long deltaStepDroit = currentStepDroit - lastStepDroit;
 
-    // Repère Direct : X devant, Y gauche, Theta trigo (CCW+)
-    x_pos += delta_s * cos(orientation);
-    y_pos += delta_s * sin(orientation);
+    if (deltaStepGauche != 0 || deltaStepDroit != 0) {
+      lastStepGauche = currentStepGauche;
+      lastStepDroit = currentStepDroit;
 
+      float distanceParStep = (M_PI * dRoues) / stepPerRev;
+      float s_L = deltaStepGauche * distanceParStep;
+      float s_R = deltaStepDroit * distanceParStep;
+      float delta_s = (s_R + s_L) / 2.0;
+      float delta_theta = (s_L - s_R) / ecartRoues; // Inversion L/R
+
+      orientation += delta_theta;
+      if (orientation > M_PI)
+        orientation -= 2 * M_PI;
+      if (orientation < -M_PI)
+        orientation += 2 * M_PI;
+
+      // Repère Direct : X devant, Y gauche, Theta trigo (CCW+)
+      x_pos += delta_s * cos(orientation);
+      y_pos += delta_s * sin(orientation);
+    }
     xSemaphoreGive(xPositionMutex);
+  }
+}
+
+// --- CONTRÔLE EN VITESSE CONTINUE (JOYSTICK) ---
+
+static void applyStepperSpeed(FastAccelStepper *stepper, int32_t speedHz, uint32_t accelHz) {
+  if (stepper == nullptr) return;
+  if (speedHz == 0) {
+    stepper->stopMove();
+  } else {
+    stepper->setAcceleration(accelHz);
+    if (speedHz > 0) {
+      stepper->setSpeedInHz((uint32_t)speedHz);
+      stepper->runForward();
+      stepper->applySpeedAcceleration();
+    } else {
+      stepper->setSpeedInHz((uint32_t)(-speedHz));
+      stepper->runBackward();
+      stepper->applySpeedAcceleration();
+    }
+  }
+}
+
+void ClassMotors::SetVelocity(float vx, float vtheta) {
+  lastSpeedCmdTick = millis();
+
+  // 1. Gestion de l'arrêt si consigne nulle
+  if (std::abs(vx) < 1.0f && std::abs(vtheta) < 1.0f) {
+    StopVelocity();
+    return;
+  }
+
+  // 2. Sécurité d'évitement LiDAR
+  if (LiDAR_state == 1) {
+    // Obstacle immédiat critique : coupure totale
+    StopVelocity();
+    return;
+  } else if (LiDAR_state == 2 && vx > 0) {
+    // Obstacle devant : interdiction d'avancer, rotation autorisée
+    vx = 0.0f;
+  } else if (LiDAR_state == 3 && vx < 0) {
+    // Obstacle derrière : interdiction de reculer, rotation autorisée
+    vx = 0.0f;
+  }
+
+  speedControlActive = true;
+  currentVx = vx;
+  currentVtheta = vtheta;
+
+  // 3. Cinématique différentielle :
+  // vx en mm/s, vtheta en deg/s -> omega en rad/s
+  float omega = vtheta * (M_PI / 180.0f);
+
+  // vL, vR en mm/s
+  float v_L = vx + (omega * (ecartRoues / 2.0f));
+  float v_R = vx - (omega * (ecartRoues / 2.0f));
+
+  // Conversion en fréquence de pas (Hz)
+  // stepPerRev / (PI * dRoues) = pas / mm
+  float stepFactor = stepPerRev / (M_PI * dRoues);
+  int32_t speedHzL = (int32_t)round(v_L * stepFactor);
+  int32_t speedHzR = (int32_t)round(v_R * stepFactor);
+
+  // Saturation à la fréquence max
+  const int32_t MAX_SPEED_HZ = 16000;
+  if (speedHzL > MAX_SPEED_HZ) speedHzL = MAX_SPEED_HZ;
+  if (speedHzL < -MAX_SPEED_HZ) speedHzL = -MAX_SPEED_HZ;
+  if (speedHzR > MAX_SPEED_HZ) speedHzR = MAX_SPEED_HZ;
+  if (speedHzR < -MAX_SPEED_HZ) speedHzR = -MAX_SPEED_HZ;
+
+  const uint32_t ACCEL_HZ_VEL = 20000; // Pas/s² (accélération réactive et fluide)
+
+  applyStepperSpeed(moteurGauche, speedHzL, ACCEL_HZ_VEL);
+  applyStepperSpeed(moteurDroit, speedHzR, ACCEL_HZ_VEL);
+}
+
+void ClassMotors::StopVelocity() {
+  speedControlActive = false;
+  currentVx = 0.0f;
+  currentVtheta = 0.0f;
+  if (moteurGauche) moteurGauche->stopMove();
+  if (moteurDroit) moteurDroit->stopMove();
+}
+
+void ClassMotors::CheckWatchdog() {
+  if (speedControlActive) {
+    // 1. Timeout de sécurité (500 ms sans nouvelle consigne)
+    if (millis() - lastSpeedCmdTick > 500) {
+      StopVelocity();
+      Serial.println("-> WATCHDOG: Timeout vitesse 500ms, arret moteurs");
+      return;
+    }
+
+    // 2. Détection dynamique d'obstacle pendant le mouvement
+    if (LiDAR_state == 1) {
+      StopVelocity();
+    } else if (LiDAR_state == 2 && currentVx > 0) {
+      SetVelocity(0.0f, currentVtheta);
+    } else if (LiDAR_state == 3 && currentVx < 0) {
+      SetVelocity(0.0f, currentVtheta);
+    }
   }
 }

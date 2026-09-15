@@ -57,18 +57,26 @@ void ComWithRasp::Receive() {
 
 void ComWithRasp::TelemetryLoop() {
   float x, y, angle;
+  int telemetryCounter = 0;
 
   while (1) {
-    mot.GetPosition(x, y, angle);
+    mot.UpdateOdometry();
+    mot.CheckWatchdog();
 
-    Serial.print("T ");
-    Serial.print(x);
-    Serial.print(" ");
-    Serial.print(y);
-    Serial.print(" ");
-    Serial.println(angle * RAD_TO_DEG);
+    telemetryCounter++;
+    if (telemetryCounter >= 5) { // 5 * 20ms = 100ms (10 Hz)
+      telemetryCounter = 0;
+      mot.GetPosition(x, y, angle);
 
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+      Serial.print("T ");
+      Serial.print(x);
+      Serial.print(" ");
+      Serial.print(y);
+      Serial.print(" ");
+      Serial.println(angle * RAD_TO_DEG);
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(20));
   }
 }
 
@@ -135,6 +143,7 @@ void ComWithRasp::processLine() {
 void ComWithRasp::processCommand(const String &cmd,
                                  const std::vector<int> &params) {
   if (cmd == "G" && params.size() == 3) {
+    mot.StopVelocity();
     if (!isMoving) {
       Serial.println("GoToPosition (async)");
       isMoving = true;
@@ -151,6 +160,13 @@ void ComWithRasp::processCommand(const String &cmd,
     } else {
       Serial.println("Deplacement deja en cours");
     }
+  } else if (cmd == "V" && params.size() >= 2) {
+    if (isMoving) {
+      mot.Stop();
+      FLAG_STOP = true;
+      isMoving = false;
+    }
+    mot.SetVelocity((float)params[0], (float)params[1]);
   } else if (cmd == "L") {
     if (params.size() == 1) {
       LiDAR_state = params[0];
@@ -164,6 +180,7 @@ void ComWithRasp::processCommand(const String &cmd,
     serialGoto.SetPos((float)params[0], (float)params[1], (float)params[2]);
   } else if (cmd == "H") {
     Serial.println("Halt");
+    mot.StopVelocity();
     mot.Stop();
     FLAG_STOP = true;
   } else {

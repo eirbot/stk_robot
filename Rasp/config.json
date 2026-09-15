@@ -63,7 +63,7 @@
     "lidar_mode": "OFF",
     "lidar_simu": false,
     "score_target": 142,
-    "server_ip": "192.168.10.2",
+    "server_ip": "192.168.1.2",
     "skip_homologation": false,
     "static_strat": "3b_pouss_plus",
     "strat_mode": "STATIC",

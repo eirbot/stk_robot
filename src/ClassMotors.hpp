@@ -31,6 +31,12 @@ public:
   void GetPosition(float &x, float &y, float &angle);
   void SetPosition(float x, float y, float angle);
 
+  // Contrôle en vitesse continue (Joystick)
+  void SetVelocity(float vx, float vtheta);
+  void StopVelocity();
+  void CheckWatchdog();
+  bool IsSpeedControlActive() const { return speedControlActive; }
+
 private:
   QueueHandle_t xQueue;
   QueueHandle_t xQueueBuffer;
@@ -45,6 +51,11 @@ private:
 
   long lastStepGauche = 0;
   long lastStepDroit = 0;
+
+  volatile bool speedControlActive = false;
+  uint32_t lastSpeedCmdTick = 0;
+  float currentVx = 0.0f;
+  float currentVtheta = 0.0f;
 };
 void StopStepper(FastAccelStepper *moteur1, FastAccelStepper *moteur2,
                  ClassMotors *instance = nullptr);

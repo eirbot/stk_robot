@@ -14,6 +14,9 @@ echo "[STKbtw] Utilisateur courant : $(whoami)"
 echo "[STKbtw] Date : $(date)"
 echo "================================================="
 
+# 0. Configuration de l'IP statique 192.168.1.2/24 sur les interfaces enp*
+sudo /usr/local/bin/stk-set-enp-ip 2>/dev/null || true
+
 # 1. S'assurer des droits d'exécution sur base_stk (avec sudo si nécessaire)
 if [[ -f /opt/eirbot/Base/Web/base_stk ]]; then
     sudo chmod +x /opt/eirbot/Base/Web/base_stk 2>/dev/null || chmod +x /opt/eirbot/Base/Web/base_stk 2>/dev/null || true

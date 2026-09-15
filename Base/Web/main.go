@@ -41,11 +41,13 @@ func loadConfig() map[string]interface{} {
 func main() {
 	// Charger la configuration globale
 	globalState.Lock()
+	globalState.ServerIP = getHostIP()
 	globalState.Config = loadConfig()
 	if t, ok := globalState.Config["team"].(string); ok {
 		globalState.Team = t
 	}
 	globalState.Unlock()
+	fmt.Printf("[NET] Base Déportée joignable sur : http://%s:8080\n", globalState.ServerIP)
 
 	// Initialisation du canal descendant ZMQ PUB (PC -> Robot)
 	var err error

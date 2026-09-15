@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EIRBOT 2026 - Contrôle Manuel Joystick</title>
+    <link rel="stylesheet" href="/static/css/common.css">
+    <link rel="stylesheet" href="/static/css/controle.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <script src="/static/js/common.js" defer></script>
+    <script src="/static/js/controle.js" defer></script>
+</head>
+
+<body class="mode-BLEUE">
+    <header class="header">
+        <div class="header-left">
+            <a href="/" class="btn-back">← Accueil</a>
+            <h1 class="page-title">🕹️ PILOTAGE JOYSTICK</h1>
+            <span id="conn-badge" class="badge-conn disconnected">HORS LIGNE</span>
+        </div>
+        <div class="sys-info" id="sys-info">...</div>
+    </header>
+
+    <main class="control-container">
+        <!-- Colonne Gauche : Joystick Virtuel & Arrêt d'Urgence -->
+        <section class="joystick-section card">
+            <div class="section-header">
+                <h2>CONTRÔLE TACTILE & SOURIS</h2>
+                <div class="help-hint">Touchez et glissez le stick, ou utilisez ZQSD / Flèches</div>
+            </div>
+
+            <div class="joystick-wrapper">
+                <div id="joystick-zone" class="joystick-base">
+                    <!-- Boussole décorative -->
+                    <div class="compass-mark mark-n">AVANT</div>
+                    <div class="compass-mark mark-s">ARRIÈRE</div>
+                    <div class="compass-mark mark-w">GAUCHE</div>
+                    <div class="compass-mark mark-e">DROITE</div>
+                    <div class="joystick-crosshair-h"></div>
+                    <div class="joystick-crosshair-v"></div>
+                    <div class="joystick-inner-ring"></div>
+                    <!-- Stick mobile -->
+                    <div id="joystick-knob" class="joystick-knob">
+                        <div class="knob-glow"></div>
+                        <div class="knob-center"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="joystick-quick-actions">
+                <button id="btn-emergency-stop" class="btn-emergency" onclick="triggerEmergencyStop()">
+                    🛑 ARRÊT D'URGENCE
+                </button>
+                <button id="btn-zero-speed" class="btn-neutral" onclick="sendZeroSpeed()">
+                    🔄 NEUTRE (0,0)
+                </button>
+            </div>
+
+            <!-- Clavier interactif visuel -->
+            <div class="keyboard-preview">
+                <div class="key-row">
+                    <div id="key-up" class="virtual-key"><span class="key-main">Z</span><span class="key-sub">▲</span></div>
+                </div>
+                <div class="key-row">
+                    <div id="key-left" class="virtual-key"><span class="key-main">Q</span><span class="key-sub">◀</span></div>
+                    <div id="key-down" class="virtual-key"><span class="key-main">S</span><span class="key-sub">▼</span></div>
+                    <div id="key-right" class="virtual-key"><span class="key-main">D</span><span class="key-sub">▶</span></div>
+                </div>
+                <div class="key-hint">Espace : Arrêt immédiat</div>
+            </div>
+        </section>
+
+        <!-- Colonne Droite : Vitesses, Télémétrie et Réglages -->
+        <div class="sidebar-section">
+            <!-- Consignes Dynamiques en Temps Réel -->
+            <section class="card speeds-card">
+                <h2>⚡ CONSIGNE DE VITESSE</h2>
+                <div class="gauges-grid">
+                    <div class="gauge-item">
+                        <span class="gauge-label">Vitesse Linéaire (Vx)</span>
+                        <div class="gauge-value" id="val-vx">0 <small>mm/s</small></div>
+                        <div class="progress-track">
+                            <div id="bar-vx" class="progress-fill fill-linear" style="width: 50%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="gauge-item">
+                        <span class="gauge-label">Vitesse Angulaire (Vθ)</span>
+                        <div class="gauge-value" id="val-vtheta">0 <small>°/s</small></div>
+                        <div class="progress-track">
+                            <div id="bar-vtheta" class="progress-fill fill-angular" style="width: 50%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="wheel-speeds">
+                    <div class="wheel-box">
+                        <span class="wheel-name">Roue Gauche :</span>
+                        <span id="val-vl" class="wheel-val">0 mm/s</span>
+                    </div>
+                    <div class="wheel-box">
+                        <span class="wheel-name">Roue Droite :</span>
+                        <span id="val-vr" class="wheel-val">0 mm/s</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Télémétrie en Direct -->
+            <section class="card telemetry-card">
+                <h2>📍 TÉLÉMÉTRIE & ÉTATS</h2>
+                <div class="telemetry-grid">
+                    <div class="telemetry-cell">
+                        <span class="cell-label">Position X</span>
+                        <span id="pos-x" class="cell-val">0.0 mm</span>
+                    </div>
+                    <div class="telemetry-cell">
+                        <span class="cell-label">Position Y</span>
+                        <span id="pos-y" class="cell-val">0.0 mm</span>
+                    </div>
+                    <div class="telemetry-cell">
+                        <span class="cell-label">Orientation θ</span>
+                        <span id="pos-theta" class="cell-val">0.0°</span>
+                    </div>
+                    <div class="telemetry-cell">
+                        <span class="cell-label">Statut LiDAR</span>
+                        <span id="lidar-status-badge" class="badge-status status-free">LIBRE</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Réglages Profils de Vitesse -->
+            <section class="card settings-card">
+                <h2>⚙️ RÉGLAGES & LIMITES</h2>
+
+                <div class="setting-group">
+                    <div class="setting-title-row">
+                        <label for="slider-linear-max">Vitesse Max Linéaire :</label>
+                        <span id="label-linear-max" class="badge-setting">500 mm/s</span>
+                    </div>
+                    <div class="preset-buttons">
+                        <button class="btn-preset" onclick="setLinearMax(250)">Précision (250)</button>
+                        <button class="btn-preset active" onclick="setLinearMax(500)">Standard (500)</button>
+                        <button class="btn-preset" onclick="setLinearMax(800)">Rapide (800)</button>
+                    </div>
+                    <input id="slider-linear-max" type="range" min="100" max="1000" step="50" value="500"
+                        oninput="onLinearSliderChange(this.value)">
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-title-row">
+                        <label for="slider-angular-max">Vitesse Max Rotation :</label>
+                        <span id="label-angular-max" class="badge-setting">90 °/s</span>
+                    </div>
+                    <div class="preset-buttons">
+                        <button class="btn-preset" onclick="setAngularMax(45)">Doux (45°)</button>
+                        <button class="btn-preset active" onclick="setAngularMax(90)">Standard (90°)</button>
+                        <button class="btn-preset" onclick="setAngularMax(180)">Vif (180°)</button>
+                    </div>
+                    <input id="slider-angular-max" type="range" min="30" max="250" step="15" value="90"
+                        oninput="onAngularSliderChange(this.value)">
+                </div>
+
+                <div class="setting-toggle-row">
+                    <label class="toggle-container">
+                        <input id="toggle-invert-y" type="checkbox">
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">Inverser l'axe Avant / Arrière</span>
+                    </label>
+                </div>
+            </section>
+        </div>
+    </main>
+</body>
+
+</html>

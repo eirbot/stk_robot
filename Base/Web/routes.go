@@ -43,6 +43,23 @@ func setupRoutes(app *fiber.App) {
 	app.Get("/led_studio", func(c *fiber.Ctx) error { return c.SendFile("./templates/led_studio.html") })
 	app.Get("/media", func(c *fiber.Ctx) error { return c.SendFile("./templates/media.html") })
 	app.Get("/replay", func(c *fiber.Ctx) error { return c.SendFile("./templates/replay.html") })
+	app.Get("/controle", func(c *fiber.Ctx) error { return c.SendFile("./templates/controle.html") })
+	app.Get("/control", func(c *fiber.Ctx) error { return c.Redirect("/controle") })
+
+	// API REST pour contrôle vitesse joystick
+	app.Post("/api/cmd_vel", func(c *fiber.Ctx) error {
+		var body map[string]interface{}
+		if err := c.BodyParser(&body); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+		}
+		envoyerAuRobot("cmd_vel", body)
+		return c.JSON(fiber.Map{"status": "ok"})
+	})
+
+	// API REST pour récupérer l'adresse IP réseau réelle du PC Base
+	app.Get("/api/server_ip", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"ip": getHostIP()})
+	})
 
 	// API REST pour les actions initiées depuis l'IHM Web
 	app.Post("/api/action/:act", func(c *fiber.Ctx) error {
@@ -315,11 +332,23 @@ func setupRoutes(app *fiber.App) {
 				var packet struct {
 					Type    string      `json:"type"`
 					Payload interface{} `json:"payload"`
+					Data    interface{} `json:"data"`
 				}
 				if err := json.Unmarshal(msg, &packet); err == nil {
-					if packet.Type == "action" && packet.Payload == "calibrate_vision" {
+					targetPayload := packet.Payload
+					if targetPayload == nil {
+						targetPayload = packet.Data
+					}
+
+					if packet.Type == "cmd_vel" {
+						envoyerAuRobot("cmd_vel", targetPayload)
+					} else if packet.Type == "action" && targetPayload == "calibrate_vision" {
 						fmt.Println("[Web-IHM] Message de calibration vision reçu, retransmission vers ZMQ...")
 						envoyerAuRobot("action", "calibrate_vision")
+					} else if packet.Type == "action" {
+						if actStr, ok := targetPayload.(string); ok {
+							envoyerAuRobot("action", actStr)
+						}
 					}
 				}
 			}

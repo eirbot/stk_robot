@@ -1,0 +1,663 @@
+/* =======================================================
+   EIRBOT 2026 - CONTROLE JOYSTICK STYLES
+   ======================================================= */
+
+:root {
+    --bg-dark: #0d1117;
+    --card-bg: rgba(22, 27, 34, 0.85);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --primary-cyan: #00d2ff;
+    --accent-blue: #007bff;
+    --accent-yellow: #ffb703;
+    --danger-red: #ff334b;
+    --success-green: #00e676;
+    --text-main: #f0f6fc;
+    --text-muted: #8b949e;
+    --font-heading: 'Outfit', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: var(--font-heading);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+/* Header Adjustments */
+.header {
+    background: rgba(22, 27, 34, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--card-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.page-title {
+    font-size: 1.3rem;
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    background: linear-gradient(135deg, #fff 30%, var(--primary-cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.badge-conn {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.badge-conn.connected {
+    background: rgba(0, 230, 118, 0.15);
+    color: var(--success-green);
+    border: 1px solid rgba(0, 230, 118, 0.4);
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.2);
+}
+
+.badge-conn.disconnected {
+    background: rgba(255, 51, 75, 0.15);
+    color: var(--danger-red);
+    border: 1px solid rgba(255, 51, 75, 0.4);
+}
+
+/* Main Container Layout */
+.control-container {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 20px;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+    flex: 1;
+}
+
+/* Base Card Style */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    transition: border-color 0.3s ease;
+}
+
+.card h2 {
+    font-size: 1.05rem;
+    margin: 0 0 16px 0;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #e6edf3;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 10px;
+}
+
+/* =======================================================
+   JOYSTICK ZONE
+   ======================================================= */
+.joystick-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.section-header {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.help-hint {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.joystick-wrapper {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px 0;
+}
+
+.joystick-base {
+    position: relative;
+    width: 290px;
+    height: 290px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #1a222d 0%, #0d1218 80%);
+    border: 3px solid rgba(0, 210, 255, 0.25);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 25px rgba(0, 210, 255, 0.1);
+    cursor: grab;
+    touch-action: none;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+
+.joystick-base:active {
+    cursor: grabbing;
+    border-color: var(--primary-cyan);
+    box-shadow: 0 0 40px rgba(0, 210, 255, 0.3), inset 0 0 35px rgba(0, 210, 255, 0.2);
+}
+
+.joystick-inner-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 170px;
+    height: 170px;
+    border-radius: 50%;
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    pointer-events: none;
+}
+
+.joystick-crosshair-h,
+.joystick-crosshair-v {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.08);
+    pointer-events: none;
+}
+
+.joystick-crosshair-h {
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    transform: translateY(-50%);
+}
+
+.joystick-crosshair-v {
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    transform: translateX(-50%);
+}
+
+.compass-mark {
+    position: absolute;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.3);
+    pointer-events: none;
+    letter-spacing: 1px;
+}
+
+.mark-n { top: 12px; left: 50%; transform: translateX(-50%); }
+.mark-s { bottom: 12px; left: 50%; transform: translateX(-50%); }
+.mark-w { left: 12px; top: 50%; transform: translateY(-50%); }
+.mark-e { right: 12px; top: 50%; transform: translateY(-50%); }
+
+/* Stick / Nipple */
+.joystick-knob {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 90px;
+    height: 90px;
+    margin-left: -45px;
+    margin-top: -45px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #2a3848 0%, #151e28 80%);
+    border: 2px solid var(--primary-cyan);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 210, 255, 0.4);
+    pointer-events: none;
+    transition: transform 0.05s linear;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.knob-glow {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    box-shadow: inset 0 0 15px rgba(0, 210, 255, 0.3);
+}
+
+.knob-center {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary-cyan);
+    box-shadow: 0 0 12px var(--primary-cyan);
+}
+
+/* Quick Actions */
+.joystick-quick-actions {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    margin-top: 15px;
+}
+
+.btn-emergency {
+    flex: 2;
+    background: linear-gradient(135deg, #ff1a35 0%, #c00018 100%);
+    color: white;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 1.1rem;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(255, 26, 53, 0.4);
+    transition: all 0.2s ease;
+    letter-spacing: 0.5px;
+    animation: pulse-red 2s infinite;
+}
+
+.btn-emergency:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(255, 26, 53, 0.6);
+}
+
+.btn-emergency:active {
+    transform: translateY(1px);
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(255, 26, 53, 0.6); }
+    70% { box-shadow: 0 0 0 12px rgba(255, 26, 53, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 26, 53, 0); }
+}
+
+.btn-neutral {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #f0f6fc;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-neutral:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Keyboard Preview */
+.keyboard-preview {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.key-row {
+    display: flex;
+    gap: 8px;
+}
+
+.virtual-key {
+    width: 48px;
+    height: 48px;
+    background: #1c232d;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    box-shadow: 0 4px 0 #0f141a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #e6edf3;
+    transition: all 0.1s ease;
+}
+
+.virtual-key.active {
+    background: var(--primary-cyan);
+    color: #000;
+    border-color: var(--primary-cyan);
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #0099bb, 0 0 15px rgba(0, 210, 255, 0.5);
+}
+
+.key-main {
+    font-weight: 800;
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+.key-sub {
+    font-size: 0.65rem;
+    opacity: 0.6;
+}
+
+.key-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* =======================================================
+   SIDEBAR SECTION (Gauges, Telemetry, Settings)
+   ======================================================= */
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Gauges */
+.gauges-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.gauge-item {
+    background: rgba(0, 0, 0, 0.25);
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.gauge-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.gauge-value {
+    font-family: var(--font-mono);
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+.gauge-value small {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.progress-track {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 50%;
+    transition: width 0.08s ease, background 0.2s ease;
+}
+
+.fill-linear {
+    background: linear-gradient(90deg, #00d2ff, #007bff);
+}
+
+.fill-angular {
+    background: linear-gradient(90deg, #ff9100, #ffd600);
+}
+
+.wheel-speeds {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+}
+
+.wheel-name {
+    color: var(--text-muted);
+    margin-right: 6px;
+}
+
+.wheel-val {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: #00d2ff;
+}
+
+/* Telemetry Grid */
+.telemetry-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.telemetry-cell {
+    background: rgba(0, 0, 0, 0.25);
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cell-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cell-val {
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.badge-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    width: fit-content;
+    margin-top: 2px;
+}
+
+.status-free {
+    background: rgba(0, 230, 118, 0.15);
+    color: var(--success-green);
+    border: 1px solid rgba(0, 230, 118, 0.3);
+}
+
+.status-alert {
+    background: rgba(255, 183, 3, 0.15);
+    color: var(--accent-yellow);
+    border: 1px solid rgba(255, 183, 3, 0.3);
+}
+
+.status-stop {
+    background: rgba(255, 51, 75, 0.2);
+    color: var(--danger-red);
+    border: 1px solid rgba(255, 51, 75, 0.4);
+    animation: pulse-badge 1s infinite;
+}
+
+@keyframes pulse-badge {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Settings Card */
+.setting-group {
+    margin-bottom: 18px;
+}
+
+.setting-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.setting-title-row label {
+    font-size: 0.9rem;
+    color: #c9d1d9;
+    font-weight: 600;
+}
+
+.badge-setting {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary-cyan);
+    background: rgba(0, 210, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+
+.preset-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.btn-preset {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #c9d1d9;
+    padding: 6px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-preset:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.btn-preset.active {
+    background: rgba(0, 210, 255, 0.2);
+    border-color: var(--primary-cyan);
+    color: var(--primary-cyan);
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+}
+
+input[type="range"] {
+    width: 100%;
+    accent-color: var(--primary-cyan);
+    cursor: pointer;
+}
+
+.setting-toggle-row {
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.toggle-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 12px;
+}
+
+.toggle-container input {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    transition: 0.3s;
+    flex-shrink: 0;
+}
+
+.toggle-slider::before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    background: #fff;
+    transition: 0.3s;
+}
+
+.toggle-container input:checked + .toggle-slider {
+    background: var(--primary-cyan);
+}
+
+.toggle-container input:checked + .toggle-slider::before {
+    transform: translateX(20px);
+}
+
+.toggle-label {
+    font-size: 0.85rem;
+    color: #c9d1d9;
+}
+
+/* =======================================================
+   RESPONSIVE DESIGN
+   ======================================================= */
+@media (max-width: 950px) {
+    .control-container {
+        grid-template-columns: 1fr;
+    }
+
+    .joystick-base {
+        width: 260px;
+        height: 260px;
+    }
+
+    .joystick-knob {
+        width: 80px;
+        height: 80px;
+        margin-left: -40px;
+        margin-top: -40px;
+    }
+}

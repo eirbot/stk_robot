@@ -23,6 +23,9 @@ class SocketWrapper {
 
                 // If this is a state_update, dispatch virtual events for compatibility
                 if (type === 'state_update' && data) {
+                    if (data.server_ip) {
+                        window.serverIP = data.server_ip;
+                    }
                     // Dispatch virtual 'robot_position'
                     if (data.telemetry && this.listeners['robot_position']) {
                         this.listeners['robot_position'].forEach(callback => callback(data.telemetry));
@@ -31,10 +34,17 @@ class SocketWrapper {
                     if (data.telemetry && this.listeners['sys_info']) {
                         const volt = data.telemetry.voltage ? data.telemetry.voltage.toFixed(1) + "V" : "--V";
                         const volt_float = data.telemetry.voltage || 0.0;
+                        let displayIp = window.serverIP || data.server_ip;
+                        if (!displayIp || displayIp === 'localhost' || displayIp === '127.0.0.1') {
+                            if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                                displayIp = window.location.hostname;
+                            }
+                        }
                         const sysInfoData = {
                             volt: volt,
                             volt_float: volt_float,
-                            ip: window.location.hostname,
+                            ip: displayIp || window.location.hostname,
+                            rasp_ip: data.telemetry.rasp_ip || "??",
                             cpu: "N/A"
                         };
                         this.listeners['sys_info'].forEach(callback => callback(sysInfoData));
@@ -121,13 +131,29 @@ window.socket.on('state_update', (state) => {
     else document.body.classList.remove('breathing-BLEUE', 'breathing-JAUNE');
 });
 
-// --- DÉTECTION DU MODE ÉCRAN ROBOT ---
+// --- DÉTECTION DU MODE ÉCRAN ROBOT & RÉCUPÉRATION IP RÉSEAU SERVEUR ---
 document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('mode') === 'robot') {
         document.body.classList.add('robot-screen');
         console.log("[COMMON] Mode Robot activé (classe CSS robot-screen ajoutée)");
     }
+
+    // Récupération immédiate de la véritable adresse IP réseau du serveur
+    fetch('/api/server_ip')
+        .then(r => r.json())
+        .then(res => {
+            if (res && res.ip && res.ip !== '127.0.0.1') {
+                window.serverIP = res.ip;
+                const sysInfoEl = document.getElementById('sys-info');
+                if (sysInfoEl && (sysInfoEl.innerText === '...' || sysInfoEl.innerText.includes('127.0.0.1') || sysInfoEl.innerText.includes('localhost'))) {
+                    const parts = sysInfoEl.innerText.split('|');
+                    const voltPart = parts.length > 1 ? parts[1].trim() : '--.-V';
+                    sysInfoEl.innerText = `${res.ip} | ${voltPart}`;
+                }
+            }
+        })
+        .catch(() => {});
 });
 
 // --- MISE À JOUR COMMUNE DES INFOS SYSTEME (IP & Batterie) SUR PC ---
@@ -137,8 +163,15 @@ window.socket.on('sys_info', (data) => {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') !== 'robot') {
             const volt = data.volt || '--.-V';
-            const ip = data.ip || '?.?.?.?';
-            sysInfoEl.innerText = `${ip} | ${volt}`;
+            let ip = window.serverIP || data.server_ip || data.ip;
+            if (!ip || ip === 'localhost' || ip === '127.0.0.1') {
+                if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                    ip = window.location.hostname;
+                } else if (window.serverIP) {
+                    ip = window.serverIP;
+                }
+            }
+            sysInfoEl.innerText = `Base: ${ip || '?.?.?.?'} | Robot: ${data.rasp_ip || '??'} | ${volt}`;
         }
     }
 });
