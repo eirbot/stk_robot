@@ -14,9 +14,9 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-evenly;
-    /* Better spacing */
     align-items: center;
-    padding: 1vh;
+    padding: 1.5vh 2vw;
+    box-sizing: border-box;
 }
 
 /* INPUTS & SELECTS */
@@ -24,52 +24,21 @@ select {
     background-color: #333;
     color: #fff;
     border: 1px solid #555;
-    padding: 10px;
-    font-size: 2.5vh;
+    padding: 8px 12px;
+    font-size: 2.2vh;
     border-radius: 5px;
 }
 
-.score-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 2vw;
-}
-
-.score-box {
-    font-size: 15vh;
-    /* HUGE relative to screen height */
-    line-height: 1;
-    font-weight: bold;
-    color: #C3E88D;
-    min-width: 15vw;
-}
-
-.btn-arrow {
-    background: transparent;
-    border: 2px solid #555;
-    color: #aaa;
-    font-size: 5vh;
-    width: 8vh;
-    height: 8vh;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-
-.btn-arrow:active {
-    background: #333;
-}
-
+/* TEAM BOX */
 .team-box {
-    font-size: 5vh;
+    font-size: 4.5vh;
     font-weight: bold;
-    padding: 1vh 3vw;
+    padding: 0.8vh 3vw;
     border-radius: 10px;
-    margin-bottom: 2vh;
+    margin-bottom: 0.5vh;
     transition: 0.3s;
+    user-select: none;
+    cursor: pointer;
 }
 
 .mode-BLEUE .team-box {
@@ -82,10 +51,35 @@ select {
     color: black;
 }
 
+/* DASHBOARD STATUS ROW (TIRETTE, STRAT, FSM) */
+.dashboard-status-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5vw;
+    flex-wrap: wrap;
+    margin: 0.5vh 0;
+}
+
+.status-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8ch;
+    font-size: 2.2vh;
+    color: #ccc;
+}
+
+.status-label {
+    font-weight: 600;
+    color: #888;
+    font-size: 0.85em;
+    text-transform: uppercase;
+}
+
 .tirette-box {
-    font-size: 3vh;
+    font-size: 2.2vh;
     font-weight: bold;
-    padding: 1vh 2vw;
+    padding: 0.6vh 1.8vw;
     border-radius: 8px;
     border: 2px solid #555;
     background: #222;
@@ -93,11 +87,66 @@ select {
     transition: 0.3s;
 }
 
+/* ROBOT POSITION ODOMETRY BOX */
+.robot-pos-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2vw;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 0.8vh 2.5vw;
+    border-radius: 10px;
+    font-size: 2.5vh;
+    color: #4fc3f7;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-variant-numeric: tabular-nums;
+    margin: 0.5vh 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.pos-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4ch;
+}
+
+.pos-label {
+    color: #8892b0;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.pos-val {
+    color: #ffffff;
+    font-weight: bold;
+    min-width: 4ch;
+    text-align: right;
+    display: inline-block;
+    font-variant-numeric: tabular-nums;
+}
+
+.pos-unit {
+    color: #64748b;
+    font-size: 0.85em;
+}
+
+.pos-sep {
+    color: #334155;
+    user-select: none;
+}
+
+/* TIMER CHRONO (AGRANDI) */
 .timer-box {
-    font-size: 8vh;
-    margin-top: 2vh;
+    font-size: clamp(5rem, 16vh, 13rem);
+    font-weight: 900;
     color: #FFCB6B;
-    font-family: monospace;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    line-height: 1;
+    margin: 1vh 0;
+    text-shadow: 0 0 25px rgba(255, 203, 107, 0.35);
 }
 
 /* STATUS BADGES */
@@ -121,7 +170,7 @@ select {
     }
 }
 
-/* CONTROLS BAS */
+/* CONTROLS BAS (PC) */
 .controls {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -129,7 +178,8 @@ select {
     padding: 2vh;
     background: #1c2128;
     border-top: 2px solid #333;
-    min-height: 15vh;
+    min-height: 14vh;
+    box-sizing: border-box;
 }
 
 button {
@@ -181,29 +231,28 @@ button:active {
 }
 
 @keyframes flash-red {
-
-    0%,
-    100% {
+    0%, 100% {
         background: #d32f2f;
     }
-
     50% {
         background: #ff5252;
     }
 }
 
-/* --- ROBOT SCREEN MODE --- */
+/* GUIDE DES 4 BOUTONS (Par défaut masqué sur PC) */
+.robot-buttons-bar {
+    display: none;
+}
+
+/* ========================================= */
+/* --- ROBOT SCREEN MODE (ÉCRAN 7" RASP) --- */
+/* ========================================= */
 body.robot-screen {
     border: none !important;
     overflow: hidden !important;
 }
 
-body.robot-screen .controls,
-body.robot-screen #tirette-status,
-body.robot-screen .header > div:first-child,
-body.robot-screen .dashboard > div:nth-child(3),
-body.robot-screen .dashboard > div:nth-child(4),
-body.robot-screen .dashboard > div:nth-child(5) {
+body.robot-screen .pc-only {
     display: none !important;
 }
 
@@ -215,42 +264,166 @@ body.robot-screen .header {
     align-items: center;
     border-bottom: none !important;
     background: transparent !important;
-    padding: 3vh 0 0 0 !important;
+    padding: 2.5vh 0 0 0 !important;
     position: absolute;
     top: 0;
     left: 0;
     z-index: 10;
 }
 
+body.robot-screen .header > div:first-child {
+    display: none !important;
+}
+
 body.robot-screen .sys-info {
-    font-size: 5vh !important;
+    font-size: 4.2vh !important;
     text-align: center !important;
+    justify-content: center !important;
     width: 100%;
     opacity: 1 !important;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+    font-variant-numeric: tabular-nums !important;
+    white-space: nowrap !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 2vw !important;
+}
+
+body.robot-screen .sys-info-volt {
+    min-width: 6ch !important;
+    text-align: right !important;
+    display: inline-block !important;
+    font-variant-numeric: tabular-nums !important;
 }
 
 body.robot-screen .dashboard {
     width: 100vw;
-    height: 100vh;
+    height: calc(100vh - 14vh);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     justify-content: space-evenly;
     align-items: center;
-    padding: 10vh 2vw 2vh 2vw !important;
+    padding: 8vh 3vw 1vh 3vw !important;
 }
 
 body.robot-screen .team-box {
-    font-size: 8vh !important;
-    padding: 1.5vh 5vw !important;
-    margin-bottom: 0vh !important;
+    font-size: 6.5vh !important;
+    padding: 1.2vh 6vw !important;
+    margin: 0 !important;
 }
 
-body.robot-screen .score-box {
-    font-size: 30vh !important;
+body.robot-screen .robot-pos-box {
+    font-size: 4.2vh !important;
+    padding: 1.2vh 4vw !important;
+    background: rgba(0, 0, 0, 0.45) !important;
+    border: 1.5px solid rgba(79, 195, 247, 0.35) !important;
+    border-radius: 12px !important;
+    margin: 0 !important;
+}
+
+body.robot-screen .pos-val {
+    min-width: 4.5ch !important;
 }
 
 body.robot-screen .timer-box {
-    font-size: 18vh !important;
-    margin-top: 0vh !important;
+    font-size: 19vh !important;
+    margin: 0 !important;
+    text-shadow: 0 0 30px rgba(255, 203, 107, 0.5) !important;
+}
+
+/* BARRE DES 4 BOUTONS PHYSIQUES (BAS DE L'ÉCRAN 7") */
+body.robot-screen .robot-buttons-bar {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 14vh !important;
+    box-sizing: border-box !important;
+    background: #0c0f14 !important;
+    border-top: 2px solid #232a35 !important;
+    z-index: 100 !important;
+}
+
+body.robot-screen .robot-btn-hint {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-right: 1px solid #1e242d !important;
+    padding: 0.5vh 1vw !important;
+    text-align: center !important;
+    position: relative !important;
+    user-select: none !important;
+    cursor: pointer !important;
+    transition: background 0.15s !important;
+}
+
+body.robot-screen .robot-btn-hint:last-child {
+    border-right: none !important;
+}
+
+body.robot-screen .robot-btn-hint:active {
+    background: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.robot-screen .btn-badge {
+    position: absolute !important;
+    top: 0.8vh !important;
+    left: 1vw !important;
+    background: #262c36 !important;
+    color: #8892b0 !important;
+    font-size: 1.8vh !important;
+    font-weight: 800 !important;
+    width: 2.8vh !important;
+    height: 2.8vh !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-family: monospace !important;
+    border: 1px solid #363e4d !important;
+}
+
+body.robot-screen .btn-main {
+    font-size: 2.8vh !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.5px !important;
+    color: #ffffff !important;
+    text-transform: uppercase !important;
+    margin-top: 0.4vh !important;
+}
+
+body.robot-screen .btn-sub {
+    font-size: 1.8vh !important;
+    color: #8892b0 !important;
+    margin-top: 0.2vh !important;
+}
+
+/* Couleurs spécifiques par bouton */
+body.robot-screen .btn-hint-team .btn-main {
+    color: #42a5f5 !important;
+}
+
+body.robot-screen .btn-hint-strat .btn-main {
+    color: #ffb74d !important;
+}
+
+body.robot-screen .btn-hint-power .btn-main {
+    color: #ef5350 !important;
+}
+
+body.robot-screen .btn-hint-init .btn-main {
+    color: #66bb6a !important;
+}
+
+/* Flèche indicatrice vers le bas (vers le bouton physique en-dessous de l'écran) */
+body.robot-screen .robot-btn-hint::after {
+    content: '▼';
+    position: absolute;
+    bottom: 0.3vh;
+    font-size: 1.2vh;
+    color: #475569;
 }

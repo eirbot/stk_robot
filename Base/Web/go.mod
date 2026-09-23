@@ -1,6 +1,6 @@
 module base_stk
 
-go 1.26.3
+go 1.22
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.13

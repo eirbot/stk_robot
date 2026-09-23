@@ -29,8 +29,30 @@ body {
 
 .sys-info {
     text-align: right;
-    font-size: 0.8em;
-    opacity: 0.8;
+    font-size: 0.85em;
+    opacity: 0.9;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sys-info-item {
+    display: inline-block;
+}
+
+.sys-info-volt {
+    min-width: 5.5ch;
+    text-align: right;
+    display: inline-block;
+    font-variant-numeric: tabular-nums;
+}
+
+.sys-info-sep {
+    opacity: 0.4;
+    user-select: none;
 }
 
 /* BOUTONS NAVIGATION & SYSTEME */

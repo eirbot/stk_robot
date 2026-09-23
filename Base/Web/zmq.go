@@ -32,6 +32,13 @@ func pipelineReceptionRobot() {
 				var tel RobotTelemetry
 				if err := json.Unmarshal(msgObj.Data, &tel); err == nil {
 					globalState.Lock()
+					if tel.RaspIP == "" || tel.RaspIP == "Err" || tel.RaspIP == "??" {
+						if globalState.Telemetry.RaspIP != "" {
+							tel.RaspIP = globalState.Telemetry.RaspIP
+						} else {
+							tel.RaspIP = getRaspIPFromDHCP()
+						}
+					}
 					globalState.Telemetry = tel
 
 					// Si la tirette est tirée physiquement sur le robot, on déclenche le départ côté PC
@@ -47,6 +54,8 @@ func pipelineReceptionRobot() {
 					globalState.Unlock()
 
 					globalHub.Broadcast(packet)
+				} else {
+					fmt.Printf("[ZMQ] Erreur décodage télémétrie: %v\n", err)
 				}
 			} else if msgObj.Type == "state_update" {
 				var update StateUpdate

@@ -32,7 +32,7 @@ class SocketWrapper {
                     }
                     // Dispatch virtual 'sys_info'
                     if (data.telemetry && this.listeners['sys_info']) {
-                        const volt = data.telemetry.voltage ? data.telemetry.voltage.toFixed(1) + "V" : "--V";
+                        const volt = formatVoltage(data.telemetry.voltage);
                         const volt_float = data.telemetry.voltage || 0.0;
                         let displayIp = window.serverIP || data.server_ip;
                         if (!displayIp || displayIp === 'localhost' || displayIp === '127.0.0.1') {
@@ -44,7 +44,7 @@ class SocketWrapper {
                             volt: volt,
                             volt_float: volt_float,
                             ip: displayIp || window.location.hostname,
-                            rasp_ip: data.telemetry.rasp_ip || "??",
+                            rasp_ip: data.telemetry.rasp_ip || window.raspIP || "??",
                             cpu: "N/A"
                         };
                         this.listeners['sys_info'].forEach(callback => callback(sysInfoData));
@@ -129,6 +129,11 @@ window.socket.on('state_update', (state) => {
 
     if (state.match_finished) document.body.classList.add('breathing-' + state.team);
     else document.body.classList.remove('breathing-BLEUE', 'breathing-JAUNE');
+
+    if (state && state.telemetry && state.telemetry.rasp_ip && state.telemetry.rasp_ip !== '??' && state.telemetry.rasp_ip !== 'Err') {
+        window.raspIP = state.telemetry.rasp_ip;
+        updateSysInfoDisplay();
+    }
 });
 
 // --- DÉTECTION DU MODE ÉCRAN ROBOT & RÉCUPÉRATION IP RÉSEAU SERVEUR ---
@@ -145,33 +150,51 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(res => {
             if (res && res.ip && res.ip !== '127.0.0.1') {
                 window.serverIP = res.ip;
-                const sysInfoEl = document.getElementById('sys-info');
-                if (sysInfoEl && (sysInfoEl.innerText === '...' || sysInfoEl.innerText.includes('127.0.0.1') || sysInfoEl.innerText.includes('localhost'))) {
-                    const parts = sysInfoEl.innerText.split('|');
-                    const voltPart = parts.length > 1 ? parts[1].trim() : '--.-V';
-                    sysInfoEl.innerText = `${res.ip} | ${voltPart}`;
-                }
             }
+            if (res && res.rasp_ip && res.rasp_ip !== 'Err' && res.rasp_ip !== '' && res.rasp_ip !== '??') {
+                window.raspIP = res.rasp_ip;
+            }
+            updateSysInfoDisplay();
         })
         .catch(() => {});
 });
 
-// --- MISE À JOUR COMMUNE DES INFOS SYSTEME (IP & Batterie) SUR PC ---
-window.socket.on('sys_info', (data) => {
-    const sysInfoEl = document.getElementById('sys-info');
-    if (sysInfoEl) {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('mode') !== 'robot') {
-            const volt = data.volt || '--.-V';
-            let ip = window.serverIP || data.server_ip || data.ip;
-            if (!ip || ip === 'localhost' || ip === '127.0.0.1') {
-                if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-                    ip = window.location.hostname;
-                } else if (window.serverIP) {
-                    ip = window.serverIP;
-                }
-            }
-            sysInfoEl.innerText = `Base: ${ip || '?.?.?.?'} | Robot: ${data.rasp_ip || '??'} | ${volt}`;
+function formatVoltage(val) {
+    if (val === null || val === undefined || val === '') return '--.-V';
+    if (typeof val === 'number') {
+        return val.toFixed(1) + 'V';
+    }
+    if (typeof val === 'string') {
+        const m = val.match(/([0-9]+(?:\.[0-9]+)?)/);
+        if (m) {
+            const num = parseFloat(m[1]);
+            if (!isNaN(num)) return num.toFixed(1) + 'V';
         }
     }
+    return '--.-V';
+}
+
+function updateSysInfoDisplay(rawVolt) {
+    const sysInfoEl = document.getElementById('sys-info');
+    if (!sysInfoEl) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'robot') return;
+
+    const baseIp = window.serverIP || '?.?.?.?';
+    const raspIp = window.raspIP || '??';
+    if (rawVolt) {
+        const fv = formatVoltage(rawVolt);
+        if (fv !== '--.-V') window.lastVolt = fv;
+    }
+    const v = window.lastVolt || '--.-V';
+    sysInfoEl.innerHTML = `<span class="sys-info-item">Base: ${baseIp}</span><span class="sys-info-sep">|</span><span class="sys-info-item">Robot: ${raspIp}</span><span class="sys-info-sep">|</span><span class="sys-info-item sys-info-volt">${v}</span>`;
+}
+
+// --- MISE À JOUR COMMUNE DES INFOS SYSTEME (IP & Batterie) SUR PC ---
+window.socket.on('sys_info', (data) => {
+    const incoming = data.rasp_ip || data.ip;
+    if (incoming && incoming !== '??' && incoming !== 'Err' && incoming !== '127.0.0.1' && incoming !== window.serverIP) {
+        window.raspIP = incoming;
+    }
+    updateSysInfoDisplay(data.volt || data.volt_float);
 });

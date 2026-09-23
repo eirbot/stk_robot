@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 )
 
@@ -15,6 +16,37 @@ type RobotTelemetry struct {
 	Tirette string  `json:"tirette"` // "WAIT_INSERT", "TRIGGERED"
 	IMUYaw  float64 `json:"imu_yaw"`
 	RaspIP  string  `json:"rasp_ip"`
+}
+
+func (t *RobotTelemetry) UnmarshalJSON(data []byte) error {
+	type Alias RobotTelemetry
+	aux := struct {
+		Current interface{} `json:"current"`
+		Voltage interface{} `json:"voltage"`
+		*Alias
+	}{
+		Alias: (*Alias)(t),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	switch v := aux.Current.(type) {
+	case float64:
+		t.Current = v
+	case string:
+		var f float64
+		fmt.Sscanf(v, "%f", &f)
+		t.Current = f
+	}
+	switch v := aux.Voltage.(type) {
+	case float64:
+		t.Voltage = v
+	case string:
+		var f float64
+		fmt.Sscanf(v, "%f", &f)
+		t.Voltage = f
+	}
+	return nil
 }
 
 // État Global Unifié (fusion de l'IHM et du matériel)

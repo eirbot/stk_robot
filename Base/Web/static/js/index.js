@@ -1,22 +1,42 @@
-// index.js corrigé — Mise à jour de l'affichage en fonction des données de `state`
+// index.js — Mise à jour dynamique de l'affichage (PC et Écran Robot 7")
 
-// Lorsque le serveur envoie un état, on met à jour l'interface si la page possède un score
+// Mise à jour de l'affichage de la position du robot (X, Y, Theta)
+function updatePositionDisplay(pos) {
+    if (!pos) return;
+    const posXEl = document.getElementById('pos-x');
+    const posYEl = document.getElementById('pos-y');
+    const posThetaEl = document.getElementById('pos-theta');
+    if (posXEl && pos.x !== undefined && pos.x !== null) {
+        posXEl.innerText = Math.round(Number(pos.x));
+    }
+    if (posYEl && pos.y !== undefined && pos.y !== null) {
+        posYEl.innerText = Math.round(Number(pos.y));
+    }
+    if (posThetaEl && pos.theta !== undefined && pos.theta !== null) {
+        posThetaEl.innerText = Number(pos.theta).toFixed(1);
+    }
+}
+
+// Écoute directe des paquets robot_position
+window.socket.on('robot_position', (pos) => {
+    updatePositionDisplay(pos);
+});
+
+// Écoute de l'état global State
 window.socket.on('state_update', (state) => {
-    // Sécurité : si on est sur une autre page, on ne fait rien
-    if (!document.getElementById('score')) return;
+    if (!document.getElementById('team-display')) return;
 
     // --- 1. ÉQUIPE ---
     document.getElementById('team-display').innerText = 'ÉQUIPE ' + state.team;
 
-    // --- 2. SCORE ---
-    // On accepte score_current ou score selon ce qui existe dans le state
-    const scoreVal = state.score_current ?? state.score ?? 0;
-    document.getElementById('score').innerText = scoreVal;
-
-    // --- 3. TIMER ---
-    // On préfère la version string formatée par le Python, sinon on le fait nous-même
+    // --- 2. TIMER ---
     const timer = state.timer_str ?? (typeof state.timer !== 'undefined' ? Number(state.timer).toFixed(1) : '0.0');
     document.getElementById('timer').innerText = timer;
+
+    // --- 3. POSITION DU ROBOT ---
+    if (state.telemetry) {
+        updatePositionDisplay(state.telemetry);
+    }
 
     // --- 4. STRATÉGIE ---
     const stratEl = document.getElementById('strat-display');
@@ -27,17 +47,14 @@ window.socket.on('state_update', (state) => {
         const mode = state.strat_mode ?? config.strat_mode ?? 'DYNAMIC';
 
         if (mode === 'STATIC') {
-            // Mode interactif : on affiche le sélecteur
             stratEl.style.display = 'none';
             stratSel.style.display = 'inline-block';
             stratSel.style.color = "#FF9800";
 
-            // On sélectionne la bonne valeur si elle existe
             const current = state.strat_id ?? config.static_strat;
             if (current) stratSel.value = current;
 
         } else {
-            // Mode auto : on affiche juste le texte
             stratEl.style.display = 'inline-block';
             stratSel.style.display = 'none';
 
@@ -56,7 +73,6 @@ window.socket.on('state_update', (state) => {
     const tirDiv = document.getElementById('tirette-status');
     if (tirDiv) {
         const tir = state.tirette ?? false;
-        // Gestion souple : supporte les strings ("ARMED") ou les booléens (True/False)
         if (tir === 'ARMED' || tir === true) {
             tirDiv.innerText = 'TIRETTE: ARMÉE (PRÊT)';
             tirDiv.className = 'tirette-box status-armed';
@@ -93,17 +109,7 @@ window.socket.on('state_update', (state) => {
         }
     }
 
-    // --- 8. Score Manuel ---
-    // On cache les flèches pendant le match pour éviter les fausses manips
-    const arrows = document.querySelectorAll('.btn-arrow');
-    const manualEnabled = state.manual_score_enabled ?? true;
-    const runningMatch = state.match_running ?? (state.fsm_state === 'MATCH');
-
-    arrows.forEach(e => {
-        e.style.visibility = (manualEnabled && !runningMatch) ? 'visible' : 'hidden';
-    });
-
-    // --- 9. Infos Système & Stratégie (Haut de l'écran) ---
+    // --- 8. Infos Système & Stratégie (Haut de l'écran en mode Robot) ---
     const sysInfoEl = document.getElementById('sys-info');
     if (sysInfoEl) {
         const urlParams = new URLSearchParams(window.location.search);
@@ -112,24 +118,18 @@ window.socket.on('state_update', (state) => {
             const stratName = state.strat_id || config.static_strat || 'Aucune';
             let voltStr = '--.-V';
             if (state.telemetry && typeof state.telemetry.voltage === 'number') {
-                voltStr = state.telemetry.voltage.toFixed(1) + 'V';
+                voltStr = typeof formatVoltage === 'function' ? formatVoltage(state.telemetry.voltage) : state.telemetry.voltage.toFixed(1) + 'V';
+            } else if (window.lastVolt) {
+                voltStr = window.lastVolt;
             }
-            sysInfoEl.innerText = `${stratName} | ${voltStr}`;
+            const rIp = (state.telemetry && state.telemetry.rasp_ip) || window.raspIP || '';
+            const ipPart = rIp ? `<span class="sys-info-sep">|</span><span class="sys-info-item">${rIp}</span>` : '';
+            sysInfoEl.innerHTML = `<span class="sys-info-item">${stratName}</span>${ipPart}<span class="sys-info-sep">|</span><span class="sys-info-item sys-info-volt">${voltStr}</span>`;
         }
     }
 });
 
-// Fonction indispensable pour les boutons de score
-function adjustScore(delta) {
-    fetch('/api/score_edit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ delta: delta })
-    });
-}
-
 // Initialisation : Chargement des stratégies (Global)
-// Initial Load
 loadBlocklyStrats('strat-select');
 
 // Auto-Refresh Strategy List every 5 seconds (Sync Robot/PC)
@@ -138,7 +138,6 @@ setInterval(() => loadBlocklyStrats('strat-select'), 5000);
 // Changement de stratégie via le sélecteur (Global)
 async function updateStrat(event_or_val) {
     let val = event_or_val;
-    // Handle both direct call (string) and event handler (Event)
     if (event_or_val && event_or_val.target) {
         val = event_or_val.target.value;
     } else if (!val) {
@@ -153,4 +152,18 @@ async function updateStrat(event_or_val) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: 'static_strat', val: val })
     });
+}
+
+// Fonction pour faire défiler les stratégies (Bouton 2 sur l'écran robot ou tactile)
+function cycleStrat() {
+    const sel = document.getElementById('strat-select');
+    if (!sel || sel.options.length <= 1) return;
+    let nextIdx = sel.selectedIndex + 1;
+    if (nextIdx >= sel.options.length) {
+        nextIdx = sel.options[0].disabled ? 1 : 0;
+    }
+    if (sel.options[nextIdx]) {
+        sel.selectedIndex = nextIdx;
+        updateStrat(sel.options[nextIdx].value);
+    }
 }

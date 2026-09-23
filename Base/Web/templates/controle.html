@@ -21,6 +21,10 @@
             <a href="/" class="btn-back">← Accueil</a>
             <h1 class="page-title">🕹️ PILOTAGE JOYSTICK</h1>
             <span id="conn-badge" class="badge-conn disconnected">HORS LIGNE</span>
+            <div id="gamepad-badge" class="badge-gamepad disconnected" onclick="toggleGamepadModal()" title="Cliquer pour afficher l'aide manette">
+                <span class="gp-icon">🎮</span>
+                <span id="gamepad-status-text">AUCUNE MANETTE</span>
+            </div>
         </div>
         <div class="sys-info" id="sys-info">...</div>
     </header>
@@ -29,17 +33,42 @@
         <!-- Colonne Gauche : Joystick Virtuel & Arrêt d'Urgence -->
         <section class="joystick-section card">
             <div class="section-header">
-                <h2>CONTRÔLE TACTILE & SOURIS</h2>
-                <div class="help-hint">Touchez et glissez le stick, ou utilisez ZQSD / Flèches</div>
+                <h2>CONTRÔLE TACTILE, SOURIS & MANETTE</h2>
+                <div class="help-hint">Glissez le stick, utilisez ZQSD / WASD / Flèches, ou branchez une manette</div>
+            </div>
+
+            <!-- Sélecteur de Cible : Base Robot ou Actionneurs 1 à 4 -->
+            <div class="control-target-selector">
+                <div class="target-selector-header">
+                    <span class="target-label">CIBLE DU JOYSTICK :</span>
+                    <span class="target-hints">Touches [0-4] | Manette [L1/R1]</span>
+                </div>
+                <div class="target-buttons">
+                    <button id="target-btn-robot" class="target-btn active" onclick="setControlTarget('robot')">
+                        <span class="tb-icon">🤖</span> Base Robot
+                    </button>
+                    <button id="target-btn-arm-1" class="target-btn" onclick="setControlTarget('arm_1')">
+                        <span class="tb-num">1</span> Bras #1
+                    </button>
+                    <button id="target-btn-arm-2" class="target-btn" onclick="setControlTarget('arm_2')">
+                        <span class="tb-num">2</span> Bras #2
+                    </button>
+                    <button id="target-btn-arm-3" class="target-btn" onclick="setControlTarget('arm_3')">
+                        <span class="tb-num">3</span> Bras #3
+                    </button>
+                    <button id="target-btn-arm-4" class="target-btn" onclick="setControlTarget('arm_4')">
+                        <span class="tb-num">4</span> Bras #4
+                    </button>
+                </div>
             </div>
 
             <div class="joystick-wrapper">
                 <div id="joystick-zone" class="joystick-base">
-                    <!-- Boussole décorative -->
-                    <div class="compass-mark mark-n">AVANT</div>
-                    <div class="compass-mark mark-s">ARRIÈRE</div>
-                    <div class="compass-mark mark-w">GAUCHE</div>
-                    <div class="compass-mark mark-e">DROITE</div>
+                    <!-- Boussole décorative et repères de pilotage -->
+                    <div id="mark-n" class="compass-mark mark-n">AVANT</div>
+                    <div id="mark-s" class="compass-mark mark-s">ARRIÈRE</div>
+                    <div id="mark-w" class="compass-mark mark-w">GAUCHE</div>
+                    <div id="mark-e" class="compass-mark mark-e">DROITE</div>
                     <div class="joystick-crosshair-h"></div>
                     <div class="joystick-crosshair-v"></div>
                     <div class="joystick-inner-ring"></div>
@@ -58,19 +87,22 @@
                 <button id="btn-zero-speed" class="btn-neutral" onclick="sendZeroSpeed()">
                     🔄 NEUTRE (0,0)
                 </button>
+                <button id="btn-gamepad-help" class="btn-gamepad-toggle" onclick="toggleGamepadModal()">
+                    🎮 AIDE MANETTE
+                </button>
             </div>
 
             <!-- Clavier interactif visuel -->
             <div class="keyboard-preview">
                 <div class="key-row">
-                    <div id="key-up" class="virtual-key"><span class="key-main">Z</span><span class="key-sub">▲</span></div>
+                    <div id="key-up" class="virtual-key"><span class="key-main">Z/W</span><span class="key-sub">▲</span></div>
                 </div>
                 <div class="key-row">
-                    <div id="key-left" class="virtual-key"><span class="key-main">Q</span><span class="key-sub">◀</span></div>
+                    <div id="key-left" class="virtual-key"><span class="key-main">Q/A</span><span class="key-sub">◀</span></div>
                     <div id="key-down" class="virtual-key"><span class="key-main">S</span><span class="key-sub">▼</span></div>
                     <div id="key-right" class="virtual-key"><span class="key-main">D</span><span class="key-sub">▶</span></div>
                 </div>
-                <div class="key-hint">Espace : Arrêt immédiat</div>
+                <div class="key-hint">Espace : Arrêt | D-pad / Boutons manette : Actionneurs</div>
             </div>
         </section>
 
@@ -173,7 +205,221 @@
                 </div>
             </section>
         </div>
+
+        <!-- Section Pleine Largeur : Contrôle des Actionneurs -->
+        <section class="card actuators-section">
+            <div class="actuators-header">
+                <h2>🦾 CONTRÔLE DES ACTIONNEURS & BRAS</h2>
+                <div id="actuator-feedback" class="actuator-feedback">Prêt</div>
+            </div>
+
+            <!-- Presets Globaux Rapides -->
+            <div class="actuator-presets-bar">
+                <button class="btn-actuator-preset primary" onclick="sendActuatorCmd('pose_match')">
+                    🏁 Pose Match
+                </button>
+                <button class="btn-actuator-preset" onclick="sendActuatorCmd('pose_camera')">
+                    📸 Pose Caméra
+                </button>
+                <button class="btn-actuator-preset" onclick="sendActuatorCmd('pose_deploy')">
+                    📦 Déployer
+                </button>
+                <button class="btn-actuator-preset" onclick="sendActuatorCmd('pose_grab')">
+                    📥 Prendre (Grab All)
+                </button>
+                <button class="btn-actuator-preset" onclick="sendActuatorCmd('pose_poser')">
+                    📤 Poser (Release All)
+                </button>
+                <button class="btn-actuator-preset" onclick="sendActuatorCmd('pose_ranger')">
+                    🔒 Ranger
+                </button>
+                <button class="btn-actuator-preset warning" onclick="sendActuatorCmd('init_robot')">
+                    🔄 Homing / Init (I)
+                </button>
+            </div>
+
+            <!-- Grille des 4 Actionneurs Individuels -->
+            <div class="actuators-grid">
+                <!-- Actionneur 1 -->
+                <div class="actuator-card" id="act-card-1">
+                    <div class="act-card-header">
+                        <span class="act-title">BRASH #1</span>
+                        <span class="act-badge">Avant Gauche</span>
+                    </div>
+                    <div class="act-control-group">
+                        <label>Ascenseur : <span id="label-height-1" class="val-badge">0 mm</span></label>
+                        <div class="height-slider-row">
+                            <input type="range" id="slider-height-1" min="0" max="170" step="5" value="0"
+                                oninput="onHeightSliderChange(1, this.value)">
+                        </div>
+                        <div class="quick-height-buttons">
+                            <button onclick="setActuatorHeight(1, 0)">0</button>
+                            <button onclick="setActuatorHeight(1, 50)">50</button>
+                            <button onclick="setActuatorHeight(1, 100)">100</button>
+                            <button onclick="setActuatorHeight(1, 170)">170</button>
+                        </div>
+                    </div>
+                    <div class="act-buttons-row">
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('grab', { id: 1 })">🤏 Serrer</button>
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('release', { id: 1 })">✋ Ouvrir</button>
+                    </div>
+                    <div class="act-buttons-row">
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 1, sens: 1 })">🔄 Pivot 1</button>
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 1, sens: 0 })">↩️ Pivot 0</button>
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('tourner', { id: 1 })">🔁 9G</button>
+                    </div>
+                </div>
+
+                <!-- Actionneur 2 -->
+                <div class="actuator-card" id="act-card-2">
+                    <div class="act-card-header">
+                        <span class="act-title">BRASH #2</span>
+                        <span class="act-badge">Arrière Gauche</span>
+                    </div>
+                    <div class="act-control-group">
+                        <label>Ascenseur : <span id="label-height-2" class="val-badge">0 mm</span></label>
+                        <div class="height-slider-row">
+                            <input type="range" id="slider-height-2" min="0" max="170" step="5" value="0"
+                                oninput="onHeightSliderChange(2, this.value)">
+                        </div>
+                        <div class="quick-height-buttons">
+                            <button onclick="setActuatorHeight(2, 0)">0</button>
+                            <button onclick="setActuatorHeight(2, 50)">50</button>
+                            <button onclick="setActuatorHeight(2, 100)">100</button>
+                            <button onclick="setActuatorHeight(2, 170)">170</button>
+                        </div>
+                    </div>
+                    <div class="act-buttons-row">
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('grab', { id: 2 })">🤏 Serrer</button>
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('release', { id: 2 })">✋ Ouvrir</button>
+                    </div>
+                    <div class="act-buttons-row">
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 2, sens: 1 })">🔄 Pivot 1</button>
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 2, sens: 0 })">↩️ Pivot 0</button>
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('tourner', { id: 2 })">🔁 9G</button>
+                    </div>
+                </div>
+
+                <!-- Actionneur 3 -->
+                <div class="actuator-card" id="act-card-3">
+                    <div class="act-card-header">
+                        <span class="act-title">BRASH #3</span>
+                        <span class="act-badge">Arrière Droit</span>
+                    </div>
+                    <div class="act-control-group">
+                        <label>Ascenseur : <span id="label-height-3" class="val-badge">0 mm</span></label>
+                        <div class="height-slider-row">
+                            <input type="range" id="slider-height-3" min="0" max="170" step="5" value="0"
+                                oninput="onHeightSliderChange(3, this.value)">
+                        </div>
+                        <div class="quick-height-buttons">
+                            <button onclick="setActuatorHeight(3, 0)">0</button>
+                            <button onclick="setActuatorHeight(3, 50)">50</button>
+                            <button onclick="setActuatorHeight(3, 100)">100</button>
+                            <button onclick="setActuatorHeight(3, 170)">170</button>
+                        </div>
+                    </div>
+                    <div class="act-buttons-row">
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('grab', { id: 3 })">🤏 Serrer</button>
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('release', { id: 3 })">✋ Ouvrir</button>
+                    </div>
+                    <div class="act-buttons-row">
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 3, sens: 1 })">🔄 Pivot 1</button>
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 3, sens: 0 })">↩️ Pivot 0</button>
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('tourner', { id: 3 })">🔁 9G</button>
+                    </div>
+                </div>
+
+                <!-- Actionneur 4 -->
+                <div class="actuator-card" id="act-card-4">
+                    <div class="act-card-header">
+                        <span class="act-title">BRASH #4</span>
+                        <span class="act-badge">Avant Droit</span>
+                    </div>
+                    <div class="act-control-group">
+                        <label>Ascenseur : <span id="label-height-4" class="val-badge">0 mm</span></label>
+                        <div class="height-slider-row">
+                            <input type="range" id="slider-height-4" min="0" max="170" step="5" value="0"
+                                oninput="onHeightSliderChange(4, this.value)">
+                        </div>
+                        <div class="quick-height-buttons">
+                            <button onclick="setActuatorHeight(4, 0)">0</button>
+                            <button onclick="setActuatorHeight(4, 50)">50</button>
+                            <button onclick="setActuatorHeight(4, 100)">100</button>
+                            <button onclick="setActuatorHeight(4, 170)">170</button>
+                        </div>
+                    </div>
+                    <div class="act-buttons-row">
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('grab', { id: 4 })">🤏 Serrer</button>
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('release', { id: 4 })">✋ Ouvrir</button>
+                    </div>
+                    <div class="act-buttons-row">
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 4, sens: 1 })">🔄 Pivot 1</button>
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 4, sens: 0 })">↩️ Pivot 0</button>
+                        <button class="btn-act-sub" onclick="sendActuatorCmd('tourner', { id: 4 })">🔁 9G</button>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
+
+    <!-- Modal d'Aide & Configuration Manette -->
+    <div id="gamepad-modal" class="modal-overlay hidden" onclick="onModalOverlayClick(event)">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>🎮 CONTRÔLE À LA MANETTE (GAMEPAD)</h3>
+                <button class="btn-modal-close" onclick="toggleGamepadModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="gamepad-device-info">
+                    <span class="info-label">Manette active :</span>
+                    <span id="modal-gamepad-name" class="info-val">Aucune manette détectée</span>
+                </div>
+
+                <div class="gamepad-mapping-grid">
+                    <div class="mapping-card">
+                        <h4>🕹️ Déplacement (Conduite)</h4>
+                        <ul>
+                            <li><b>Stick Gauche Y :</b> Avancer / Reculer</li>
+                            <li><b>Stick Droit X (ou Gauche X) :</b> Tourner Gauche / Droite</li>
+                            <li><b>Bouton B / Rond / Select :</b> 🛑 Arrêt d'urgence</li>
+                        </ul>
+                    </div>
+
+                    <div class="mapping-card">
+                        <h4>🦾 Actionneurs (Presets)</h4>
+                        <ul>
+                            <li><b>D-Pad Haut :</b> 📦 Déployer</li>
+                            <li><b>D-Pad Bas :</b> 🔒 Ranger</li>
+                            <li><b>D-Pad Gauche :</b> 📥 Prendre (Grab All)</li>
+                            <li><b>D-Pad Droite :</b> 📤 Poser (Release All)</li>
+                            <li><b>Bouton Y / Triangle :</b> 📸 Pose Caméra</li>
+                            <li><b>Bouton A / Croix :</b> 🏁 Pose Match</li>
+                            <li><b>Start / Options :</b> 🔄 Homing / Init</li>
+                        </ul>
+                    </div>
+
+                    <div class="mapping-card">
+                        <h4>🤏 Pinces</h4>
+                        <ul>
+                            <li><b>Gâchette Droite (RT / R2) :</b> Tout Serrer</li>
+                            <li><b>Gâchette Gauche (LT / L2) :</b> Tout Ouvrir</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="gamepad-visualizer">
+                    <div class="gp-vis-axis">
+                        <span>Stick G (Vx): <b id="gp-vis-vx">0</b></span>
+                        <span>Stick D (Vθ): <b id="gp-vis-vtheta">0</b></span>
+                    </div>
+                    <div id="gp-buttons-indicator" class="gp-buttons-indicator">
+                        <!-- Badges des boutons allumés en direct -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

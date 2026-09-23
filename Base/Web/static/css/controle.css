@@ -142,6 +142,109 @@ body {
     color: var(--text-muted);
 }
 
+/* =======================================================
+   SÉLECTEUR DE CIBLE (ROBOT VS BRAS 1-4)
+   ======================================================= */
+.control-target-selector {
+    background: rgba(13, 17, 23, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.target-selector-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.target-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: #c9d1d9;
+}
+
+.target-hints {
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    color: var(--primary-cyan);
+    background: rgba(0, 210, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 210, 255, 0.25);
+}
+
+.target-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.target-btn {
+    flex: 1 1 auto;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #c9d1d9;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.target-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.target-btn.active {
+    background: linear-gradient(135deg, rgba(0, 210, 255, 0.25), rgba(0, 123, 255, 0.35));
+    border-color: var(--primary-cyan);
+    color: #fff;
+    box-shadow: 0 0 12px rgba(0, 210, 255, 0.35);
+}
+
+.tb-num {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.target-btn.active .tb-num {
+    background: var(--primary-cyan);
+    color: #000;
+    font-weight: 800;
+}
+
+/* Carte Actionneur Ciblée */
+.actuator-card.targeted {
+    border-color: var(--primary-cyan);
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.35), inset 0 0 15px rgba(0, 210, 255, 0.05);
+    background: rgba(16, 26, 38, 0.85);
+    transform: translateY(-2px);
+}
+
+.actuator-card.targeted .act-title {
+    color: #fff;
+    text-shadow: 0 0 8px var(--primary-cyan);
+}
+
 .joystick-wrapper {
     position: relative;
     width: 100%;
@@ -660,4 +763,465 @@ input[type="range"] {
         margin-left: -40px;
         margin-top: -40px;
     }
+}
+
+/* =======================================================
+   BADGE & BOUTONS MANETTE
+   ======================================================= */
+.badge-gamepad {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+}
+
+.badge-gamepad.connected {
+    background: rgba(0, 210, 255, 0.15);
+    color: var(--primary-cyan);
+    border-color: rgba(0, 210, 255, 0.4);
+    box-shadow: 0 0 12px rgba(0, 210, 255, 0.25);
+    animation: gp-glow 2s infinite alternate;
+}
+
+@keyframes gp-glow {
+    0% { box-shadow: 0 0 6px rgba(0, 210, 255, 0.2); }
+    100% { box-shadow: 0 0 15px rgba(0, 210, 255, 0.4); }
+}
+
+.badge-gamepad.disconnected {
+    background: rgba(139, 148, 158, 0.12);
+    color: var(--text-muted);
+    border-color: rgba(139, 148, 158, 0.25);
+}
+
+.badge-gamepad:hover {
+    transform: translateY(-1px);
+    border-color: var(--primary-cyan);
+}
+
+.btn-gamepad-toggle {
+    background: rgba(0, 210, 255, 0.1);
+    color: var(--primary-cyan);
+    border: 1px solid rgba(0, 210, 255, 0.3);
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-gamepad-toggle:hover {
+    background: rgba(0, 210, 255, 0.2);
+    box-shadow: 0 0 12px rgba(0, 210, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+/* =======================================================
+   PANNEAU ACTIONNEURS & PRESETS
+   ======================================================= */
+.actuators-section {
+    grid-column: 1 / -1;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    background: rgba(22, 27, 34, 0.9);
+}
+
+.actuators-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.actuator-feedback {
+    font-size: 0.85rem;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s ease;
+}
+
+.actuator-feedback.active {
+    color: var(--primary-cyan);
+    background: rgba(0, 210, 255, 0.15);
+    border-color: rgba(0, 210, 255, 0.4);
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+}
+
+.actuator-presets-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: rgba(13, 17, 23, 0.6);
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btn-actuator-preset {
+    flex: 1 1 auto;
+    min-width: 130px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #e6edf3;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-actuator-preset:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-actuator-preset:active {
+    transform: translateY(0);
+}
+
+.btn-actuator-preset.primary {
+    background: linear-gradient(135deg, rgba(0, 210, 255, 0.2), rgba(0, 123, 255, 0.25));
+    border-color: rgba(0, 210, 255, 0.4);
+    color: #fff;
+}
+
+.btn-actuator-preset.primary:hover {
+    background: linear-gradient(135deg, rgba(0, 210, 255, 0.35), rgba(0, 123, 255, 0.4));
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
+}
+
+.btn-actuator-preset.warning {
+    background: rgba(255, 183, 3, 0.12);
+    border-color: rgba(255, 183, 3, 0.35);
+    color: var(--accent-yellow);
+}
+
+.btn-actuator-preset.warning:hover {
+    background: rgba(255, 183, 3, 0.25);
+    box-shadow: 0 0 15px rgba(255, 183, 3, 0.3);
+}
+
+/* Grille des Actionneurs Individuels */
+.actuators-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.actuator-card {
+    background: rgba(13, 17, 23, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.25s ease;
+}
+
+.actuator-card:hover {
+    border-color: rgba(0, 210, 255, 0.3);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.act-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 8px;
+}
+
+.act-title {
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--primary-cyan);
+    letter-spacing: 0.5px;
+}
+
+.act-badge {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+
+.act-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.act-control-group label {
+    font-size: 0.8rem;
+    color: #c9d1d9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.val-badge {
+    font-family: var(--font-mono);
+    color: var(--primary-cyan);
+    font-weight: 700;
+}
+
+.height-slider-row input[type="range"] {
+    width: 100%;
+    margin: 4px 0;
+}
+
+.quick-height-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+
+.quick-height-buttons button {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #c9d1d9;
+    padding: 4px 0;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    transition: all 0.2s ease;
+}
+
+.quick-height-buttons button:hover {
+    background: rgba(0, 210, 255, 0.15);
+    color: var(--primary-cyan);
+    border-color: rgba(0, 210, 255, 0.3);
+}
+
+.act-buttons-row {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-act-sub {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e6edf3;
+    padding: 6px 8px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.btn-act-sub:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.btn-act-sub:active {
+    transform: translateY(0);
+}
+
+/* =======================================================
+   MODAL AIDE MANETTE
+   ======================================================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.modal-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.modal-card {
+    background: #161b22;
+    border: 1px solid rgba(0, 210, 255, 0.3);
+    border-radius: 16px;
+    max-width: 650px;
+    width: 100%;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    background: rgba(13, 17, 23, 0.9);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--primary-cyan);
+}
+
+.btn-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-modal-close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.gamepad-device-info {
+    background: rgba(13, 17, 23, 0.7);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.info-label {
+    color: var(--text-muted);
+}
+
+.info-val {
+    font-weight: 700;
+    color: var(--primary-cyan);
+    font-family: var(--font-mono);
+}
+
+.gamepad-mapping-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+}
+
+.mapping-card {
+    background: rgba(13, 17, 23, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.mapping-card h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.85rem;
+    color: #e6edf3;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 6px;
+}
+
+.mapping-card ul {
+    margin: 0;
+    padding-left: 16px;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: #c9d1d9;
+}
+
+.mapping-card b {
+    color: var(--primary-cyan);
+}
+
+.gamepad-visualizer {
+    background: rgba(13, 17, 23, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.gp-vis-axis {
+    display: flex;
+    justify-content: space-around;
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+}
+
+.gp-vis-axis b {
+    color: var(--primary-cyan);
+}
+
+.gp-buttons-indicator {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 24px;
+    align-items: center;
+}
+
+.gp-active-key {
+    background: var(--primary-cyan);
+    color: #000;
+    font-weight: 800;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    box-shadow: 0 0 6px rgba(0, 210, 255, 0.5);
 }

@@ -83,6 +83,14 @@ class ZmqClient(threading.Thread):
                     shared.state["tirette"] = "TRIGGERED"
                     shared.state["match_running"] = True
                     shared.state["start_time"] = time.time()
+                elif act == "init":
+                    print("[ZMQ CLIENT] Action INIT reçue (Pose match)")
+                    try:
+                        from strat.actions import actionneurs
+                        if actionneurs:
+                            threading.Thread(target=actionneurs.pose_match, daemon=True).start()
+                    except Exception as e:
+                        print(f"[ZMQ CLIENT] Erreur action init : {e}")
 
             elif cmd_type == "update_score":
                 score = payload.get("score_current", 0)
@@ -97,6 +105,65 @@ class ZmqClient(threading.Thread):
                         esp.set_speed(vx, vtheta)
                 except Exception as e:
                     print(f"[ZMQ CLIENT] Erreur cmd_vel : {e}")
+
+            elif cmd_type == "cmd_actuator":
+                try:
+                    from strat.actions import actionneurs
+                    if not actionneurs:
+                        print("[ZMQ CLIENT] ⚠️ Actionneurs non disponibles (mode simulation)")
+                    else:
+                        act_cmd = payload.get("cmd") if isinstance(payload, dict) else str(payload)
+                        print(f"[ZMQ CLIENT] 🦾 Ordre Actionneur : {act_cmd} ({payload})")
+                        
+                        # Presets globaux (lancés dans un thread dédié pour ne jamais bloquer la boucle ZMQ)
+                        if act_cmd == "pose_match":
+                            threading.Thread(target=actionneurs.pose_match, daemon=True).start()
+                        elif act_cmd == "pose_camera":
+                            threading.Thread(target=actionneurs.pose_camera, daemon=True).start()
+                        elif act_cmd == "pose_ranger":
+                            threading.Thread(target=actionneurs.pose_ranger, daemon=True).start()
+                        elif act_cmd == "pose_deploy":
+                            threading.Thread(target=actionneurs.pose_deploy, daemon=True).start()
+                        elif act_cmd == "pose_grab":
+                            threading.Thread(target=actionneurs.pose_grab, daemon=True).start()
+                        elif act_cmd == "pose_poser":
+                            threading.Thread(target=actionneurs.pose_poser, daemon=True).start()
+                        elif act_cmd == "init" or act_cmd == "init_robot":
+                            threading.Thread(target=actionneurs.init_robot, daemon=True).start()
+                        elif act_cmd == "pose_temperature":
+                            is_yellow = shared.state.get("team") == "JAUNE"
+                            threading.Thread(target=actionneurs.pose_temperature, args=(is_yellow,), daemon=True).start()
+                        
+                        # Contrôles unitaires
+                        elif act_cmd == "ascenseur":
+                            act_id = int(payload.get("id", 1))
+                            hauteur = int(payload.get("hauteur", payload.get("height", 0)))
+                            actionneurs.ascenseur(act_id, hauteur)
+                        elif act_cmd == "grab":
+                            act_id = int(payload.get("id", 1))
+                            actionneurs.grab(act_id)
+                        elif act_cmd == "release":
+                            act_id = int(payload.get("id", 1))
+                            actionneurs.release(act_id)
+                        elif act_cmd == "grab_all":
+                            for i in range(1, 5):
+                                actionneurs.grab(i)
+                        elif act_cmd == "release_all":
+                            for i in range(1, 5):
+                                actionneurs.release(i)
+                        elif act_cmd == "pivoter":
+                            act_id = int(payload.get("id", 1))
+                            sens = int(payload.get("sens", 0))
+                            actionneurs.pivoter(act_id, sens)
+                        elif act_cmd == "tourner":
+                            act_id = int(payload.get("id", 1))
+                            actionneurs.tourner(act_id)
+                        elif act_cmd == "raw":
+                            raw_cmd = str(payload.get("raw", ""))
+                            if raw_cmd:
+                                actionneurs.send(raw_cmd)
+                except Exception as e:
+                    print(f"[ZMQ CLIENT] Erreur cmd_actuator : {e}")
 
             elif cmd_type == "goto":
                 try:
@@ -174,7 +241,10 @@ class ZmqClient(threading.Thread):
                 try:
                     from utils.system_info import get_voltage_float, get_battery_current, get_ip
                     telemetry_data["voltage"] = get_voltage_float()
-                    telemetry_data["current"] = get_battery_current()
+                    try:
+                        telemetry_data["current"] = float(get_battery_current())
+                    except:
+                        telemetry_data["current"] = 0.0
                     telemetry_data["rasp_ip"] = get_ip()
                 except Exception as e:
                     telemetry_data["rasp_ip"] = "Err"

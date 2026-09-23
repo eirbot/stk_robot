@@ -17,33 +17,63 @@
     </div>
 
     <div class="dashboard">
-        <div id="team-display" class="team-box">...</div>
+        <div id="team-display" class="team-box" onclick="sendAction('team')">...</div>
 
-        <div id="tirette-status" class="tirette-box status-non-armed">TIRETTE: NON ARMÉE</div>
+        <!-- Informations d'état & stratégie (affichées sur PC, masquées sur l'écran robot) -->
+        <div class="dashboard-status-row pc-only">
+            <div id="tirette-status" class="tirette-box status-non-armed">TIRETTE: NON ARMÉE</div>
 
-        <div style="margin-top:15px; font-size:1.2em; color:#ccc;">
-            STRATÉGIE
-            <span id="strat-display" style="font-weight:bold; color:white; display:none;">#?</span>
-            <select id="strat-select" class="strat-select" onchange="updateStrat(this.value)"
-                style="display:none;"></select>
+            <div class="status-item strat-container">
+                <span class="status-label">STRATÉGIE:</span>
+                <span id="strat-display" style="font-weight:bold; color:white; display:none;">#?</span>
+                <select id="strat-select" class="strat-select" onchange="updateStrat(this.value)"
+                    style="display:none;"></select>
+            </div>
+
+            <div class="status-item fsm-container">
+                <span class="status-label">ÉTAT:</span>
+                <span id="fsm-display" class="badge">INIT</span>
+            </div>
         </div>
 
-        <div style="margin-top:10px; font-size:1.2em; color:#ccc;">
-            ÉTAT <span id="fsm-display" class="badge">INIT</span>
+        <!-- Position Odométrique X, Y, Theta du Robot (affichée sur l'écran Rasp et sur PC) -->
+        <div id="robot-pos-display" class="robot-pos-box">
+            <span class="pos-item"><span class="pos-label">X:</span> <span id="pos-x" class="pos-val">0</span><span class="pos-unit">mm</span></span>
+            <span class="pos-sep">|</span>
+            <span class="pos-item"><span class="pos-label">Y:</span> <span id="pos-y" class="pos-val">0</span><span class="pos-unit">mm</span></span>
+            <span class="pos-sep">|</span>
+            <span class="pos-item"><span class="pos-label">θ:</span> <span id="pos-theta" class="pos-val">0.0</span><span class="pos-unit">°</span></span>
         </div>
 
-        <div style="margin-top:10px; color:#aaa;">SCORE</div>
-
-        <div class="score-container">
-            <button class="btn-arrow" onclick="adjustScore(-1)">▼</button>
-            <div id="score" class="score-box">0</div>
-            <button class="btn-arrow" onclick="adjustScore(1)">▲</button>
-        </div>
-
+        <!-- Chronomètre géant du match (agrandi pour occuper l'espace libéré) -->
         <div id="timer" class="timer-box">100.0</div>
     </div>
 
-    <div class="controls">
+    <!-- Guide des 4 boutons physiques pour l'écran 7" de la Rasp (aligné au-dessus de chaque bouton) -->
+    <div id="robot-buttons-guide" class="robot-buttons-bar">
+        <div class="robot-btn-hint btn-hint-team" onclick="sendAction('team')" title="Bouton 1 : Équipe">
+            <div class="btn-badge">1</div>
+            <div class="btn-main">ÉQUIPE</div>
+            <div class="btn-sub">Bleue / Jaune</div>
+        </div>
+        <div class="robot-btn-hint btn-hint-strat" onclick="cycleStrat()" title="Bouton 2 : Stratégie">
+            <div class="btn-badge">2</div>
+            <div class="btn-main">STRATÉGIE</div>
+            <div class="btn-sub">Changer</div>
+        </div>
+        <div class="robot-btn-hint btn-hint-power" title="Bouton 3 : Start / Stop Programme">
+            <div class="btn-badge">3</div>
+            <div class="btn-main">ON / OFF</div>
+            <div class="btn-sub">Programme</div>
+        </div>
+        <div class="robot-btn-hint btn-hint-init" onclick="sendAction('init')" title="Bouton 4 : Init Actionneurs">
+            <div class="btn-badge">4</div>
+            <div class="btn-main">INIT</div>
+            <div class="btn-sub">Actionneurs</div>
+        </div>
+    </div>
+
+    <div class="controls pc-only">
         <button id="btn-start" class="btn-start" onclick="sendAction('start')">GO MATCH</button>
         <button id="btn-stop" class="btn-stop hidden" onclick="sendAction('stop')">STOP URGENCE</button>
         <button id="btn-reset" class="btn-reset hidden" onclick="sendAction('reset')">RESET MATCH</button>

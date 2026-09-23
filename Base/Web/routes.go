@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -56,9 +58,25 @@ func setupRoutes(app *fiber.App) {
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
 
-	// API REST pour récupérer l'adresse IP réseau réelle du PC Base
+	// API REST pour contrôle des actionneurs
+	app.Post("/api/actuator", func(c *fiber.Ctx) error {
+		var body map[string]interface{}
+		if err := c.BodyParser(&body); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+		}
+		envoyerAuRobot("cmd_actuator", body)
+		return c.JSON(fiber.Map{"status": "ok"})
+	})
+
+	// API REST pour récupérer l'adresse IP réseau réelle du PC Base et de la Rasp
 	app.Get("/api/server_ip", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{"ip": getHostIP()})
+		globalState.Lock()
+		raspIP := globalState.Telemetry.RaspIP
+		globalState.Unlock()
+		return c.JSON(fiber.Map{
+			"ip":      getHostIP(),
+			"rasp_ip": raspIP,
+		})
 	})
 
 	// API REST pour les actions initiées depuis l'IHM Web
@@ -94,6 +112,8 @@ func setupRoutes(app *fiber.App) {
 			envoyerAuRobot("action", "reset")
 		} else if act == "tirette" {
 			envoyerAuRobot("action", "tirette")
+		} else if act == "init" {
+			envoyerAuRobot("action", "init")
 		}
 		globalState.Unlock()
 
@@ -287,6 +307,140 @@ func setupRoutes(app *fiber.App) {
 		return c.JSON(fiber.Map{"status": "sent_to_robot"})
 	})
 
+	// Route API pour flasher les ESPs (Motor / Actionneurs) depuis la base déportée via la Raspberry Pi
+	app.Post("/api/flash_esp/:target", func(c *fiber.Ctx) error {
+		target := strings.ToLower(c.Params("target"))
+
+		var envName, serialPort, label string
+		if target == "motors" || target == "motor" {
+			envName = "Motor"
+			serialPort = "/dev/esp_motors"
+			label = "Moteurs"
+		} else if target == "arms" || target == "arm" || target == "actionneurs" {
+			envName = "Actionneurs"
+			serialPort = "/dev/esp_action"
+			label = "Actionneurs / Bras"
+		} else {
+			return c.Status(400).JSON(fiber.Map{
+				"status": "error",
+				"msg":    fmt.Sprintf("Cible inconnue: %s. Utilisez 'motors' ou 'arms'.", target),
+			})
+		}
+
+		// 1. Détermination du répertoire racine du projet (contenant platformio.ini)
+		projectRoot := "/home/based/Documents/stk_robot"
+		if p, err := filepath.Abs("../.."); err == nil {
+			if _, err := os.Stat(filepath.Join(p, "platformio.ini")); err == nil {
+				projectRoot = p
+			}
+		}
+
+		// 2. Détermination du chemin vers le binaire pio
+		pioPath := "/home/based/.local/bin/pio"
+		if p, err := exec.LookPath("pio"); err == nil {
+			pioPath = p
+		} else if _, err := os.Stat("/home/based/.platformio/penv/bin/pio"); err == nil {
+			pioPath = "/home/based/.platformio/penv/bin/pio"
+		}
+
+		// 3. Compilation avec PlatformIO pour l'environnement demandé
+		fmt.Printf("[FLASH] Démarrage compilation PlatformIO pour '%s' dans %s...\n", envName, projectRoot)
+		buildCmd := exec.Command(pioPath, "run", "-e", envName)
+		buildCmd.Dir = projectRoot
+		buildOut, err := buildCmd.CombinedOutput()
+		if err != nil {
+			fmt.Printf("[FLASH] Échec de la compilation:\n%s\n", string(buildOut))
+			return c.JSON(fiber.Map{
+				"status": "error",
+				"step":   "build",
+				"msg":    fmt.Sprintf("Échec de la compilation PlatformIO pour %s", label),
+				"output": string(buildOut),
+			})
+		}
+		fmt.Printf("[FLASH] Compilation réussie pour %s !\n", envName)
+
+		// 4. Récupération de l'IP de la Raspberry Pi
+		globalState.Lock()
+		raspIP := globalState.Telemetry.RaspIP
+		globalState.Unlock()
+		if raspIP == "" || raspIP == "??" || raspIP == "Err" {
+			raspIP = getRaspIPFromDHCP()
+		}
+		if raspIP == "" || raspIP == "??" || raspIP == "Err" {
+			raspIP = "192.168.10.89"
+		}
+
+		// 5. Transfert des binaires (.bin) vers la Rasp
+		remoteDir := fmt.Sprintf("/tmp/esp_flash/%s", envName)
+		mkdirCmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
+			fmt.Sprintf("eirbot@%s", raspIP), fmt.Sprintf("mkdir -p %s", remoteDir))
+		if out, err := mkdirCmd.CombinedOutput(); err != nil {
+			return c.JSON(fiber.Map{
+				"status": "error",
+				"step":   "ssh_mkdir",
+				"msg":    fmt.Sprintf("Impossible de créer le dossier distant sur la Rasp: %v", err),
+				"output": string(out),
+			})
+		}
+
+		localBinPattern := filepath.Join(projectRoot, ".pio", "build", envName, "*.bin")
+		binFiles, _ := filepath.Glob(localBinPattern)
+		if len(binFiles) == 0 {
+			return c.JSON(fiber.Map{
+				"status": "error",
+				"step":   "find_bins",
+				"msg":    fmt.Sprintf("Aucun binaire trouvé dans %s", localBinPattern),
+			})
+		}
+
+		scpArgs := []string{"-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5"}
+		scpArgs = append(scpArgs, binFiles...)
+		scpArgs = append(scpArgs, fmt.Sprintf("eirbot@%s:%s/", raspIP, remoteDir))
+		scpCmd := exec.Command("scp", scpArgs...)
+		if out, err := scpCmd.CombinedOutput(); err != nil {
+			return c.JSON(fiber.Map{
+				"status": "error",
+				"step":   "scp",
+				"msg":    fmt.Sprintf("Erreur lors de la copie des binaires vers la Rasp: %v", err),
+				"output": string(out),
+			})
+		}
+
+		// 6. Libération du port série sur la Rasp (fuser -k pour libérer main_robot.py si actif)
+		freeCmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
+			fmt.Sprintf("eirbot@%s", raspIP), fmt.Sprintf("sudo fuser -k %s 2>/dev/null; sleep 0.5", serialPort))
+		_ = freeCmd.Run()
+
+		// 7. Flashage via esptool.py sur la Raspberry Pi
+		flashScript := fmt.Sprintf(
+			"python3 /home/eirbot/esptool/esptool.py --chip esp32 --port %s --baud 460800 write_flash -z "+
+				"--flash_mode dio --flash_freq 40m --flash_size 4MB "+
+				"0x1000 %s/bootloader.bin 0x8000 %s/partitions.bin 0x10000 %s/firmware.bin",
+			serialPort, remoteDir, remoteDir, remoteDir,
+		)
+
+		fmt.Printf("[FLASH] Envoi de la commande de flash sur la Rasp (%s sur %s)...\n", envName, serialPort)
+		flashCmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=30",
+			fmt.Sprintf("eirbot@%s", raspIP), flashScript)
+		flashOut, err := flashCmd.CombinedOutput()
+		if err != nil {
+			fmt.Printf("[FLASH] Échec du flash:\n%s\n", string(flashOut))
+			return c.JSON(fiber.Map{
+				"status": "error",
+				"step":   "flash",
+				"msg":    fmt.Sprintf("Échec du flash sur l'ESP %s : %v", label, err),
+				"output": string(flashOut),
+			})
+		}
+
+		fmt.Printf("[FLASH] Flash réussi pour %s !\n%s\n", label, string(flashOut))
+		return c.JSON(fiber.Map{
+			"status": "ok",
+			"msg":    fmt.Sprintf("Flash de l'ESP %s réussi avec succès !", label),
+			"output": string(flashOut),
+		})
+	})
+
 	// Gestionnaire d'IHM en temps réel (WebSockets)
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
@@ -342,6 +496,8 @@ func setupRoutes(app *fiber.App) {
 
 					if packet.Type == "cmd_vel" {
 						envoyerAuRobot("cmd_vel", targetPayload)
+					} else if packet.Type == "cmd_actuator" {
+						envoyerAuRobot("cmd_actuator", targetPayload)
 					} else if packet.Type == "action" && targetPayload == "calibrate_vision" {
 						fmt.Println("[Web-IHM] Message de calibration vision reçu, retransmission vers ZMQ...")
 						envoyerAuRobot("action", "calibrate_vision")

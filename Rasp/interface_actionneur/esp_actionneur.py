@@ -54,6 +54,10 @@ class ESPActionneurs:
             except Exception as e:
                 print(f"[ACTIONNEURS] ❌ Erreur d'envoi : {e}")
 
+    def send_raw(self, cmd):
+        """Alias pour send, compatible avec les appels génériques."""
+        self.send(cmd)
+
     def init_robot(self):
         self.send("I")
         # Attend que l'ESP ait fini et que le flag soit levé

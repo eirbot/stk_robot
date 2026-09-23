@@ -61,7 +61,8 @@ def background_loop():
             'volt': get_battery_voltage(), 
             'volt_float': volts,
             'current': get_battery_current(),
-            'ip': get_ip(), 
+            'ip': get_ip(),
+            'rasp_ip': get_ip(),
             'devs': devs
         })
 

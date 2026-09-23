@@ -19,13 +19,14 @@ with open(LOG_FILE, "a") as f:
 def get_robot_status():
     """Vérifie si le processus main_robot.py est en cours d'exécution."""
     try:
-        # pgrep -f cherche le nom complet de la commande
-        subprocess.check_output(["pgrep", "-f", "main_robot.py"])
-        return True
+        out = subprocess.check_output(["pgrep", "-f", "main_robot.py"]).decode().strip().split()
+        my_pid = str(os.getpid())
+        active_pids = [p for p in out if p != my_pid]
+        return len(active_pids) > 0
     except subprocess.CalledProcessError:
         return False
 
-def toggle_robot(channel):
+def toggle_robot():
     """Lance ou arrête le robot selon son état actuel."""
     # Petit délai pour éviter les rebonds résiduels
     time.sleep(0.05)
@@ -53,17 +54,27 @@ def toggle_robot(channel):
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(PIN_BUTTON_3, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-# Détection de l'appui (Front descendant car pull-up interne)
-# bouncetime de 500ms pour éviter les doubles appuis accidentels
-GPIO.add_event_detect(PIN_BUTTON_3, GPIO.FALLING, callback=toggle_robot, bouncetime=800)
-
 print(f"[LAUNCHER] Service prêt. Écoute sur le PIN {PIN_BUTTON_3} (Bouton 3).")
 print(f"[LAUNCHER] Script Exec: {EXEC_SCRIPT}")
 print(f"[LAUNCHER] Script Stop: {STOP_SCRIPT}")
 
+last_val = 1
+debounce_counter = 0
+DEBOUNCE_THRESH = 3
+
 try:
     while True:
-        time.sleep(1)
+        val = GPIO.input(PIN_BUTTON_3)
+        if val != last_val:
+            debounce_counter += 1
+            if debounce_counter >= DEBOUNCE_THRESH:
+                last_val = val
+                debounce_counter = 0
+                if val == 0:  # Front descendant (appui sur le bouton)
+                    toggle_robot()
+        else:
+            debounce_counter = 0
+        time.sleep(0.05)
 except KeyboardInterrupt:
     print("[LAUNCHER] Arrêt du service.")
     GPIO.cleanup()

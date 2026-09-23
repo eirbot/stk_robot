@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	zmq "github.com/pebbe/zmq4"
@@ -46,8 +47,35 @@ func main() {
 	if t, ok := globalState.Config["team"].(string); ok {
 		globalState.Team = t
 	}
+	dhcpIP := getRaspIPFromDHCP()
+	if dhcpIP != "" {
+		globalState.Telemetry.RaspIP = dhcpIP
+	}
 	globalState.Unlock()
 	fmt.Printf("[NET] Base Déportée joignable sur : http://%s:8080\n", globalState.ServerIP)
+	if dhcpIP != "" {
+		fmt.Printf("[NET] IP Robot détectée via DHCP : %s\n", dhcpIP)
+	}
+
+	// Surveillance périodique des baux DHCP pour détecter le robot automatiquement
+	go func() {
+		for {
+			time.Sleep(3 * time.Second)
+			ip := getRaspIPFromDHCP()
+			if ip != "" {
+				globalState.Lock()
+				if globalState.Telemetry.RaspIP != ip {
+					globalState.Telemetry.RaspIP = ip
+					packet, _ := json.Marshal(map[string]interface{}{
+						"type": "state_update",
+						"data": &globalState,
+					})
+					globalHub.Broadcast(packet)
+				}
+				globalState.Unlock()
+			}
+		}
+	}()
 
 	// Initialisation du canal descendant ZMQ PUB (PC -> Robot)
 	var err error
