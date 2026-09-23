@@ -1,3 +1,0 @@
-# Droits sudo sans mot de passe pour l'utilisateur stk (Live OS Robotique)
-stk ALL=(ALL:ALL) NOPASSWD: ALL
-Defaults:stk !authenticate
