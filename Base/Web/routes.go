@@ -5,10 +5,13 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -35,17 +38,108 @@ func saveConfigToFile(cfg map[string]interface{}) {
 	}
 }
 
+var (
+	visionCmd   *exec.Cmd
+	visionMutex sync.Mutex
+)
+
+func findVisionPaths() (string, string) {
+	candidates := []string{
+		"/home/based/Documents/stk_robot/Base/Vision",
+		"../../Base/Vision",
+		"Base/Vision",
+		"../Vision",
+		"Vision",
+	}
+	for _, dir := range candidates {
+		venvPy := filepath.Join(dir, ".venv", "bin", "python3")
+		script := filepath.Join(dir, "vision_worker.py")
+		if _, err := os.Stat(venvPy); err == nil {
+			if _, err2 := os.Stat(script); err2 == nil {
+				return venvPy, script
+			}
+		}
+	}
+	return "", ""
+}
+
+func startVisionWorker() (int, error) {
+	visionMutex.Lock()
+	defer visionMutex.Unlock()
+
+	if visionCmd != nil && visionCmd.Process != nil {
+		if visionCmd.ProcessState == nil || !visionCmd.ProcessState.Exited() {
+			return visionCmd.Process.Pid, nil
+		}
+	}
+
+	venvPy, script := findVisionPaths()
+	if venvPy == "" {
+		return 0, fmt.Errorf("environnement virtuel vision (.venv) introuvable dans Base/Vision")
+	}
+
+	cmd := exec.Command(venvPy, script)
+	cmd.Dir = filepath.Dir(script)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		return 0, err
+	}
+	visionCmd = cmd
+	fmt.Printf("[VISION] Processus vision_worker démarré (PID: %d)\n", cmd.Process.Pid)
+	return cmd.Process.Pid, nil
+}
+
+func stopVisionWorker() {
+	visionMutex.Lock()
+	defer visionMutex.Unlock()
+
+	if visionCmd != nil && visionCmd.Process != nil {
+		pid := visionCmd.Process.Pid
+		_ = visionCmd.Process.Kill()
+		_ = visionCmd.Wait()
+		fmt.Printf("[VISION] Processus vision_worker (PID: %d) arrêté\n", pid)
+		visionCmd = nil
+	}
+}
+
+func isVisionWorkerRunning() (bool, int) {
+	visionMutex.Lock()
+	defer visionMutex.Unlock()
+
+	if visionCmd != nil && visionCmd.Process != nil {
+		if visionCmd.ProcessState == nil || !visionCmd.ProcessState.Exited() {
+			return true, visionCmd.Process.Pid
+		}
+	}
+	return false, 0
+}
+
 func setupRoutes(app *fiber.App) {
-	// Services de fichiers statiques pour l'IHM
-	app.Static("/static", "./static")
-	app.Get("/", func(c *fiber.Ctx) error { return c.SendFile("./templates/index.html") })
-	app.Get("/map", func(c *fiber.Ctx) error { return c.SendFile("./templates/map.html") })
-	app.Get("/debug", func(c *fiber.Ctx) error { return c.SendFile("./templates/debug.html") })
-	app.Get("/blockly", func(c *fiber.Ctx) error { return c.SendFile("./templates/blockly.html") })
-	app.Get("/led_studio", func(c *fiber.Ctx) error { return c.SendFile("./templates/led_studio.html") })
-	app.Get("/media", func(c *fiber.Ctx) error { return c.SendFile("./templates/media.html") })
-	app.Get("/replay", func(c *fiber.Ctx) error { return c.SendFile("./templates/replay.html") })
-	app.Get("/controle", func(c *fiber.Ctx) error { return c.SendFile("./templates/controle.html") })
+	// Services de fichiers statiques pour l'IHM avec mise en cache et compression
+	app.Static("/static", "./static", fiber.Static{
+		Compress:      true,
+		ByteRange:     true,
+		Browse:        false,
+		MaxAge:        0, // Rechargement instantané des fichiers CSS/JS à chaque modification
+		CacheDuration: 1 * time.Second,
+	})
+
+	// Pages HTML avec en-têtes anti-blocage et revalidation
+	sendPage := func(c *fiber.Ctx, path string) error {
+		c.Set("Cache-Control", "no-cache, must-revalidate")
+		return c.SendFile(path)
+	}
+
+	app.Get("/", func(c *fiber.Ctx) error { return sendPage(c, "./templates/index.html") })
+	app.Get("/map", func(c *fiber.Ctx) error { return sendPage(c, "./templates/map.html") })
+	app.Get("/debug", func(c *fiber.Ctx) error { return sendPage(c, "./templates/debug.html") })
+	app.Get("/blockly", func(c *fiber.Ctx) error { return sendPage(c, "./templates/blockly.html") })
+	app.Get("/led_studio", func(c *fiber.Ctx) error { return sendPage(c, "./templates/led_studio.html") })
+	app.Get("/media", func(c *fiber.Ctx) error { return sendPage(c, "./templates/media.html") })
+	app.Get("/replay", func(c *fiber.Ctx) error { return sendPage(c, "./templates/replay.html") })
+	app.Get("/controle", func(c *fiber.Ctx) error { return sendPage(c, "./templates/controle.html") })
 	app.Get("/control", func(c *fiber.Ctx) error { return c.Redirect("/controle") })
 
 	// API REST pour contrôle vitesse joystick
@@ -307,6 +401,74 @@ func setupRoutes(app *fiber.App) {
 		return c.JSON(fiber.Map{"status": "sent_to_robot"})
 	})
 
+	// --- Routes Vision Zénithale USB (PC Base) ---
+	app.Get("/api/stream_usb", func(c *fiber.Ctx) error {
+		globalState.Lock()
+		srvIP := globalState.ServerIP
+		globalState.Unlock()
+		if srvIP == "" || srvIP == "127.0.0.1" {
+			srvIP = c.Hostname()
+		}
+		qs := string(c.Request().URI().QueryString())
+		target := fmt.Sprintf("http://%s:8082/stream", srvIP)
+		if qs != "" {
+			target += "?" + qs
+		}
+		return c.Redirect(target)
+	})
+
+	app.Get("/api/vision/status", func(c *fiber.Ctx) error {
+		running, pid := isVisionWorkerRunning()
+		return c.JSON(fiber.Map{
+			"running": running,
+			"pid":     pid,
+		})
+	})
+
+	app.Post("/api/vision/start", func(c *fiber.Ctx) error {
+		pid, err := startVisionWorker()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"status": "error", "msg": err.Error()})
+		}
+		return c.JSON(fiber.Map{"status": "ok", "pid": pid})
+	})
+
+	app.Post("/api/vision/stop", func(c *fiber.Ctx) error {
+		stopVisionWorker()
+		return c.JSON(fiber.Map{"status": "ok"})
+	})
+
+	app.Post("/api/vision/toggle", func(c *fiber.Ctx) error {
+		running, _ := isVisionWorkerRunning()
+		if running {
+			stopVisionWorker()
+			return c.JSON(fiber.Map{"status": "stopped", "running": false})
+		} else {
+			pid, err := startVisionWorker()
+			if err != nil {
+				return c.Status(500).JSON(fiber.Map{"status": "error", "msg": err.Error()})
+			}
+			return c.JSON(fiber.Map{"status": "started", "running": true, "pid": pid})
+		}
+	})
+
+	app.All("/api/vision/resolution", func(c *fiber.Ctx) error {
+		mode := c.Query("mode")
+		target := "http://127.0.0.1:8082/api/toggle_resolution"
+		if mode != "" {
+			target += "?mode=" + mode
+		}
+		client := http.Client{Timeout: 2 * time.Second}
+		resp, err := client.Get(target)
+		if err != nil {
+			return c.Status(502).JSON(fiber.Map{"status": "error", "msg": "vision_worker non joignable"})
+		}
+		defer resp.Body.Close()
+		var res map[string]interface{}
+		_ = json.NewDecoder(resp.Body).Decode(&res)
+		return c.JSON(res)
+	})
+
 	// Route API pour flasher les ESPs (Motor / Actionneurs) depuis la base déportée via la Raspberry Pi
 	app.Post("/api/flash_esp/:target", func(c *fiber.Ctx) error {
 		target := strings.ToLower(c.Params("target"))
@@ -452,7 +614,7 @@ func setupRoutes(app *fiber.App) {
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
 		fmt.Println("[Web-IHM] Client connecté")
 		
-		ch := make(chan []byte, 100)
+		ch := make(chan []byte, 16) // Buffer restreint pour éliminer le backlog de vieux paquets lors du chargement
 		globalHub.Lock()
 		globalHub.clients[c] = ch
 		globalHub.Unlock()

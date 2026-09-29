@@ -122,15 +122,21 @@ function loadBlocklyStrats(selectId) {
 
 // --- SOCKET GLOBAL STATE WATCHER ---
 window.socket.on('state_update', (state) => {
-    localState = state;
+    if (!state) return;
+    if (state.config) window.localConfig = state.config;
+    localState = Object.assign(localState, state);
+    if (window.localConfig && !localState.config) localState.config = window.localConfig;
+
     // Gestion des classes globales (couleur équipe, animation match)
-    document.body.classList.remove('mode-BLEUE', 'mode-JAUNE');
-    document.body.classList.add('mode-' + state.team);
+    if (state.team) {
+        document.body.classList.remove('mode-BLEUE', 'mode-JAUNE');
+        document.body.classList.add('mode-' + state.team);
 
-    if (state.match_finished) document.body.classList.add('breathing-' + state.team);
-    else document.body.classList.remove('breathing-BLEUE', 'breathing-JAUNE');
+        if (state.match_finished) document.body.classList.add('breathing-' + state.team);
+        else document.body.classList.remove('breathing-BLEUE', 'breathing-JAUNE');
+    }
 
-    if (state && state.telemetry && state.telemetry.rasp_ip && state.telemetry.rasp_ip !== '??' && state.telemetry.rasp_ip !== 'Err') {
+    if (state.telemetry && state.telemetry.rasp_ip && state.telemetry.rasp_ip !== '??' && state.telemetry.rasp_ip !== 'Err') {
         window.raspIP = state.telemetry.rasp_ip;
         updateSysInfoDisplay();
     }

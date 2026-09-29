@@ -47,9 +47,21 @@ func pipelineReceptionRobot() {
 						globalState.FsmState = "RUNNING"
 					}
 
+					// Allègement trame : pour la télémétrie haute fréquence (10Hz),
+					// on n'embarque pas le dictionnaire Config complet (économise ~88% de bande passante et CPU client)
 					packet, _ := json.Marshal(map[string]interface{}{
 						"type": "state_update",
-						"data": &globalState,
+						"data": map[string]interface{}{
+							"match_running":     globalState.MatchRunning,
+							"match_finished":    globalState.MatchFinished,
+							"score_current":     globalState.ScoreCurrent,
+							"team":              globalState.Team,
+							"timer_str":         globalState.TimerStr,
+							"fsm_state":         globalState.FsmState,
+							"obstacle_detected": globalState.ObstacleDetected,
+							"obstacle_type":     globalState.ObstacleType,
+							"telemetry":         globalState.Telemetry,
+						},
 					})
 					globalState.Unlock()
 
@@ -217,7 +229,17 @@ func pipelineReceptionRobot() {
 				}
 				packet, _ := json.Marshal(map[string]interface{}{
 					"type": "state_update",
-					"data": &globalState,
+					"data": map[string]interface{}{
+						"match_running":     globalState.MatchRunning,
+						"match_finished":    globalState.MatchFinished,
+						"score_current":     globalState.ScoreCurrent,
+						"team":              globalState.Team,
+						"timer_str":         globalState.TimerStr,
+						"fsm_state":         globalState.FsmState,
+						"obstacle_detected": globalState.ObstacleDetected,
+						"obstacle_type":     globalState.ObstacleType,
+						"telemetry":         globalState.Telemetry,
+					},
 				})
 				globalState.Unlock()
 

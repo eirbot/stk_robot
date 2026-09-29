@@ -9,9 +9,10 @@ from utils import get_ip, get_battery_voltage, get_cpu_temp, get_battery_current
 
 def background_loop():
     print("[IHM] Background loop démarrée.")
+    last_sys_info_time = 0
     
     while True:
-        # 1. Timer Match (inchangé)
+        # 1. Timer Match (inchangé à 10Hz pour précision d'affichage)
         if state["match_running"] and state["start_time"]:
             elapsed = time.time() - state["start_time"]
             remaining = 100.0 - elapsed
@@ -22,48 +23,49 @@ def background_loop():
             else:
                 state["timer_str"] = f"{remaining:.1f}"
 
-        # 2. Infos Système (mis à jour avec les vrais ports et l'état caméra)
-        import ihm.shared as shared
-        devs = {
-            'lidar': os.path.exists('/dev/lidar'),
-            'esp_motors': os.path.exists('/dev/esp_motors'),
-            'esp_arms': os.path.exists('/dev/esp_action'),
-            'camera': shared.camera is not None and shared.camera.running
-        }
-        
-        volts = get_voltage_float()
+        # 2. Infos Système & Santé (cadencé à 1Hz pour ne pas saturer la bande passante ZMQ/WebSocket)
+        now = time.time()
+        if now - last_sys_info_time >= 1.0:
+            last_sys_info_time = now
+            import ihm.shared as shared
+            devs = {
+                'lidar': os.path.exists('/dev/lidar'),
+                'esp_motors': os.path.exists('/dev/esp_motors'),
+                'esp_arms': os.path.exists('/dev/esp_action'),
+                'camera': shared.camera is not None and shared.camera.running
+            }
+            
+            volts = get_voltage_float()
 
-        # --- Détection Batterie Faible (Seuil 18V pour batterie 20V) ---
-        if 3.0 <= volts < 18.0:
-             now = time.time()
-             last_alert = state.get("last_bat_alert", 0)
-             
-             # On renvoie la commande toutes les 2 secondes pour être PRIORITAIRE sur les autres anims
-             if not state.get("bat_low", False) or (now - last_alert > 2.0):
-                 if not state.get("bat_low", False):
-                     print(f"[TASKS] ⚠️ BATTERIE FAIBLE ({volts}V) ! Alerte Prioritaire.")
-                     state["bat_low"] = True
+            # --- Détection Batterie Faible (Seuil 18V pour batterie 20V) ---
+            if 3.0 <= volts < 18.0:
+                 last_alert = state.get("last_bat_alert", 0)
                  
-                 state["last_bat_alert"] = now
-                 send_led_cmd("ANIM:BLINK:255,0,0,300") # Clignotement rapide rouge
-        
-        # Hystérésis pour le rétablissement
-        elif volts > 19.5:
-             if state.get("bat_low", False):
-                 print(f"[TASKS] Batterie rétablie ({volts}V).")
-                 state["bat_low"] = False
-                 send_led_cmd("COLOR:0,255,0") # Retour au vert
+                 # On renvoie la commande toutes les 2 secondes pour être PRIORITAIRE sur les autres anims
+                 if not state.get("bat_low", False) or (now - last_alert > 2.0):
+                     if not state.get("bat_low", False):
+                         print(f"[TASKS] ⚠️ BATTERIE FAIBLE ({volts}V) ! Alerte Prioritaire.")
+                         state["bat_low"] = True
+                     
+                     state["last_bat_alert"] = now
+                     send_led_cmd("ANIM:BLINK:255,0,0,300") # Clignotement rapide rouge
+            
+            # Hystérésis pour le rétablissement
+            elif volts > 19.5:
+                 if state.get("bat_low", False):
+                     print(f"[TASKS] Batterie rétablie ({volts}V).")
+                     state["bat_low"] = False
+                     send_led_cmd("COLOR:0,255,0") # Retour au vert
 
+            send_sys_info({
+                'cpu': f"{psutil.cpu_percent()}%", 
+                'temp': get_cpu_temp(),
+                'volt': get_battery_voltage(), 
+                'volt_float': volts,
+                'current': get_battery_current(),
+                'ip': get_ip(),
+                'rasp_ip': get_ip(),
+                'devs': devs
+            })
 
-        send_sys_info({
-            'cpu': f"{psutil.cpu_percent()}%", 
-            'temp': get_cpu_temp(),
-            'volt': get_battery_voltage(), 
-            'volt_float': volts,
-            'current': get_battery_current(),
-            'ip': get_ip(),
-            'rasp_ip': get_ip(),
-            'devs': devs
-        })
-
-        time.sleep(0.1) # 10Hz (Suffisant pour une fluidité visuelle)
+        time.sleep(0.1) # 10Hz (Suffisant pour le chronomètre de match)

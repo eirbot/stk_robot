@@ -321,6 +321,49 @@ async function loadBeacons() {
 // CONNEXION WEBSOCKET ET RÉCEPTION DE LA TÉLÉMÉTRIE
 // -----------------------------------------------------------------------------
 function setupWebSocket() {
+    // Réutilisation du socket partagé de common.js pour éviter une double connexion réseau
+    if (window.socket) {
+        console.log("[MAP 3D] Utilisation du WebSocket partagé (window.socket)");
+        window.socket.on('state_update', (state) => {
+            if (!state) return;
+            if (state.team && state.team !== currentTeam) {
+                currentTeam = state.team;
+                updateTeamColor();
+            }
+            if (state.obstacle_detected !== undefined) {
+                obstacleDetected = state.obstacle_detected;
+                obstacleType = state.obstacle_type;
+            }
+            if (state.telemetry) {
+                robotPos = {
+                    x: state.telemetry.x,
+                    y: state.telemetry.y,
+                    theta: state.telemetry.theta
+                };
+                updateRobotMeshPosition(robotGroup, robotPos);
+                updateUI();
+            }
+        });
+
+        window.socket.on('lidar_pos', (data) => {
+            if (!data) return;
+            lidarPos = {
+                x: data.x,
+                y: data.y,
+                theta: data.theta * Math.PI / 180,
+                err: data.err
+            };
+            lidarGroup.visible = true;
+            updateRobotMeshPosition(lidarGroup, lidarPos);
+            updateUI();
+        });
+
+        window.socket.on('lidar_frame', (data) => {
+            if (data) updateLidarFrame(data);
+        });
+        return;
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     
@@ -354,9 +397,9 @@ function setupWebSocket() {
                 // Télémétrie odométrique
                 if (state.telemetry) {
                     robotPos = {
-                        x: state.telemetry.x, // Longueur (-1500 à 1500)
-                        y: state.telemetry.y, // Largeur (0 à 2000)
-                        theta: state.telemetry.theta // en radians
+                        x: state.telemetry.x,
+                        y: state.telemetry.y,
+                        theta: state.telemetry.theta
                     };
 
                     updateRobotMeshPosition(robotGroup, robotPos);
@@ -367,9 +410,9 @@ function setupWebSocket() {
             // 2. Traitement de la position LiDAR (Ghost semi-transparent)
             if (msg.type === "lidar_pos" && msg.data) {
                 lidarPos = {
-                    x: msg.data.x, // Longueur (-1500 à 1500)
-                    y: msg.data.y, // Largeur (0 à 2000)
-                    theta: msg.data.theta * Math.PI / 180, // Télémétrie en degrés -> converti en radians
+                    x: msg.data.x,
+                    y: msg.data.y,
+                    theta: msg.data.theta * Math.PI / 180,
                     err: msg.data.err
                 };
                 

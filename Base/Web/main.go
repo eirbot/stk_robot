@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	zmq "github.com/pebbe/zmq4"
 )
 
@@ -94,9 +95,23 @@ func main() {
 	// Lancement de l'écoute du robot en tâche de fond
 	go pipelineReceptionRobot()
 
+	// Démarrage automatique du module de vision si la caméra USB est branchée
+	if _, err := os.Stat("/dev/video0"); err == nil {
+		go func() {
+			time.Sleep(1 * time.Second) // Attente de l'ouverture des sockets ZMQ
+			_, _ = startVisionWorker()
+		}()
+	}
+
 	app := fiber.New(fiber.Config{
 		BodyLimit: 20 * 1024 * 1024, // Limite de 20 Mo pour le téléversement
 	})
+
+	// Compression automatique (Gzip / Brotli / Deflate) de tous les flux HTTP (HTML, CSS, JS, JSON)
+	// Réduit drastiquement la taille des premiers paquets transmis au navigateur
+	app.Use(compress.New(compress.Config{
+		Level: compress.LevelBestSpeed,
+	}))
 
 	// Configuration des routes (définies dans routes.go)
 	setupRoutes(app)

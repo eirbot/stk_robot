@@ -43,7 +43,7 @@ window.socket.on('state_update', (state) => {
     const stratSel = document.getElementById('strat-select');
 
     if (stratEl && stratSel) {
-        const config = state.config || {};
+        const config = state.config || window.localConfig || {};
         const mode = state.strat_mode ?? config.strat_mode ?? 'DYNAMIC';
 
         if (mode === 'STATIC') {

@@ -3,13 +3,308 @@
 
 <head>
     <title>DEBUG & CONFIG</title>
-    <link rel="stylesheet" href="/static/css/common.css">
-    <link rel="stylesheet" href="/static/css/debug.css">
+    <link rel="stylesheet" href="/static/css/common.css?v=2.4">
+    <link rel="stylesheet" href="/static/css/debug.css?v=2.4">
 
-    <script src="/static/js/chart.js"></script>
+    <style>
+        /* Styles garantis pour les flux vidéo et boutons d'action */
+        .video-card {
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+            background: #161b22 !important;
+            border: 1px solid #30363d !important;
+            border-radius: 8px !important;
+            padding: 14px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        }
 
-    <script src="/static/js/common.js" defer></script>
-    <script src="/static/js/debug.js" defer></script>
+        .video-card-header {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin-bottom: 12px !important;
+            gap: 10px !important;
+            flex-wrap: wrap !important;
+        }
+
+        .video-title-group {
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+
+        .video-icon {
+            font-size: 1.5em !important;
+            display: inline-block !important;
+        }
+
+        .video-subtitle {
+            font-size: 0.75em !important;
+            color: #8b949e !important;
+            display: block !important;
+            margin-top: 2px !important;
+        }
+
+        .video-actions-group {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            flex-wrap: wrap !important;
+        }
+
+        .badge-status-pill {
+            padding: 5px 12px !important;
+            border-radius: 12px !important;
+            font-size: 0.75em !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+        }
+
+        .badge-offline {
+            background: rgba(244, 67, 54, 0.15) !important;
+            color: #ff6b6b !important;
+            border: 1px solid rgba(244, 67, 54, 0.4) !important;
+        }
+
+        .badge-online {
+            background: rgba(46, 204, 113, 0.15) !important;
+            color: #2ecc71 !important;
+            border: 1px solid rgba(46, 204, 113, 0.4) !important;
+            box-shadow: 0 0 8px rgba(46, 204, 113, 0.25) !important;
+        }
+
+        .btn-video-action {
+            background: #21262d !important;
+            color: #e6edf3 !important;
+            border: 1px solid #363b42 !important;
+            padding: 8px 14px !important;
+            border-radius: 6px !important;
+            font-size: 0.85em !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            user-select: none !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        .btn-video-action:hover {
+            background: #30363d !important;
+            color: #ffffff !important;
+            border-color: #8b949e !important;
+            transform: translateY(-1px) !important;
+        }
+
+        .btn-aruco-active {
+            background: rgba(0, 210, 255, 0.2) !important;
+            color: #00d2ff !important;
+            border-color: #00b4db !important;
+            box-shadow: 0 0 8px rgba(0, 210, 255, 0.3) !important;
+        }
+
+        .btn-aruco-active:hover {
+            background: rgba(0, 210, 255, 0.3) !important;
+            border-color: #00e5ff !important;
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.5) !important;
+        }
+
+        .btn-aruco-inactive {
+            background: #21262d !important;
+            color: #8b949e !important;
+            border-color: #30363d !important;
+        }
+
+        .btn-vision-power {
+            background: rgba(46, 204, 113, 0.15) !important;
+            color: #2ecc71 !important;
+            border-color: rgba(46, 204, 113, 0.4) !important;
+        }
+
+        .btn-vision-power.running {
+            background: rgba(244, 67, 54, 0.15) !important;
+            color: #ff6b6b !important;
+            border-color: rgba(244, 67, 54, 0.4) !important;
+        }
+
+        /* Bouton Bascule Résolution 4K/1080p */
+        .btn-resolution-toggle {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(79, 70, 229, 0.2)) !important;
+            color: #c084fc !important;
+            border-color: rgba(168, 85, 247, 0.4) !important;
+            box-shadow: 0 0 8px rgba(168, 85, 247, 0.2) !important;
+        }
+
+        .btn-resolution-toggle:hover {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.35), rgba(79, 70, 229, 0.35)) !important;
+            border-color: #c084fc !important;
+            box-shadow: 0 0 12px rgba(192, 132, 252, 0.4) !important;
+        }
+
+        .btn-resolution-toggle.mode-60fps {
+            background: linear-gradient(135deg, rgba(234, 88, 12, 0.25), rgba(202, 138, 4, 0.25)) !important;
+            color: #fbbf24 !important;
+            border-color: rgba(251, 191, 36, 0.4) !important;
+            box-shadow: 0 0 8px rgba(251, 191, 36, 0.25) !important;
+        }
+
+        .btn-fullscreen {
+            background: linear-gradient(135deg, #1f6feb, #238636) !important;
+            color: #ffffff !important;
+            border: 1px solid #388bfd !important;
+        }
+
+        .btn-fullscreen:hover {
+            background: linear-gradient(135deg, #388bfd, #2ea043) !important;
+            border-color: #58a6ff !important;
+            box-shadow: 0 0 10px rgba(56, 139, 253, 0.4) !important;
+        }
+
+        .video-display-container {
+            position: relative !important;
+            background: #0d1117 !important;
+            border-radius: 8px !important;
+            overflow: hidden !important;
+            min-height: 280px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border: 1px solid #30363d !important;
+        }
+
+        .video-feed {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 480px !important;
+            object-fit: contain !important;
+            display: block !important;
+            cursor: zoom-in !important;
+            background: #000 !important;
+        }
+
+        /* BOUTON PLEIN ÉCRAN FERMER - STRICTEMENT MASQUÉ HORS PLEIN ÉCRAN */
+        .fullscreen-close-btn {
+            display: none !important;
+            position: absolute !important;
+            top: 20px !important;
+            right: 20px !important;
+            background: rgba(20, 20, 20, 0.9) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.4) !important;
+            padding: 10px 20px !important;
+            border-radius: 25px !important;
+            font-size: 0.95em !important;
+            font-weight: 700 !important;
+            cursor: pointer !important;
+            backdrop-filter: blur(10px) !important;
+            z-index: 999999 !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7) !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .fullscreen-close-btn:hover {
+            background: rgba(244, 67, 54, 0.9) !important;
+            border-color: #f44336 !important;
+            transform: scale(1.05) !important;
+        }
+
+        /* PLEIN ÉCRAN : Règle classe JavaScript (.is-fullscreen) */
+        .video-display-container.is-fullscreen {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            border: none !important;
+            background: #000 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            z-index: 999999 !important;
+        }
+
+        .video-display-container.is-fullscreen .video-feed {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            object-fit: contain !important;
+            cursor: zoom-out !important;
+        }
+
+        .video-display-container.is-fullscreen .fullscreen-close-btn {
+            display: block !important;
+        }
+
+        /* PLEIN ÉCRAN : Règle standard :fullscreen */
+        .video-display-container:fullscreen {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            border: none !important;
+            background: #000 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .video-display-container:fullscreen .video-feed {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            object-fit: contain !important;
+            cursor: zoom-out !important;
+        }
+
+        .video-display-container:fullscreen .fullscreen-close-btn {
+            display: block !important;
+        }
+
+        /* PLEIN ÉCRAN : Règle Webkit :-webkit-full-screen */
+        .video-display-container:-webkit-full-screen {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            border: none !important;
+            background: #000 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .video-display-container:-webkit-full-screen .video-feed {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            object-fit: contain !important;
+            cursor: zoom-out !important;
+        }
+
+        .video-display-container:-webkit-full-screen .fullscreen-close-btn {
+            display: block !important;
+        }
+    </style>
+
+    <script src="/static/js/chart.js" defer></script>
+    <script src="/static/js/common.js?v=2.4" defer></script>
+    <script src="/static/js/debug.js?v=2.4" defer></script>
 </head>
 
 <body class="mode-BLEUE">
@@ -120,13 +415,71 @@
             </div>
         </div>
 
-        <div class="card" style="grid-column: span 2;">
-            <h3>📷 Flux Caméra Embarquée</h3>
-            <div style="display:flex; justify-content:center; align-items:center; background:#111; border:1px solid #333; border-radius:8px; min-height:240px; margin-top:10px; overflow:hidden; position:relative;">
-                <img id="camera-stream" src="" alt="Flux vidéo" style="max-width:100%; max-height:360px; border-radius: 4px; display: none;">
-                <div id="camera-placeholder" style="color:#666; font-size: 0.9em; padding: 20px; text-align: center;">
-                    🎥 En attente du flux vidéo de la caméra...
+        <!-- FLUX VIDÉO 1 : Caméra Zénithale USB (PC) -->
+        <div class="card video-card" id="card-video-zenithale">
+            <div class="video-card-header">
+                <div class="video-title-group">
+                    <span class="video-icon">🔭</span>
+                    <div>
+                        <h3 style="margin:0; font-size:1.05em;">Caméra Zénithale USB</h3>
+                        <span class="video-subtitle">PC • Détection ArUco & Recalage Table</span>
+                    </div>
                 </div>
+                <div class="video-actions-group">
+                    <span id="zenithale-badge" class="badge-status-pill badge-offline">HORS LIGNE</span>
+                    <button id="btn-toggle-resolution" onclick="toggleCameraResolution()" class="btn-video-action btn-resolution-toggle" title="Basculer entre 4K @ 30fps et 1080p @ 60fps">
+                        📺 4K @ 30fps
+                    </button>
+                    <button id="btn-toggle-aruco" onclick="toggleArucoOverlay()" class="btn-video-action btn-aruco-active" title="Activer / Masquer les annotations ArUco">
+                        🎯 ArUco : ON
+                    </button>
+                    <button id="btn-toggle-vision-worker" onclick="toggleVisionWorker()" class="btn-video-action btn-vision-power" title="Démarrer / Arrêter le processus de vision">
+                        ▶ Démarrer
+                    </button>
+                    <button id="btn-fullscreen-zenithale" onclick="toggleFullscreen('container-zenithale')" class="btn-video-action btn-fullscreen" title="Afficher en plein écran">
+                        ⛶ Plein Écran
+                    </button>
+                </div>
+            </div>
+
+            <div id="container-zenithale" class="video-display-container">
+                <img id="zenithale-stream" src="" alt="Flux Caméra Zénithale USB" class="video-feed" style="display:none;" ondblclick="toggleFullscreen('container-zenithale')" title="Double-cliquer pour basculer en plein écran">
+                <div id="zenithale-placeholder" class="video-placeholder">
+                    <div class="placeholder-icon">📹</div>
+                    <div id="zenithale-placeholder-text">En attente du flux de la caméra USB...</div>
+                    <button onclick="startVisionWorker()" class="btn-flash" style="margin-top:10px; background:#00d2ff; color:#0d1117; font-weight:bold;">
+                        Lancer le flux USB
+                    </button>
+                </div>
+                <button id="fs-close-zenithale" class="fullscreen-close-btn" style="display: none;" onclick="exitFullscreen()">✕ Quitter Plein Écran</button>
+            </div>
+        </div>
+
+        <!-- FLUX VIDÉO 2 : Caméra Embarquée (Robot) -->
+        <div class="card video-card" id="card-video-embarquee">
+            <div class="video-card-header">
+                <div class="video-title-group">
+                    <span class="video-icon">🤖</span>
+                    <div>
+                        <h3 style="margin:0; font-size:1.05em;">Caméra Embarquée</h3>
+                        <span class="video-subtitle">Raspberry Pi • Flux Match (Port 8081)</span>
+                    </div>
+                </div>
+                <div class="video-actions-group">
+                    <span id="embarquee-badge" class="badge-status-pill badge-offline">HORS LIGNE</span>
+                    <button id="btn-fullscreen-embarquee" onclick="toggleFullscreen('container-embarquee')" class="btn-video-action btn-fullscreen" title="Afficher en plein écran">
+                        ⛶ Plein Écran
+                    </button>
+                </div>
+            </div>
+
+            <div id="container-embarquee" class="video-display-container">
+                <img id="camera-stream" src="" alt="Flux Caméra Embarquée" class="video-feed" style="display:none;" ondblclick="toggleFullscreen('container-embarquee')" title="Double-cliquer pour basculer en plein écran">
+                <div id="camera-placeholder" class="video-placeholder">
+                    <div class="placeholder-icon">🎥</div>
+                    <div id="camera-placeholder-text">En attente du flux vidéo de la caméra robot...</div>
+                </div>
+                <button id="fs-close-embarquee" class="fullscreen-close-btn" style="display: none;" onclick="exitFullscreen()">✕ Quitter Plein Écran</button>
             </div>
         </div>
 

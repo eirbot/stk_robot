@@ -18,3 +18,5 @@ compile_commands.json.bak
 .framework
 .ccls
 Base/Web/.zmq/
+*.fiber.gz
+*.fiber.br
