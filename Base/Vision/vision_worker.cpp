@@ -70,7 +70,7 @@ constexpr double HAUTEUR_TAG_ROBOT = 300.0;
 constexpr double DEPART_ABS_X      = 200.0;
 constexpr double DEPART_ABS_Y      = 200.0;
 
-constexpr int TAG_ID_ROBOT = 47;
+constexpr int TAG_ID_ROBOT = 2;
 
 // ==============================================================================
 // --- WRAPPER UNIFIE ARUCO : COMPATIBLE OPENCV 4.x (< 4.7) ET OPENCV 5.x / 4.7+

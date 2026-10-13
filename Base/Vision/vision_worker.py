@@ -42,7 +42,7 @@ TAGS_VINYLE_COORDS = {
 }
 
 # ID du tag ArUco posé sur le robot
-TAG_ID_ROBOT = 47
+TAG_ID_ROBOT = 2
 
 # Paramètres de calibration intrinsèque de la caméra (ex: capteur 4K)
 MATRICE_CAMERA = np.array([
