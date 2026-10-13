@@ -566,20 +566,20 @@ while True:
                 cv2.putText(image_annotee, f"TABLE #{tag_id}", (c_pt[0] + int(18 * scale_ui), c_pt[1] - int(10 * scale_ui)),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.85 * scale_ui, (255, 255, 0), max(2, int(2.5 * scale_ui)))
             
-        # Si nous avons une matrice d'homographie valide
-        if derniere_homographie is not None:
-            robot_idx = -1
-            for i, tag_id in enumerate(ids.flatten()):
-                if tag_id == TAG_ID_ROBOT:
-                    robot_idx = i
-                    break
-                    
-            if robot_idx != -1:
-                robot_trouve = True
-                coins_robot = coins[robot_idx][0]
-                centre_image = np.mean(coins_robot, axis=0)
-                devant_image = np.mean(coins_robot[0:2], axis=0)
+        # Recherche du robot (Tag TAG_ID_ROBOT)
+        robot_idx = -1
+        for i, tag_id in enumerate(ids.flatten()):
+            if tag_id == TAG_ID_ROBOT:
+                robot_idx = i
+                break
                 
+        if robot_idx != -1:
+            robot_trouve = True
+            coins_robot = coins[robot_idx][0]
+            centre_image = np.mean(coins_robot, axis=0)
+            devant_image = np.mean(coins_robot[0:2], axis=0)
+            
+            if derniere_homographie is not None:
                 # Application de l'homographie sur le centre et le nez du robot
                 points_projeter = np.array([[centre_image], [devant_image]], dtype=np.float32)
                 points_monde_brut = cv2.perspectiveTransform(points_projeter, derniere_homographie)
@@ -608,6 +608,13 @@ while True:
                     
                 x_final = x_parallaxe + offset_x
                 y_final = y_parallaxe + offset_y
+            else:
+                # Mode sans table : angle direct image et position approximative
+                dx = devant_image[0] - centre_image[0]
+                dy = devant_image[1] - centre_image[1]
+                theta_rad = math.atan2(-dy, dx)
+                x_final = (centre_image[0] / frame_w) * LARGEUR_TABLE_X
+                y_final = (1.0 - (centre_image[1] / frame_h)) * HAUTEUR_TABLE_Y
                 
                 # Envoi des coordonnées finales via ZMQ PUSH
                 message_telemetrie = {

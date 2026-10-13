@@ -68,15 +68,26 @@ func ensureVisionWorkerCompiled(visionDir string) (string, error) {
 		filepath.Join(visionDir, "build", "vision_worker"),
 	}
 
+	cppFile := filepath.Join(visionDir, "vision_worker.cpp")
+	var cppModTime time.Time
+	if fi, err := os.Stat(cppFile); err == nil {
+		cppModTime = fi.ModTime()
+	}
+
 	for _, bin := range binCandidates {
 		if fi, err := os.Stat(bin); err == nil && !fi.IsDir() {
+			if !cppModTime.IsZero() && fi.ModTime().Before(cppModTime) {
+				fmt.Printf("[VISION] 🔄 Le code C++ vision_worker.cpp (%s) est plus récent que %s (%s). Recompilation...\n",
+					cppModTime.Format("15:04:05"), filepath.Base(bin), fi.ModTime().Format("15:04:05"))
+				break
+			}
 			_ = os.Chmod(bin, 0755)
 			return filepath.Abs(bin)
 		}
 	}
 
-	// Binaire non présent : compilation automatique en C++ via CMake
-	fmt.Printf("[VISION] ⚙️  Binaire vision_worker C++ non trouvé dans %s. Compilation automatique en cours via CMake...\n", visionDir)
+	// Binaire non présent ou obsolète : compilation automatique en C++ via CMake
+	fmt.Printf("[VISION] ⚙️  Compilation de vision_worker C++ dans %s via CMake...\n", visionDir)
 	buildDir := filepath.Join(visionDir, "build")
 	_ = os.MkdirAll(buildDir, 0755)
 

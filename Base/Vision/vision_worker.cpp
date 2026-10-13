@@ -81,17 +81,23 @@ public:
 #if OPENCV_ARUCO_MODERN
         dict_ = cv::aruco::getPredefinedDictionary(dict_id);
         params_.adaptiveThreshWinSizeMin = 3;
-        params_.adaptiveThreshWinSizeMax = 23;
-        params_.adaptiveThreshWinSizeStep = 10;
-        params_.cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+        params_.adaptiveThreshWinSizeMax = 41;
+        params_.adaptiveThreshWinSizeStep = 4;
+        params_.minMarkerPerimeterRate = 0.005;
+        params_.maxMarkerPerimeterRate = 4.0;
+        params_.polygonalApproxAccuracyRate = 0.05;
+        params_.cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
         detector_ = std::make_unique<cv::aruco::ArucoDetector>(dict_, params_);
 #else
         dict_ = cv::aruco::getPredefinedDictionary(dict_id);
         params_ = cv::aruco::DetectorParameters::create();
         params_->adaptiveThreshWinSizeMin = 3;
-        params_->adaptiveThreshWinSizeMax = 23;
-        params_->adaptiveThreshWinSizeStep = 10;
-        params_->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+        params_->adaptiveThreshWinSizeMax = 41;
+        params_->adaptiveThreshWinSizeStep = 4;
+        params_->minMarkerPerimeterRate = 0.005;
+        params_->maxMarkerPerimeterRate = 4.0;
+        params_->polygonalApproxAccuracyRate = 0.05;
+        params_->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
 #endif
     }
 
@@ -251,6 +257,7 @@ struct StreamFrameBuffer {
            << "\"simulated\":" << (simulated ? "true" : "false") << ","
            << "\"homography_ready\":" << (homography_ready ? "true" : "false") << ","
            << "\"robot_detected\":" << (robot_detected ? "true" : "false") << ","
+           << "\"robot_tag_id\":" << TAG_ID_ROBOT << ","
            << "\"robot_x\":" << std::setprecision(1) << robot_x << ","
            << "\"robot_y\":" << std::setprecision(1) << robot_y << ","
            << "\"robot_theta_deg\":" << std::setprecision(1) << robot_theta_deg << ","
@@ -836,22 +843,24 @@ int main(int argc, char** argv) {
                 }
             }
 
-            // Calcul de la position du robot (Tag 47)
-            if (has_homography) {
-                int robot_idx = -1;
-                for (size_t i = 0; i < ids.size(); ++i) {
-                    if (ids[i] == TAG_ID_ROBOT) {
-                        robot_idx = static_cast<int>(i);
-                        break;
-                    }
+            // Calcul de la position du robot (Tag TAG_ID_ROBOT)
+            int robot_idx = -1;
+            for (size_t i = 0; i < ids.size(); ++i) {
+                if (ids[i] == TAG_ID_ROBOT) {
+                    robot_idx = static_cast<int>(i);
+                    break;
                 }
+            }
 
-                if (robot_idx != -1) {
-                    robot_trouve = true;
-                    const auto& coins_robot = corners[robot_idx];
-                    cv::Point2f centre_image = (coins_robot[0] + coins_robot[1] + coins_robot[2] + coins_robot[3]) * 0.25f;
-                    cv::Point2f devant_image = (coins_robot[0] + coins_robot[1]) * 0.5f;
+            if (robot_idx != -1) {
+                robot_trouve = true;
+                const auto& coins_robot = corners[robot_idx];
+                cv::Point2f centre_image = (coins_robot[0] + coins_robot[1] + coins_robot[2] + coins_robot[3]) * 0.25f;
+                cv::Point2f devant_image = (coins_robot[0] + coins_robot[1]) * 0.5f;
 
+                double theta_deg = 0.0;
+
+                if (has_homography) {
                     std::vector<cv::Point2f> pts_proj = { centre_image, devant_image };
                     std::vector<cv::Point2f> pts_monde_brut;
                     cv::perspectiveTransform(pts_proj, pts_monde_brut, homography);
@@ -871,7 +880,7 @@ int main(int argc, char** argv) {
                     double dx = x_devant_parallaxe - x_parallaxe;
                     double dy = y_devant_parallaxe - y_parallaxe;
                     theta_rad = std::atan2(dy, dx);
-                    double theta_deg = theta_rad * 180.0 / M_PI;
+                    theta_deg = theta_rad * 180.0 / M_PI;
 
                     if (g_do_calibration.load()) {
                         offset_x = DEPART_ABS_X - x_parallaxe;
@@ -883,51 +892,66 @@ int main(int argc, char** argv) {
 
                     x_final = x_parallaxe + offset_x;
                     y_final = y_parallaxe + offset_y;
+                } else {
+                    // Mode sans homographie vinyle préalable :
+                    // Calcul de l'angle direct dans l'image et position métrique estimée
+                    double dx = devant_image.x - centre_image.x;
+                    double dy = devant_image.y - centre_image.y;
+                    theta_rad = std::atan2(-dy, dx);
+                    theta_deg = theta_rad * 180.0 / M_PI;
 
-                    // Envoi ZeroMQ PUSH vers le serveur Go
-                    char zmq_msg[256];
-                    snprintf(zmq_msg, sizeof(zmq_msg),
-                             "{\"type\":\"state_update\",\"data\":{\"x\":%.2f,\"y\":%.2f,\"theta\":%.4f}}",
-                             x_final, y_final, theta_rad);
-                    zmq_send(push_socket, zmq_msg, strlen(zmq_msg), ZMQ_DONTWAIT);
+                    x_final = (centre_image.x / static_cast<double>(frame_w)) * LARGEUR_TABLE_X;
+                    y_final = (1.0 - (centre_image.y / static_cast<double>(frame_h))) * HAUTEUR_TABLE_Y;
+                }
 
-                    // Tracé overlay du robot
-                    cv::Point pt_centre(static_cast<int>(centre_image.x), static_cast<int>(centre_image.y));
-                    cv::Point pt_devant(static_cast<int>(devant_image.x), static_cast<int>(devant_image.y));
+                // Envoi ZeroMQ PUSH vers le serveur Go
+                char zmq_msg[256];
+                snprintf(zmq_msg, sizeof(zmq_msg),
+                         "{\"type\":\"state_update\",\"data\":{\"x\":%.2f,\"y\":%.2f,\"theta\":%.4f}}",
+                         x_final, y_final, theta_rad);
+                zmq_send(push_socket, zmq_msg, strlen(zmq_msg), ZMQ_DONTWAIT);
 
-                    double v_dx = pt_devant.x - pt_centre.x;
-                    double v_dy = pt_devant.y - pt_centre.y;
-                    double v_len = std::hypot(v_dx, v_dy);
-                    cv::Point pt_arrow = pt_devant;
-                    if (v_len > 0.0) {
-                        double tgt_len = 110.0 * scale_ui;
-                        pt_arrow = cv::Point(static_cast<int>(pt_centre.x + (v_dx / v_len) * tgt_len),
-                                             static_cast<int>(pt_centre.y + (v_dy / v_len) * tgt_len));
-                    }
+                // Tracé overlay du robot
+                cv::Point pt_centre(static_cast<int>(centre_image.x), static_cast<int>(centre_image.y));
+                cv::Point pt_devant(static_cast<int>(devant_image.x), static_cast<int>(devant_image.y));
 
-                    cv::circle(frame_annotated, pt_centre, static_cast<int>(15 * scale_ui), cv::Scalar(0, 255, 255), -1);
-                    cv::arrowedLine(frame_annotated, pt_centre, pt_arrow, cv::Scalar(0, 255, 255),
-                                    std::max(3, static_cast<int>(6 * scale_ui)), 8, 0, 0.25);
+                double v_dx = pt_devant.x - pt_centre.x;
+                double v_dy = pt_devant.y - pt_centre.y;
+                double v_len = std::hypot(v_dx, v_dy);
+                cv::Point pt_arrow = pt_devant;
+                if (v_len > 0.0) {
+                    double tgt_len = 110.0 * scale_ui;
+                    pt_arrow = cv::Point(static_cast<int>(pt_centre.x + (v_dx / v_len) * tgt_len),
+                                         static_cast<int>(pt_centre.y + (v_dy / v_len) * tgt_len));
+                }
 
-                    std::ostringstream ss_rob;
-                    ss_rob << std::fixed << std::setprecision(0)
-                           << "ROBOT #" << TAG_ID_ROBOT << " : X=" << x_final << " Y=" << y_final
+                cv::circle(frame_annotated, pt_centre, static_cast<int>(15 * scale_ui), cv::Scalar(0, 255, 255), -1);
+                cv::arrowedLine(frame_annotated, pt_centre, pt_arrow, cv::Scalar(0, 255, 255),
+                                std::max(3, static_cast<int>(6 * scale_ui)), 8, 0, 0.25);
+
+                std::ostringstream ss_rob;
+                ss_rob << std::fixed << std::setprecision(0);
+                if (has_homography) {
+                    ss_rob << "ROBOT #" << TAG_ID_ROBOT << " : X=" << x_final << " Y=" << y_final
                            << " O=" << std::setprecision(1) << theta_deg << "deg";
-                    std::string label_robot = ss_rob.str();
+                } else {
+                    ss_rob << "ROBOT #" << TAG_ID_ROBOT << " [SANS TABLE] : X=" << x_final << " Y=" << y_final
+                           << " O=" << std::setprecision(1) << theta_deg << "deg";
+                }
+                std::string label_robot = ss_rob.str();
 
-                    int baseline = 0;
-                    cv::Size t_sz = cv::getTextSize(label_robot, cv::FONT_HERSHEY_SIMPLEX,
-                                                    0.85 * scale_ui, std::max(2, static_cast<int>(2.5 * scale_ui)), &baseline);
-                    cv::Point lbl_pos(pt_centre.x - static_cast<int>(120 * scale_ui),
-                                      pt_centre.y - static_cast<int>(35 * scale_ui));
-                    cv::Rect bg_rect(lbl_pos.x - 8, lbl_pos.y - t_sz.height - 8, t_sz.width + 16, t_sz.height + 16);
-                    bg_rect = bg_rect & cv::Rect(0, 0, frame_w, frame_h);
-                    if (bg_rect.width > 0 && bg_rect.height > 0) {
-                        cv::rectangle(frame_annotated, bg_rect, cv::Scalar(12, 16, 20), -1);
-                        cv::rectangle(frame_annotated, bg_rect, cv::Scalar(0, 255, 255), std::max(1, static_cast<int>(1.5 * scale_ui)));
-                        cv::putText(frame_annotated, label_robot, lbl_pos, cv::FONT_HERSHEY_SIMPLEX,
-                                    0.85 * scale_ui, cv::Scalar(0, 255, 255), std::max(2, static_cast<int>(2.5 * scale_ui)));
-                    }
+                int baseline = 0;
+                cv::Size t_sz = cv::getTextSize(label_robot, cv::FONT_HERSHEY_SIMPLEX,
+                                                0.85 * scale_ui, std::max(2, static_cast<int>(2.5 * scale_ui)), &baseline);
+                cv::Point lbl_pos(pt_centre.x - static_cast<int>(120 * scale_ui),
+                                  pt_centre.y - static_cast<int>(35 * scale_ui));
+                cv::Rect bg_rect(lbl_pos.x - 8, lbl_pos.y - t_sz.height - 8, t_sz.width + 16, t_sz.height + 16);
+                bg_rect = bg_rect & cv::Rect(0, 0, frame_w, frame_h);
+                if (bg_rect.width > 0 && bg_rect.height > 0) {
+                    cv::rectangle(frame_annotated, bg_rect, cv::Scalar(12, 16, 20), -1);
+                    cv::rectangle(frame_annotated, bg_rect, cv::Scalar(0, 255, 255), std::max(1, static_cast<int>(1.5 * scale_ui)));
+                    cv::putText(frame_annotated, label_robot, lbl_pos, cv::FONT_HERSHEY_SIMPLEX,
+                                0.85 * scale_ui, cv::Scalar(0, 255, 255), std::max(2, static_cast<int>(2.5 * scale_ui)));
                 }
             }
         }
@@ -975,7 +999,11 @@ int main(int argc, char** argv) {
             std::ostringstream ss_hud_rob;
             ss_hud_rob << std::fixed << std::setprecision(0);
             if (robot_trouve) {
-                ss_hud_rob << "ROBOT: DETECTE (X=" << x_final << " Y=" << y_final << ")";
+                if (has_homography) {
+                    ss_hud_rob << "ROBOT: DETECTE (X=" << x_final << " Y=" << y_final << ")";
+                } else {
+                    ss_hud_rob << "ROBOT: VU [SANS TABLE] (X=" << x_final << " Y=" << y_final << ")";
+                }
             } else {
                 ss_hud_rob << "ROBOT: NON DETECTE (Tag #" << TAG_ID_ROBOT << ")";
             }

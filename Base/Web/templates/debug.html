@@ -389,9 +389,16 @@
 
         <div class="card" style="grid-column: span 2;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h3>📍 Position Robot (Odométrie)</h3>
+                <h3>📍 Position Robot (Odométrie & Vision)</h3>
                 <button onclick="setRobotPosition()" class="btn-tiny"
                     style="background:#4CAF50; padding:8px 15px;">APPLIQUER</button>
+            </div>
+            <!-- Affichage Télémétrie en temps réel -->
+            <div class="live-odometry-banner" style="background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 15px; margin-bottom:12px; display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div style="font-size:0.85em; color:#8b949e; font-weight:700;">POSITION ACTUELLE :</div>
+                <div><span style="color:#58a6ff; font-weight:bold;">X:</span> <span id="live-pos-x" style="font-family:monospace; font-size:1.15em; font-weight:bold; color:#f0f6fc;">--</span> <span style="font-size:0.8em; color:#8b949e;">mm</span></div>
+                <div><span style="color:#58a6ff; font-weight:bold;">Y:</span> <span id="live-pos-y" style="font-family:monospace; font-size:1.15em; font-weight:bold; color:#f0f6fc;">--</span> <span style="font-size:0.8em; color:#8b949e;">mm</span></div>
+                <div><span style="color:#58a6ff; font-weight:bold;">θ:</span> <span id="live-pos-theta" style="font-family:monospace; font-size:1.15em; font-weight:bold; color:#f0f6fc;">--</span> <span style="font-size:0.8em; color:#8b949e;">°</span></div>
             </div>
             <div style="display: flex; gap: 15px; align-items: center; justify-content: center;">
                 <div style="display:flex; flex-direction:column; gap:5px;">
@@ -410,8 +417,9 @@
                         style="width: 80px; background: #333; color: white; border: 1px solid #555; padding: 5px;">
                 </div>
             </div>
-            <div style="margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; display: flex; justify-content: center;">
-                <button id="btn-calibrate-vision" class="btn-flash" style="background:#2196F3; width:100%; font-size:0.95em;">Calibrer Vision (Zénithale)</button>
+            <div style="margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                <button id="btn-copy-vision-pos" type="button" onclick="copyVisionToInputs()" class="btn-tiny" style="background:#0284c7; padding:8px 12px; font-weight:bold;" title="Copier les coordonnées X, Y, θ vues par la caméra vers les entrées ci-dessus">📋 Copier Vision → Entrées</button>
+                <button id="btn-calibrate-vision" class="btn-flash" style="background:#2196F3; flex:1; font-size:0.95em;">Calibrer Vision (Zénithale)</button>
             </div>
         </div>
 
@@ -452,6 +460,43 @@
                     </button>
                 </div>
                 <button id="fs-close-zenithale" class="fullscreen-close-btn" style="display: none;" onclick="exitFullscreen()">✕ Quitter Plein Écran</button>
+            </div>
+
+            <!-- BANDEAU TÉLÉMÉTRIE EN DIRECT : X, Y, THETA & STATUTS -->
+            <div id="zenithale-telemetry-panel" class="zenithale-telemetry-panel">
+                <div class="telemetry-item">
+                    <span class="telemetry-label">ROBOT (TAG #2)</span>
+                    <span id="zen-robot-status" class="telemetry-badge-status not-detected">NON DÉTECTÉ</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">X</span>
+                    <div class="telemetry-value-wrap">
+                        <span id="zen-pos-x" class="telemetry-value">--</span>
+                        <span class="telemetry-unit">mm</span>
+                    </div>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">Y</span>
+                    <div class="telemetry-value-wrap">
+                        <span id="zen-pos-y" class="telemetry-value">--</span>
+                        <span class="telemetry-unit">mm</span>
+                    </div>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">THETA (θ)</span>
+                    <div class="telemetry-value-wrap">
+                        <span id="zen-pos-theta" class="telemetry-value">--</span>
+                        <span class="telemetry-unit">°</span>
+                    </div>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">TABLE / CALIB</span>
+                    <span id="zen-table-status" class="telemetry-subval">ATTENTE VINYLES</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">TAGS VISIBLES</span>
+                    <span id="zen-tags-list" class="telemetry-tags">--</span>
+                </div>
             </div>
         </div>
 

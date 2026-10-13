@@ -98,6 +98,22 @@ window.socket.on('state_update', (state) => {
             stratSel.value = c.static_strat;
         }
     }
+
+    // Mise à jour de la télémétrie odonométrique en direct
+    if (state.telemetry) {
+        const livePosX = document.getElementById('live-pos-x');
+        const livePosY = document.getElementById('live-pos-y');
+        const livePosTheta = document.getElementById('live-pos-theta');
+        if (livePosX && state.telemetry.x != null) livePosX.innerText = Math.round(state.telemetry.x);
+        if (livePosY && state.telemetry.y != null) livePosY.innerText = Math.round(state.telemetry.y);
+        if (livePosTheta && state.telemetry.theta != null) {
+            let deg = state.telemetry.theta;
+            if (Math.abs(deg) <= Math.PI * 2.1) {
+                deg = deg * 180 / Math.PI;
+            }
+            livePosTheta.innerText = Number(deg).toFixed(1);
+        }
+    }
 });
 
 // Fonctions de bascule d'état caméra et LiDAR
@@ -564,7 +580,7 @@ function initZenithaleVision() {
     // Initialisation de la surveillance du statut zénithale
     checkZenithaleStatus();
     if (!zenithaleStatusTimer) {
-        zenithaleStatusTimer = setInterval(checkZenithaleStatus, 2500);
+        zenithaleStatusTimer = setInterval(checkZenithaleStatus, 1000);
     }
 
     // Écouteur pour le mode plein écran
@@ -718,6 +734,9 @@ async function checkZenithaleStatus() {
                 pwrBtn.innerHTML = '⏹ Arrêter';
                 pwrBtn.className = 'btn-video-action btn-vision-power running';
             }
+
+            // Mise à jour des coordonnées et statuts du panneau télémétrie zénithale
+            updateZenithaleTelemetryUI(data);
             return;
         }
     } catch (err) {
@@ -751,6 +770,110 @@ async function checkZenithaleStatus() {
         badge.innerText = 'HORS LIGNE';
         badge.className = 'badge-status-pill badge-offline';
     }
+
+    // Réinitialisation du panneau télémétrie zénithale
+    updateZenithaleTelemetryUI(null);
+}
+
+/**
+ * Met à jour le bandeau d'affichage de la télémétrie zénithale (X, Y, Theta, Robot, Table)
+ */
+function updateZenithaleTelemetryUI(data) {
+    const zenRobotStatus = document.getElementById('zen-robot-status');
+    const zenPosX = document.getElementById('zen-pos-x');
+    const zenPosY = document.getElementById('zen-pos-y');
+    const zenPosTheta = document.getElementById('zen-pos-theta');
+    const zenTableStatus = document.getElementById('zen-table-status');
+    const zenTagsList = document.getElementById('zen-tags-list');
+    const livePosX = document.getElementById('live-pos-x');
+    const livePosY = document.getElementById('live-pos-y');
+    const livePosTheta = document.getElementById('live-pos-theta');
+
+    if (!data) {
+        if (zenRobotStatus) {
+            zenRobotStatus.innerText = 'HORS LIGNE';
+            zenRobotStatus.className = 'telemetry-badge-status not-detected';
+        }
+        if (zenPosX) zenPosX.innerText = '--';
+        if (zenPosY) zenPosY.innerText = '--';
+        if (zenPosTheta) zenPosTheta.innerText = '--';
+        if (zenTableStatus) {
+            zenTableStatus.innerText = 'HORS LIGNE';
+            zenTableStatus.className = 'telemetry-subval';
+        }
+        if (zenTagsList) zenTagsList.innerText = '--';
+        return;
+    }
+
+    window.lastVisionData = data;
+
+    if (zenRobotStatus) {
+        const tagLabel = data.robot_tag_id ? `TAG #${data.robot_tag_id}` : 'TAG #2';
+        if (data.robot_detected) {
+            zenRobotStatus.innerText = `DÉTECTÉ (${tagLabel})`;
+            zenRobotStatus.className = 'telemetry-badge-status detected';
+        } else {
+            zenRobotStatus.innerText = `NON DÉTECTÉ (${tagLabel})`;
+            zenRobotStatus.className = 'telemetry-badge-status not-detected';
+        }
+    }
+
+    if (zenPosX && zenPosY && zenPosTheta) {
+        if (data.robot_detected) {
+            zenPosX.innerText = Math.round(data.robot_x);
+            zenPosY.innerText = Math.round(data.robot_y);
+            zenPosTheta.innerText = Number(data.robot_theta_deg).toFixed(1);
+        } else {
+            zenPosX.innerText = '--';
+            zenPosY.innerText = '--';
+            zenPosTheta.innerText = '--';
+        }
+    }
+
+    if (zenTableStatus) {
+        if (data.homography_ready) {
+            zenTableStatus.innerText = 'CALIBRÉE (4/4)';
+            zenTableStatus.className = 'telemetry-subval ready';
+        } else {
+            const tableTags = [10, 11, 12, 13];
+            const nbTags = (data.detected_ids || []).filter(id => tableTags.includes(id)).length;
+            zenTableStatus.innerText = `ATTENTE (${nbTags}/4)`;
+            zenTableStatus.className = 'telemetry-subval';
+        }
+    }
+
+    if (zenTagsList) {
+        if (data.detected_ids && data.detected_ids.length > 0) {
+            zenTagsList.innerText = '[' + data.detected_ids.join(', ') + ']';
+        } else {
+            zenTagsList.innerText = 'Aucun';
+        }
+    }
+
+    // Mise à jour de la carte odométrie avec la vision en temps réel si détecté
+    if (data.robot_detected) {
+        if (livePosX) livePosX.innerText = Math.round(data.robot_x);
+        if (livePosY) livePosY.innerText = Math.round(data.robot_y);
+        if (livePosTheta) livePosTheta.innerText = Number(data.robot_theta_deg).toFixed(1);
+    }
+}
+
+/**
+ * Copie les coordonnées détectées par la caméra zénithale directement dans les champs d'entrée d'odométrie
+ */
+function copyVisionToInputs() {
+    if (!window.lastVisionData || !window.lastVisionData.robot_detected) {
+        alert("⚠️ Le robot n'est pas encore détecté par la caméra zénithale.");
+        return;
+    }
+    const inputX = document.getElementById('pos-x');
+    const inputY = document.getElementById('pos-y');
+    const inputTheta = document.getElementById('pos-theta');
+    if (inputX) inputX.value = Math.round(window.lastVisionData.robot_x);
+    if (inputY) inputY.value = Math.round(window.lastVisionData.robot_y);
+    if (inputTheta) inputTheta.value = Math.round(window.lastVisionData.robot_theta_deg);
+
+    showNotification("Coordonnées Vision copiées dans les entrées odométriques !");
 }
 
 /**
