@@ -5,5 +5,6 @@
             "envManager": "ms-python.python:conda",
             "packageManager": "ms-python.python:conda"
         }
-    ]
+    ],
+    "cmake.sourceDirectory": "/home/guig/Documents/Eirbot/stk_robot/Base/Vision"
 }

@@ -43,24 +43,68 @@ var (
 	visionMutex sync.Mutex
 )
 
-func findVisionPaths() (string, string) {
+func findVisionDir() string {
 	candidates := []string{
-		"/home/based/Documents/stk_robot/Base/Vision",
-		"../../Base/Vision",
-		"Base/Vision",
-		"../Vision",
 		"Vision",
+		"./Vision",
+		"../Vision",
+		"Base/Vision",
+		"../../Base/Vision",
+		"/home/based/Documents/stk_robot/Base/Vision",
 	}
 	for _, dir := range candidates {
-		venvPy := filepath.Join(dir, ".venv", "bin", "python3")
-		script := filepath.Join(dir, "vision_worker.py")
-		if _, err := os.Stat(venvPy); err == nil {
-			if _, err2 := os.Stat(script); err2 == nil {
-				return venvPy, script
+		if fi, err := os.Stat(dir); err == nil && fi.IsDir() {
+			if _, err2 := os.Stat(filepath.Join(dir, "CMakeLists.txt")); err2 == nil {
+				return dir
 			}
 		}
 	}
-	return "", ""
+	return ""
+}
+
+func ensureVisionWorkerCompiled(visionDir string) (string, error) {
+	binCandidates := []string{
+		filepath.Join(visionDir, "vision_worker"),
+		filepath.Join(visionDir, "build", "vision_worker"),
+	}
+
+	for _, bin := range binCandidates {
+		if fi, err := os.Stat(bin); err == nil && !fi.IsDir() {
+			_ = os.Chmod(bin, 0755)
+			return filepath.Abs(bin)
+		}
+	}
+
+	// Binaire non présent : compilation automatique en C++ via CMake
+	fmt.Printf("[VISION] ⚙️  Binaire vision_worker C++ non trouvé dans %s. Compilation automatique en cours via CMake...\n", visionDir)
+	buildDir := filepath.Join(visionDir, "build")
+	_ = os.MkdirAll(buildDir, 0755)
+
+	cmakeCmd := exec.Command("cmake", "-B", "build", "-S", ".")
+	cmakeCmd.Dir = visionDir
+	cmakeCmd.Stdout = os.Stdout
+	cmakeCmd.Stderr = os.Stderr
+	if err := cmakeCmd.Run(); err != nil {
+		return "", fmt.Errorf("erreur configuration CMake dans %s: %w", visionDir, err)
+	}
+
+	makeCmd := exec.Command("cmake", "--build", "build", "-j4")
+	makeCmd.Dir = visionDir
+	makeCmd.Stdout = os.Stdout
+	makeCmd.Stderr = os.Stderr
+	if err := makeCmd.Run(); err != nil {
+		return "", fmt.Errorf("erreur compilation vision_worker: %w", err)
+	}
+
+	for _, bin := range binCandidates {
+		if fi, err := os.Stat(bin); err == nil && !fi.IsDir() {
+			_ = os.Chmod(bin, 0755)
+			fmt.Printf("[VISION] ✅ Binaire C++ compilé avec succès : %s\n", bin)
+			return filepath.Abs(bin)
+		}
+	}
+
+	return "", fmt.Errorf("compilation terminée mais binaire vision_worker introuvable")
 }
 
 func startVisionWorker() (int, error) {
@@ -73,13 +117,18 @@ func startVisionWorker() (int, error) {
 		}
 	}
 
-	venvPy, script := findVisionPaths()
-	if venvPy == "" {
-		return 0, fmt.Errorf("environnement virtuel vision (.venv) introuvable dans Base/Vision")
+	visionDir := findVisionDir()
+	if visionDir == "" {
+		return 0, fmt.Errorf("dossier Base/Vision introuvable")
 	}
 
-	cmd := exec.Command(venvPy, script)
-	cmd.Dir = filepath.Dir(script)
+	binPath, err := ensureVisionWorkerCompiled(visionDir)
+	if err != nil {
+		return 0, fmt.Errorf("impossible de préparer le binaire C++ : %w", err)
+	}
+
+	cmd := exec.Command(binPath)
+	cmd.Dir = filepath.Dir(binPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -87,7 +136,7 @@ func startVisionWorker() (int, error) {
 		return 0, err
 	}
 	visionCmd = cmd
-	fmt.Printf("[VISION] Processus vision_worker démarré (PID: %d)\n", cmd.Process.Pid)
+	fmt.Printf("[VISION] 🚀 Processus vision_worker C++ démarré (PID: %d, Path: %s)\n", cmd.Process.Pid, binPath)
 	return cmd.Process.Pid, nil
 }
 
@@ -116,9 +165,27 @@ func isVisionWorkerRunning() (bool, int) {
 	return false, 0
 }
 
+func findWebDir() string {
+	candidates := []string{
+		"Web",
+		"./Web",
+		".",
+		"../Web",
+		"Base/Web",
+	}
+	for _, c := range candidates {
+		if _, err := os.Stat(filepath.Join(c, "templates", "index.html")); err == nil {
+			return c
+		}
+	}
+	return "."
+}
+
 func setupRoutes(app *fiber.App) {
+	webDir := findWebDir()
+
 	// Services de fichiers statiques pour l'IHM avec mise en cache et compression
-	app.Static("/static", "./static", fiber.Static{
+	app.Static("/static", filepath.Join(webDir, "static"), fiber.Static{
 		Compress:      true,
 		ByteRange:     true,
 		Browse:        false,
@@ -127,19 +194,19 @@ func setupRoutes(app *fiber.App) {
 	})
 
 	// Pages HTML avec en-têtes anti-blocage et revalidation
-	sendPage := func(c *fiber.Ctx, path string) error {
+	sendPage := func(c *fiber.Ctx, relPath string) error {
 		c.Set("Cache-Control", "no-cache, must-revalidate")
-		return c.SendFile(path)
+		return c.SendFile(filepath.Join(webDir, relPath))
 	}
 
-	app.Get("/", func(c *fiber.Ctx) error { return sendPage(c, "./templates/index.html") })
-	app.Get("/map", func(c *fiber.Ctx) error { return sendPage(c, "./templates/map.html") })
-	app.Get("/debug", func(c *fiber.Ctx) error { return sendPage(c, "./templates/debug.html") })
-	app.Get("/blockly", func(c *fiber.Ctx) error { return sendPage(c, "./templates/blockly.html") })
-	app.Get("/led_studio", func(c *fiber.Ctx) error { return sendPage(c, "./templates/led_studio.html") })
-	app.Get("/media", func(c *fiber.Ctx) error { return sendPage(c, "./templates/media.html") })
-	app.Get("/replay", func(c *fiber.Ctx) error { return sendPage(c, "./templates/replay.html") })
-	app.Get("/controle", func(c *fiber.Ctx) error { return sendPage(c, "./templates/controle.html") })
+	app.Get("/", func(c *fiber.Ctx) error { return sendPage(c, "templates/index.html") })
+	app.Get("/map", func(c *fiber.Ctx) error { return sendPage(c, "templates/map.html") })
+	app.Get("/debug", func(c *fiber.Ctx) error { return sendPage(c, "templates/debug.html") })
+	app.Get("/blockly", func(c *fiber.Ctx) error { return sendPage(c, "templates/blockly.html") })
+	app.Get("/led_studio", func(c *fiber.Ctx) error { return sendPage(c, "templates/led_studio.html") })
+	app.Get("/media", func(c *fiber.Ctx) error { return sendPage(c, "templates/media.html") })
+	app.Get("/replay", func(c *fiber.Ctx) error { return sendPage(c, "templates/replay.html") })
+	app.Get("/controle", func(c *fiber.Ctx) error { return sendPage(c, "templates/controle.html") })
 	app.Get("/control", func(c *fiber.Ctx) error { return c.Redirect("/controle") })
 
 	// API REST pour contrôle vitesse joystick

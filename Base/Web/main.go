@@ -14,6 +14,7 @@ import (
 
 func findRaspPath() string {
 	paths := []string{
+		"../Rasp",    // Si exécuté depuis Base/
 		"../../Rasp", // Si exécuté depuis Base/Web/
 		"Rasp",       // Si exécuté depuis la racine du projet
 	}
@@ -22,7 +23,7 @@ func findRaspPath() string {
 			return p
 		}
 	}
-	return "../../Rasp" // Par défaut
+	return "../Rasp" // Par défaut
 }
 
 func loadConfig() map[string]interface{} {

@@ -20,3 +20,6 @@ compile_commands.json.bak
 Base/Web/.zmq/
 *.fiber.gz
 *.fiber.br
+Base/Vision/build/
+Base/Vision/vision_worker
+Base/base_stk
