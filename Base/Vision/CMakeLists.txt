@@ -29,8 +29,47 @@ endif()
 find_package(OpenMP REQUIRED)
 find_package(Threads REQUIRED)
 
-# Recherche modulaire d'OpenCV (compatible OpenCV 4.x et OpenCV 5.x)
-find_package(OpenCV REQUIRED COMPONENTS core imgproc objdetect imgcodecs videoio)
+# Recherche modulaire d'OpenCV (compatible OpenCV 4.x et OpenCV 5.x, Ubuntu/Debian/Arch)
+find_package(OpenCV QUIET COMPONENTS core imgproc objdetect imgcodecs videoio)
+
+if(NOT OpenCV_FOUND)
+    # Tentative dans les répertoires standards Ubuntu / Debian multiarch
+    find_path(OpenCV_DIR OpenCVConfig.cmake
+        PATHS
+        /usr/lib/x86_64-linux-gnu/cmake/opencv4
+        /usr/lib/aarch64-linux-gnu/cmake/opencv4
+        /usr/share/opencv4
+        /usr/lib/cmake/opencv4
+        /usr/local/share/opencv4
+    )
+    if(OpenCV_DIR)
+        find_package(OpenCV QUIET PATHS ${OpenCV_DIR})
+    endif()
+endif()
+
+if(NOT OpenCV_FOUND)
+    # Tentative via PkgConfig
+    find_package(PkgConfig QUIET)
+    if(PKG_CONFIG_FOUND)
+        pkg_check_modules(OpenCV QUIET opencv4)
+        if(NOT OpenCV_FOUND)
+            pkg_check_modules(OpenCV QUIET opencv)
+        endif()
+    endif()
+endif()
+
+if(NOT OpenCV_FOUND)
+    message(FATAL_ERROR
+        "\n\n"
+        "========================================================================\n"
+        " [ERREUR] OpenCV developpement est introuvable sur cette machine !\n"
+        " Pour l'installer sous Ubuntu / Debian (GCC 13+) :\n"
+        "   sudo apt update && sudo apt install -y libopencv-dev libzmq3-dev libomp-dev\n"
+        " Pour l'installer sous Arch Linux :\n"
+        "   sudo pacman -S --needed opencv zeromq openmp\n"
+        "========================================================================\n"
+    )
+endif()
 
 # Détection de ZeroMQ via pkg-config ou recherche de bibliothèque standard
 find_package(PkgConfig QUIET)
