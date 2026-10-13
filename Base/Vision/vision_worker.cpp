@@ -26,11 +26,22 @@
 
 // OpenCV
 #include <opencv2/core.hpp>
+#include <opencv2/core/version.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/videoio.hpp>
-#include <opencv2/objdetect/aruco_detector.hpp>
+
+// Compatibilité multi-versions OpenCV :
+// OpenCV >= 4.7 et OpenCV 5.0 placent ArUco dans objdetect/aruco_detector.hpp
+// OpenCV < 4.7 (ex: Ubuntu 24.04 avec libopencv-contrib-dev 4.6) le place dans opencv2/aruco.hpp
+#if CV_VERSION_MAJOR > 4 || (CV_VERSION_MAJOR == 4 && CV_VERSION_MINOR >= 7)
+    #define OPENCV_ARUCO_MODERN 1
+    #include <opencv2/objdetect/aruco_detector.hpp>
+#else
+    #define OPENCV_ARUCO_MODERN 0
+    #include <opencv2/aruco.hpp>
+#endif
 
 // OpenMP
 #include <omp.h>
@@ -60,6 +71,59 @@ constexpr double DEPART_ABS_X      = 200.0;
 constexpr double DEPART_ABS_Y      = 200.0;
 
 constexpr int TAG_ID_ROBOT = 47;
+
+// ==============================================================================
+// --- WRAPPER UNIFIE ARUCO : COMPATIBLE OPENCV 4.x (< 4.7) ET OPENCV 5.x / 4.7+
+// ==============================================================================
+class ArucoDetectorWrapper {
+public:
+    ArucoDetectorWrapper(int dict_id = cv::aruco::DICT_4X4_50) {
+#if OPENCV_ARUCO_MODERN
+        dict_ = cv::aruco::getPredefinedDictionary(dict_id);
+        params_.adaptiveThreshWinSizeMin = 3;
+        params_.adaptiveThreshWinSizeMax = 23;
+        params_.adaptiveThreshWinSizeStep = 10;
+        params_.cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+        detector_ = std::make_unique<cv::aruco::ArucoDetector>(dict_, params_);
+#else
+        dict_ = cv::aruco::getPredefinedDictionary(dict_id);
+        params_ = cv::aruco::DetectorParameters::create();
+        params_->adaptiveThreshWinSizeMin = 3;
+        params_->adaptiveThreshWinSizeMax = 23;
+        params_->adaptiveThreshWinSizeStep = 10;
+        params_->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+#endif
+    }
+
+    void detectMarkers(const cv::Mat& image,
+                       std::vector<std::vector<cv::Point2f>>& corners,
+                       std::vector<int>& ids,
+                       std::vector<std::vector<cv::Point2f>>& rejected) {
+#if OPENCV_ARUCO_MODERN
+        detector_->detectMarkers(image, corners, ids, rejected);
+#else
+        cv::aruco::detectMarkers(image, dict_, corners, ids, params_, rejected);
+#endif
+    }
+
+    void generateMarker(int id, int sidePixels, cv::Mat& out_marker) {
+#if OPENCV_ARUCO_MODERN
+        dict_.generateImageMarker(id, sidePixels, out_marker);
+#else
+        cv::aruco::drawMarker(dict_, id, sidePixels, out_marker);
+#endif
+    }
+
+private:
+#if OPENCV_ARUCO_MODERN
+    cv::aruco::Dictionary dict_;
+    cv::aruco::DetectorParameters params_;
+    std::unique_ptr<cv::aruco::ArucoDetector> detector_;
+#else
+    cv::Ptr<cv::aruco::Dictionary> dict_;
+    cv::Ptr<cv::aruco::DetectorParameters> params_;
+#endif
+};
 
 struct CameraPreset {
     int width;
@@ -602,14 +666,8 @@ int main(int argc, char** argv) {
     apply_preset(cap, current_preset_key, frame_w, frame_h, current_preset_label,
                  simuler_flux, K, D, map1, map2, homography, has_homography);
 
-    // Initialisation du détecteur ArUco moderne
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
-    cv::aruco::DetectorParameters params;
-    params.adaptiveThreshWinSizeMin = 3;
-    params.adaptiveThreshWinSizeMax = 23;
-    params.adaptiveThreshWinSizeStep = 10;
-    params.cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
-    cv::aruco::ArucoDetector detector(dictionary, params);
+    // Initialisation du détecteur ArUco unifié (compatible OpenCV 4.x et OpenCV 5.x)
+    ArucoDetectorWrapper aruco(cv::aruco::DICT_4X4_50);
 
     // Buffers réutilisés (zéro allocation à chaque frame)
     cv::Mat frame_raw, frame_undistorted, frame_annotated;
@@ -650,7 +708,7 @@ int main(int argc, char** argv) {
 
             for (const auto& kv : pts_sim) {
                 cv::Mat marker_img;
-                dictionary.generateImageMarker(kv.first, static_cast<int>(100 * scale_sim), marker_img);
+                aruco.generateMarker(kv.first, static_cast<int>(100 * scale_sim), marker_img);
                 cv::Mat marker_bgr;
                 cv::cvtColor(marker_img, marker_bgr, cv::COLOR_GRAY2BGR);
                 int sz = marker_bgr.rows;
@@ -671,7 +729,7 @@ int main(int argc, char** argv) {
             int y_img = static_cast<int>((1500.0 - sim_y_phys) * 1.2 * scale_sim + 480.0 * scale_sim);
 
             cv::Mat rob_marker;
-            dictionary.generateImageMarker(TAG_ID_ROBOT, static_cast<int>(80 * scale_sim), rob_marker);
+            aruco.generateMarker(TAG_ID_ROBOT, static_cast<int>(80 * scale_sim), rob_marker);
             cv::Mat M_rot = cv::getRotationMatrix2D(cv::Point2f(40 * scale_sim, 40 * scale_sim),
                                                    sim_theta * 180.0 / M_PI, 1.0);
             cv::Mat rob_rot;
@@ -701,7 +759,7 @@ int main(int argc, char** argv) {
         // 4. Détection ArUco
         std::vector<std::vector<cv::Point2f>> corners, rejected;
         std::vector<int> ids;
-        detector.detectMarkers(frame_undistorted, corners, ids, rejected);
+        aruco.detectMarkers(frame_undistorted, corners, ids, rejected);
 
         frame_undistorted.copyTo(frame_annotated);
 

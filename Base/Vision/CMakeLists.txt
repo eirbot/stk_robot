@@ -102,8 +102,8 @@ target_include_directories(vision_worker PRIVATE
 )
 
 # Composants OpenCV ciblés (évite VTK/viz et les dépendances inutiles)
-set(CV_TARGET_LIBS opencv_core opencv_imgproc opencv_objdetect opencv_imgcodecs opencv_videoio)
-foreach(lib opencv_calib opencv_calib3d opencv_geometry)
+set(CV_TARGET_LIBS opencv_core opencv_imgproc opencv_imgcodecs opencv_videoio)
+foreach(lib opencv_objdetect opencv_aruco opencv_calib opencv_calib3d opencv_geometry)
     if(TARGET ${lib})
         list(APPEND CV_TARGET_LIBS ${lib})
     endif()
