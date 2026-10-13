@@ -22,4 +22,3 @@ Base/Web/.zmq/
 *.fiber.br
 Base/Vision/build/
 Base/Vision/vision_worker
-Base/base_stk
