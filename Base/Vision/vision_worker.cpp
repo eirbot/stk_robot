@@ -904,11 +904,11 @@ int main(int argc, char** argv) {
                     y_final = (1.0 - (centre_image.y / static_cast<double>(frame_h))) * HAUTEUR_TABLE_Y;
                 }
 
-                // Envoi ZeroMQ PUSH vers le serveur Go
+                // Envoi ZeroMQ PUSH vers le serveur Go (type dédié vision_update avec theta en degrés)
                 char zmq_msg[256];
                 snprintf(zmq_msg, sizeof(zmq_msg),
-                         "{\"type\":\"state_update\",\"data\":{\"x\":%.2f,\"y\":%.2f,\"theta\":%.4f}}",
-                         x_final, y_final, theta_rad);
+                         "{\"type\":\"vision_update\",\"data\":{\"x\":%.2f,\"y\":%.2f,\"theta\":%.2f,\"detected\":true}}",
+                         x_final, y_final, theta_deg);
                 zmq_send(push_socket, zmq_msg, strlen(zmq_msg), ZMQ_DONTWAIT);
 
                 // Tracé overlay du robot

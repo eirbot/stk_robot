@@ -95,13 +95,24 @@ def update_config_from_server(new_cfg):
     cfg.update(new_cfg)
     state["config"] = cfg
     
-    # 1. Couleur Equipe
+    # 1. Couleur Equipe : appliquer seulement si l'équipe a changé et qu'aucune alerte n'est active
     if "team" in new_cfg:
-        state["team"] = new_cfg["team"]
-        if new_cfg["team"] == 'JAUNE':
-            send_led_cmd("COLOR:255,160,0")
-        else:
-            send_led_cmd("COLOR:0,0,255")
+        new_team = new_cfg["team"]
+        old_team = state.get("team")
+        if new_team != old_team:
+            state["team"] = new_team
+            has_active_alert = (
+                state.get("bat_low", False) or
+                state.get("tirette_msg") == "REMOVE_TO_RESET" or
+                state.get("tirette") == "ARMED" or
+                state.get("match_running", False) or
+                state.get("fsm_state") == "STOPPED"
+            )
+            if not has_active_alert:
+                if new_team == 'JAUNE':
+                    send_led_cmd("COLOR:255,160,0")
+                else:
+                    send_led_cmd("COLOR:0,0,255")
             
     # 2. EKF
     if "ekf" in new_cfg:
@@ -129,14 +140,18 @@ def update_config_from_server(new_cfg):
         
     # 7. Mode stratégie (Statique / Dynamique)
     if "strat_mode" in new_cfg:
+        old_mode = state.get("strat_mode")
         state["strat_mode"] = new_cfg["strat_mode"]
-        if new_cfg["strat_mode"] == 'STATIC' and cfg.get('static_strat'):
+        # Réassigner strat_id seulement si on bascule en STATIC
+        if old_mode != 'STATIC' and new_cfg["strat_mode"] == 'STATIC' and cfg.get('static_strat'):
             state['strat_id'] = cfg['static_strat']
             
     # 8. Choix de la stratégie statique
     if "static_strat" in new_cfg:
+        old_strat = state.get("static_strat")
         state["static_strat"] = new_cfg["static_strat"]
-        if state.get("strat_mode") == 'STATIC':
+        # Réassigner strat_id seulement si la config static_strat a elle-même changé
+        if old_strat != new_cfg["static_strat"] and state.get("strat_mode") == 'STATIC':
             state['strat_id'] = new_cfg["static_strat"]
             
     # 9. Volume Audio

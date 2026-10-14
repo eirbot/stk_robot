@@ -153,8 +153,9 @@ void ClassMotors::RestoreQueueBuffer() {
 }
 
 void ClassMotors::WaitUntilDone() {
-  while (uxQueueMessagesWaiting(xQueue) > 0 || moteurGauche->isRunning() ||
-         moteurDroit->isRunning()) {
+  while ((uxQueueMessagesWaiting(xQueue) > 0 || moteurGauche->isRunning() ||
+          moteurDroit->isRunning()) &&
+         !FLAG_STOP) {
     vTaskDelay(pdMS_TO_TICKS(10));
   }
 }

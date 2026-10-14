@@ -26,6 +26,7 @@ private:
   char rcv;
   static constexpr int MAX_COMMAND_LENGTH = 64;
   volatile bool isMoving = false;
+  TaskHandle_t goToTaskHandle = NULL;
 };
 
 #endif

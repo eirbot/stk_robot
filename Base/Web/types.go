@@ -49,6 +49,14 @@ func (t *RobotTelemetry) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Pose détectée par la caméra zénithale (indépendante de l'odométrie roues)
+type VisionPose struct {
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
+	Theta    float64 `json:"theta"` // En degrés
+	Detected bool    `json:"detected"`
+}
+
 // État Global Unifié (fusion de l'IHM et du matériel)
 type FullState struct {
 	sync.Mutex
@@ -61,6 +69,7 @@ type FullState struct {
 	ObstacleDetected bool                   `json:"obstacle_detected"`
 	ObstacleType     int                    `json:"obstacle_type"`
 	Telemetry        RobotTelemetry         `json:"telemetry"`
+	VisionPose       VisionPose             `json:"vision_pose"`
 	Config           map[string]interface{} `json:"config"`
 	ServerIP         string                 `json:"server_ip"`
 }

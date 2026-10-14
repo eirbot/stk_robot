@@ -27,13 +27,14 @@ const TABLE_L_MM = 3000; // Longueur de la table (axe X Three.js)
 const TABLE_W_MM = 2000; // Largeur de la table (axe Y Three.js)
 
 let scene, camera, renderer, controls;
-let robotGroup, lidarGroup, lidarScanGroup;
-let robotMaterial, lidarMaterial;
+let robotGroup, lidarGroup, visionGroup, lidarScanGroup;
+let robotMaterial, lidarMaterial, visionMaterial;
 let beacons = [];
 let targetSphere = null;
 
-let robotPos = { x: 0, y: 1000, theta: 0 };
-let lidarPos = null;
+let robotPos = { x: 0, y: 1000, theta: 0 }; // theta en degrés
+let lidarPos = null;                         // theta en degrés
+let visionPos = null;                        // theta en degrés
 let currentTeam = "BLEUE";
 let isTopDown = false;
 let obstacleDetected = false;
@@ -276,6 +277,31 @@ function createRobots() {
 
     lidarGroup.visible = false; // Caché par défaut
     scene.add(lidarGroup);
+
+    // --- ROBOT GHOST (VISION ZENITHALE) ---
+    // Représente la position détectée par la caméra zénithale en cyan semi-transparent
+    visionGroup = new THREE.Group();
+    visionMaterial = new THREE.MeshBasicMaterial({
+        color: 0x00d2ff, // Cyan zénithal
+        transparent: true,
+        opacity: 0.35
+    });
+
+    const vMesh = new THREE.Mesh(bodyGeo, visionMaterial);
+    vMesh.position.z = 125;
+    visionGroup.add(vMesh);
+
+    const vNose = new THREE.Mesh(noseGeo, new THREE.MeshBasicMaterial({
+        color: 0x00d2ff,
+        transparent: true,
+        opacity: 0.5
+    }));
+    vNose.rotation.z = -Math.PI / 2;
+    vNose.position.set(150, 0, 125);
+    visionGroup.add(vNose);
+
+    visionGroup.visible = false;
+    scene.add(visionGroup);
 }
 
 // -----------------------------------------------------------------------------
@@ -338,11 +364,43 @@ function setupWebSocket() {
                 robotPos = {
                     x: state.telemetry.x,
                     y: state.telemetry.y,
-                    theta: state.telemetry.theta
+                    theta: state.telemetry.theta // Télémétrie odométrie roues en degrés
                 };
                 updateRobotMeshPosition(robotGroup, robotPos);
                 updateUI();
             }
+            if (state.vision_pose && state.vision_pose.detected !== undefined) {
+                visionPos = {
+                    x: state.vision_pose.x,
+                    y: state.vision_pose.y,
+                    theta: state.vision_pose.theta,
+                    detected: state.vision_pose.detected
+                };
+                if (visionGroup) {
+                    visionGroup.visible = visionPos.detected;
+                    if (visionPos.detected) {
+                        updateRobotMeshPosition(visionGroup, visionPos);
+                    }
+                }
+                updateUI();
+            }
+        });
+
+        window.socket.on('vision_update', (data) => {
+            if (!data) return;
+            visionPos = {
+                x: data.x,
+                y: data.y,
+                theta: data.theta, // Caméra zénithale en degrés
+                detected: data.detected
+            };
+            if (visionGroup) {
+                visionGroup.visible = data.detected;
+                if (data.detected) {
+                    updateRobotMeshPosition(visionGroup, visionPos);
+                }
+            }
+            updateUI();
         });
 
         window.socket.on('lidar_pos', (data) => {
@@ -350,7 +408,7 @@ function setupWebSocket() {
             lidarPos = {
                 x: data.x,
                 y: data.y,
-                theta: data.theta * Math.PI / 180,
+                theta: data.theta, // LiDAR en degrés
                 err: data.err
             };
             lidarGroup.visible = true;
@@ -399,20 +457,53 @@ function setupWebSocket() {
                     robotPos = {
                         x: state.telemetry.x,
                         y: state.telemetry.y,
-                        theta: state.telemetry.theta
+                        theta: state.telemetry.theta // en degrés
                     };
 
                     updateRobotMeshPosition(robotGroup, robotPos);
                     updateUI();
                 }
+
+                if (state.vision_pose && state.vision_pose.detected !== undefined) {
+                    visionPos = {
+                        x: state.vision_pose.x,
+                        y: state.vision_pose.y,
+                        theta: state.vision_pose.theta,
+                        detected: state.vision_pose.detected
+                    };
+                    if (visionGroup) {
+                        visionGroup.visible = visionPos.detected;
+                        if (visionPos.detected) {
+                            updateRobotMeshPosition(visionGroup, visionPos);
+                        }
+                    }
+                    updateUI();
+                }
             }
             
-            // 2. Traitement de la position LiDAR (Ghost semi-transparent)
+            // 2. Traitement de la position Vision Zénithale
+            if (msg.type === "vision_update" && msg.data) {
+                visionPos = {
+                    x: msg.data.x,
+                    y: msg.data.y,
+                    theta: msg.data.theta, // en degrés
+                    detected: msg.data.detected
+                };
+                if (visionGroup) {
+                    visionGroup.visible = msg.data.detected;
+                    if (msg.data.detected) {
+                        updateRobotMeshPosition(visionGroup, visionPos);
+                    }
+                }
+                updateUI();
+            }
+
+            // 3. Traitement de la position LiDAR (Ghost semi-transparent)
             if (msg.type === "lidar_pos" && msg.data) {
                 lidarPos = {
                     x: msg.data.x,
                     y: msg.data.y,
-                    theta: msg.data.theta * Math.PI / 180,
+                    theta: msg.data.theta, // en degrés
                     err: msg.data.err
                 };
                 
@@ -421,7 +512,7 @@ function setupWebSocket() {
                 updateUI();
             }
 
-            // 3. Traitement de la trame LiDAR brute (Obstacle + Balises)
+            // 4. Traitement de la trame LiDAR brute (Obstacle + Balises)
             if (msg.type === "lidar_frame" && msg.data) {
                 updateLidarFrame(msg.data);
             }
@@ -442,7 +533,7 @@ function setupWebSocket() {
 }
 
 function updateRobotMeshPosition(group, pos) {
-    if (!group) return;
+    if (!group || !pos) return;
 
     // Translation du repère :
     // X_three = Robot X (déjà de -1500 à 1500)
@@ -451,7 +542,9 @@ function updateRobotMeshPosition(group, pos) {
     group.position.y = 1000 - pos.y;
 
     // Rotation autour de Z (inversée car l'axe Y est inversé)
-    group.rotation.z = -pos.theta;
+    // pos.theta est en DEGRÉS, Three.js attend des RADIANS
+    const thetaRad = ((pos.theta || 0) * Math.PI) / 180;
+    group.rotation.z = -thetaRad;
 }
 
 function updateTeamColor() {
@@ -465,12 +558,16 @@ function updateUI() {
     const el = document.getElementById('pos-text');
     if (!el) return;
     
-    // Affichage utilisateur (Longueur X et Largeur Y physique du robot)
-    const thetaDeg = robotPos.theta * 180 / Math.PI;
+    // Affichage utilisateur (Longueur X et Largeur Y physique du robot, orientation en degrés)
+    const thetaDeg = robotPos ? (robotPos.theta || 0) : 0;
     let txt = `ROBOT | X: ${robotPos.x.toFixed(0)} mm | Y: ${robotPos.y.toFixed(0)} mm | θ: ${thetaDeg.toFixed(1)}°`;
     
+    if (visionPos && visionPos.detected) {
+        txt += `  ·  VISION | X: ${visionPos.x.toFixed(0)} | Y: ${visionPos.y.toFixed(0)} | θ: ${(visionPos.theta || 0).toFixed(1)}°`;
+    }
+
     if (lidarPos) {
-        const lThetaDeg = lidarPos.theta * 180 / Math.PI;
+        const lThetaDeg = lidarPos.theta || 0;
         txt += `  ·  LiDAR | X: ${lidarPos.x.toFixed(0)} | Y: ${lidarPos.y.toFixed(0)} | θ: ${lThetaDeg.toFixed(1)}° (Δ${lidarPos.err.toFixed(0)}mm)`;
     }
     
@@ -731,9 +828,10 @@ function updateLidarFrame(data) {
     // Fonction d'aide pour transformer la position relative (polaire) en coordonnées mondiales Three.js
     function getGlobalCoords(relAngleDeg, relDistMm) {
         // Angle relatif en radians
-        const relAngleRad = relAngleDeg * Math.PI / 180;
-        // Angle absolu dans le repère de la carte (Trigonométrique CCW+)
-        const globalAngleRad = currentRobotPos.theta + relAngleRad;
+        const relAngleRad = (relAngleDeg * Math.PI) / 180;
+        // Angle absolu dans le repère de la carte (currentRobotPos.theta est en degrés)
+        const robotThetaRad = ((currentRobotPos.theta || 0) * Math.PI) / 180;
+        const globalAngleRad = robotThetaRad + relAngleRad;
         
         const globalX = currentRobotPos.x + relDistMm * Math.cos(globalAngleRad);
         const globalY = currentRobotPos.y + relDistMm * Math.sin(globalAngleRad);

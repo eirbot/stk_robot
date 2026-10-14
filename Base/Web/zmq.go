@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
+
 	zmq "github.com/pebbe/zmq4"
 )
 
@@ -32,6 +34,7 @@ func pipelineReceptionRobot() {
 				var tel RobotTelemetry
 				if err := json.Unmarshal(msgObj.Data, &tel); err == nil {
 					globalState.Lock()
+					prevTirette := globalState.Telemetry.Tirette
 					if tel.RaspIP == "" || tel.RaspIP == "Err" || tel.RaspIP == "??" {
 						if globalState.Telemetry.RaspIP != "" {
 							tel.RaspIP = globalState.Telemetry.RaspIP
@@ -41,8 +44,10 @@ func pipelineReceptionRobot() {
 					}
 					globalState.Telemetry = tel
 
-					// Si la tirette est tirée physiquement sur le robot, on déclenche le départ côté PC
-					if tel.Tirette == "TRIGGERED" && !globalState.MatchRunning {
+					// 1. Détection FRONT : uniquement transition ARMED -> TRIGGERED et match non fini/non stoppé
+					if prevTirette == "ARMED" && tel.Tirette == "TRIGGERED" &&
+						!globalState.MatchRunning && !globalState.MatchFinished &&
+						globalState.FsmState != "FINISHED" && globalState.FsmState != "STOPPED" {
 						globalState.MatchRunning = true
 						globalState.FsmState = "RUNNING"
 					}
@@ -61,6 +66,7 @@ func pipelineReceptionRobot() {
 							"obstacle_detected": globalState.ObstacleDetected,
 							"obstacle_type":     globalState.ObstacleType,
 							"telemetry":         globalState.Telemetry,
+							"vision_pose":       globalState.VisionPose,
 						},
 					})
 					globalState.Unlock()
@@ -69,10 +75,25 @@ func pipelineReceptionRobot() {
 				} else {
 					fmt.Printf("[ZMQ] Erreur décodage télémétrie: %v\n", err)
 				}
+			} else if msgObj.Type == "vision_update" {
+				// 8. Télémétrie Caméra Zénithale isolée de l'odométrie roues
+				var vPose VisionPose
+				if err := json.Unmarshal(msgObj.Data, &vPose); err == nil {
+					globalState.Lock()
+					globalState.VisionPose = vPose
+					globalState.Unlock()
+
+					packet, _ := json.Marshal(map[string]interface{}{
+						"type": "vision_update",
+						"data": vPose,
+					})
+					globalHub.Broadcast(packet)
+				}
 			} else if msgObj.Type == "state_update" {
 				var update StateUpdate
 				if err := json.Unmarshal(msgObj.Data, &update); err == nil {
 					globalState.Lock()
+					prevTirette := globalState.Telemetry.Tirette
 					if update.MatchRunning != nil {
 						globalState.MatchRunning = *update.MatchRunning
 					}
@@ -126,8 +147,10 @@ func pipelineReceptionRobot() {
 						}
 					}
 
-					// Si la tirette est tirée physiquement sur le robot, on déclenche le départ côté PC
-					if globalState.Telemetry.Tirette == "TRIGGERED" && !globalState.MatchRunning {
+					// 1. Détection FRONT : uniquement transition ARMED -> TRIGGERED et match non fini/non stoppé
+					if prevTirette == "ARMED" && globalState.Telemetry.Tirette == "TRIGGERED" &&
+						!globalState.MatchRunning && !globalState.MatchFinished &&
+						globalState.FsmState != "FINISHED" && globalState.FsmState != "STOPPED" {
 						globalState.MatchRunning = true
 						globalState.FsmState = "RUNNING"
 					}
@@ -144,6 +167,7 @@ func pipelineReceptionRobot() {
 				var act string
 				if err := json.Unmarshal(msgObj.Data, &act); err == nil {
 					globalState.Lock()
+					var cfgPayload json.RawMessage
 					if act == "team" {
 						if globalState.Team == "BLEUE" {
 							globalState.Team = "JAUNE"
@@ -153,24 +177,28 @@ func pipelineReceptionRobot() {
 						if globalState.Config != nil {
 							globalState.Config["team"] = globalState.Team
 							saveConfigToFile(globalState.Config)
+							cfgPayload = getConfigCopyLocked()
 						}
-						envoyerAuRobot("config_update", globalState.Config)
 					} else if act == "start" {
 						globalState.MatchRunning = true
 						globalState.FsmState = "RUNNING"
-						envoyerAuRobot("action", "start")
 					} else if act == "stop" {
 						globalState.MatchRunning = false
 						globalState.FsmState = "STOPPED"
-						envoyerAuRobot("action", "stop")
 					} else if act == "reset" {
 						globalState.MatchRunning = false
 						globalState.MatchFinished = false
 						globalState.ScoreCurrent = 0
 						globalState.FsmState = "WAIT_START"
-						envoyerAuRobot("action", "reset")
 					}
 					globalState.Unlock()
+
+					if len(cfgPayload) > 0 {
+						envoyerAuRobot("config_update", cfgPayload)
+					}
+					if act != "team" {
+						envoyerAuRobot("action", act)
+					}
 					broadcastState()
 				}
 			} else if msgObj.Type == "config_edit" {
@@ -209,7 +237,7 @@ func pipelineReceptionRobot() {
 						saveConfigToFile(globalState.Config)
 						globalState.Unlock()
 
-						envoyerAuRobot("config_update", globalState.Config)
+						// Ne pas renvoyer config_update au robot : c'est le robot qui vient d'émettre config_edit
 						broadcastState()
 					}
 				}
@@ -222,8 +250,11 @@ func pipelineReceptionRobot() {
 			var tel RobotTelemetry
 			if err := json.Unmarshal([]byte(msg), &tel); err == nil {
 				globalState.Lock()
+				prevTirette := globalState.Telemetry.Tirette
 				globalState.Telemetry = tel
-				if tel.Tirette == "TRIGGERED" && !globalState.MatchRunning {
+				if prevTirette == "ARMED" && tel.Tirette == "TRIGGERED" &&
+					!globalState.MatchRunning && !globalState.MatchFinished &&
+					globalState.FsmState != "FINISHED" && globalState.FsmState != "STOPPED" {
 					globalState.MatchRunning = true
 					globalState.FsmState = "RUNNING"
 				}
@@ -249,13 +280,21 @@ func pipelineReceptionRobot() {
 	}
 }
 
-// Envoyer un ordre descendant vers le robot via ZMQ PUB
+// 4. Verrou mutex pour garantir la thread-safety de zmqPublisher
+var zmqPubMutex sync.Mutex
+
+// Envoyer un ordre descendant vers le robot via ZMQ PUB (Thread-Safe)
 func envoyerAuRobot(cmdType string, payload interface{}) {
 	packet, err := json.Marshal(map[string]interface{}{
 		"type":    cmdType,
 		"payload": payload,
 	})
-	if err == nil && zmqPublisher != nil {
+	if err != nil {
+		return
+	}
+	zmqPubMutex.Lock()
+	defer zmqPubMutex.Unlock()
+	if zmqPublisher != nil {
 		zmqPublisher.Send(string(packet), 0)
 	}
 }

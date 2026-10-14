@@ -111,12 +111,16 @@ class RobotActions:
             real_x, real_y, real_theta = x, y, theta
 
         if esp:
-            success = esp.goto(real_x, real_y, real_theta)
+            success = esp.goto(real_x, real_y, real_theta, manual=manual)
             while not success:
+                if manual and shared.state.get("fsm_state") == "STOPPED":
+                    break
+                if not manual and not shared.state.get("match_running", False):
+                    break
                 print(f"[ACTION] 🔄 GOTO annulé par l'ESP (Obstacle), recalcul et relance vers ({real_x}, {real_y}, {real_theta}°)")
-                self._check_abort()
+                self._check_abort(manual=manual)
                 time.sleep(0.5)
-                success = esp.goto(real_x, real_y, real_theta)
+                success = esp.goto(real_x, real_y, real_theta, manual=manual)
         else:
             print("[SIMU] GOTO virtuel (Pas de com)")
         

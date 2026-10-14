@@ -9,6 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	zmq "github.com/pebbe/zmq4"
 )
 
@@ -107,6 +108,9 @@ func main() {
 	app := fiber.New(fiber.Config{
 		BodyLimit: 20 * 1024 * 1024, // Limite de 20 Mo pour le téléversement
 	})
+
+	// 6. Middleware recover pour empêcher tout plantage du serveur en cas de panique dans une route
+	app.Use(recover.New())
 
 	// Compression automatique (Gzip / Brotli / Deflate) de tous les flux HTTP (HTML, CSS, JS, JSON)
 	// Réduit drastiquement la taille des premiers paquets transmis au navigateur

@@ -56,18 +56,25 @@ class ESPMotors:
 
     # --- Fonctions simplifiées pour tes autres threads ---
     
-    def goto(self, x, y, theta):
+    def goto(self, x, y, theta, manual=False):
         self.cmd_done_event.clear()
         self.cmd_aborted = False
         self.send(f"G {x} {y} {theta}")
         
-        # On attend la fin, mais on vérifie régulièrement si le match est fini
+        # On attend la fin, mais on vérifie régulièrement si le match est fini ou si un arrêt est demandé
         while not self.cmd_done_event.wait(0.2):
-            # Si le match est stoppé manuellement (IHM ou Bouton Stop)
-            if not shared.state.get("match_running", False):
-                print("[MOTORS] 🛑 Match arrêté pendant mouvement, envoi STOP")
-                self.stop_robot()
-                return False
+            if manual:
+                # En mode manuel, on ne stoppe que si l'état FSM est explicitement STOPPED
+                if shared.state.get("fsm_state") == "STOPPED":
+                    print("[MOTORS] 🛑 Arrêt demandé pendant déplacement manuel, envoi STOP")
+                    self.stop_robot()
+                    return False
+            else:
+                # Si le match autonome est stoppé (IHM ou Bouton Stop)
+                if not shared.state.get("match_running", False):
+                    print("[MOTORS] 🛑 Match arrêté pendant mouvement, envoi STOP")
+                    self.stop_robot()
+                    return False
         
         return not self.cmd_aborted
 

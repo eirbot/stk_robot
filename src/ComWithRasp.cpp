@@ -144,9 +144,10 @@ void ComWithRasp::processCommand(const String &cmd,
                                  const std::vector<int> &params) {
   if (cmd == "G" && params.size() == 3) {
     mot.StopVelocity();
-    if (!isMoving) {
+    if (!isMoving && goToTaskHandle == NULL) {
       Serial.println("GoToPosition (async)");
       isMoving = true;
+      FLAG_STOP = false;
 
       // On alloue une structure pour passer les arguments + l'instance courante
       struct GoToArgs {
@@ -156,15 +157,16 @@ void ComWithRasp::processCommand(const String &cmd,
 
       GoToArgs *args = new GoToArgs{(float)params[0], (float)params[1],
                                     (float)params[2], this};
-      xTaskCreate(GoToTask, "GoToTask", 4096, args, 2, NULL);
+      xTaskCreate(GoToTask, "GoToTask", 4096, args, 2, &goToTaskHandle);
     } else {
       Serial.println("Deplacement deja en cours");
     }
   } else if (cmd == "V" && params.size() >= 2) {
-    if (isMoving) {
-      mot.Stop();
+    if (isMoving || goToTaskHandle != NULL) {
       FLAG_STOP = true;
-      isMoving = false;
+      mot.Stop();
+      // 2. On ne remet PAS isMoving = false ici manuellement : GoToTask
+      // s'interrompt proprement et libère les verrous à sa terminaison
     }
     mot.SetVelocity((float)params[0], (float)params[1]);
   } else if (cmd == "L") {
@@ -208,6 +210,7 @@ void ComWithRasp::GoToTask(void *pvParameters) {
   }
 
   args->instance->isMoving = false;
+  args->instance->goToTaskHandle = NULL;
 
   delete args;
   vTaskDelete(NULL);

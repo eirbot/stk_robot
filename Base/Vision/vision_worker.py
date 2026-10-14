@@ -616,13 +616,14 @@ while True:
                 x_final = (centre_image[0] / frame_w) * LARGEUR_TABLE_X
                 y_final = (1.0 - (centre_image[1] / frame_h)) * HAUTEUR_TABLE_Y
                 
-                # Envoi des coordonnées finales via ZMQ PUSH
+                # Envoi des coordonnées finales via ZMQ PUSH (type vision_update, angle en degrés)
                 message_telemetrie = {
-                    "type": "state_update",
+                    "type": "vision_update",
                     "data": {
                         "x": float(x_final),
                         "y": float(y_final),
-                        "theta": float(theta_rad)
+                        "theta": float(math.degrees(theta_rad)),
+                        "detected": True
                     }
                 }
                 

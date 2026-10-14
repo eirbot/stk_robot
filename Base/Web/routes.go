@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -16,6 +17,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 )
+
+// 5. Copie sérialisée sous verrou pour éviter 'concurrent map iteration and write'
+func getConfigCopyLocked() json.RawMessage {
+	if globalState.Config == nil {
+		return json.RawMessage("{}")
+	}
+	data, err := json.Marshal(globalState.Config)
+	if err != nil {
+		return json.RawMessage("{}")
+	}
+	return json.RawMessage(data)
+}
 
 func broadcastState() {
 	globalState.Lock()
@@ -256,6 +269,7 @@ func setupRoutes(app *fiber.App) {
 		act := c.Params("act")
 
 		globalState.Lock()
+		var cfgCopy json.RawMessage
 		if act == "team" {
 			if globalState.Team == "BLEUE" {
 				globalState.Team = "JAUNE"
@@ -265,9 +279,8 @@ func setupRoutes(app *fiber.App) {
 			if globalState.Config != nil {
 				globalState.Config["team"] = globalState.Team
 				saveConfigToFile(globalState.Config)
+				cfgCopy = getConfigCopyLocked()
 			}
-			// On notifie le robot de la nouvelle configuration
-			envoyerAuRobot("config_update", globalState.Config)
 		} else if act == "start" {
 			globalState.MatchRunning = true
 			globalState.FsmState = "RUNNING"
@@ -288,6 +301,10 @@ func setupRoutes(app *fiber.App) {
 			envoyerAuRobot("action", "init")
 		}
 		globalState.Unlock()
+
+		if len(cfgCopy) > 0 {
+			envoyerAuRobot("config_update", cfgCopy)
+		}
 
 		broadcastState()
 		return c.JSON(fiber.Map{"status": "ok"})
@@ -352,8 +369,8 @@ func setupRoutes(app *fiber.App) {
 			saveConfigToFile(globalState.Config)
 			globalState.Unlock()
 
-			// Notifier le robot avec la config complète mise à jour
-			envoyerAuRobot("config_update", globalState.Config)
+			// Notifier le robot avec uniquement la clé modifiée pour ne pas écraser d'autres états (LED, strat_id)
+			envoyerAuRobot("config_update", map[string]interface{}{key: val})
 			broadcastState()
 		}
 
@@ -393,10 +410,30 @@ func setupRoutes(app *fiber.App) {
 		return c.JSON(strats)
 	})
 
+	var validStratNameRegex = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
+
+	sanitizeStratName := func(raw string) (string, error) {
+		name := strings.TrimSpace(raw)
+		name = strings.TrimSuffix(name, ".xml")
+		name = strings.TrimSuffix(name, ".py")
+		name = filepath.Base(name) // Supprime tout composant de chemin ../ ou /
+		if name == "" || name == "." || name == ".." || !validStratNameRegex.MatchString(name) {
+			return "", fmt.Errorf("nom de stratégie invalide (alphanuémrique, '-' et '_' uniquement)")
+		}
+		return name, nil
+	}
+
 	app.Get("/api/load_strat/:name", func(c *fiber.Ctx) error {
-		name := c.Params("name")
-		path := findRaspPath() + "/strat/strategies/" + name + ".xml"
-		content, err := os.ReadFile(path)
+		cleanName, err := sanitizeStratName(c.Params("name"))
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{"status": "error", "message": err.Error()})
+		}
+		strategiesDir := filepath.Clean(filepath.Join(findRaspPath(), "strat", "strategies"))
+		targetPath := filepath.Clean(filepath.Join(strategiesDir, cleanName+".xml"))
+		if !strings.HasPrefix(targetPath, strategiesDir+string(filepath.Separator)) {
+			return c.Status(403).JSON(fiber.Map{"status": "error", "message": "accès interdit"})
+		}
+		content, err := os.ReadFile(targetPath)
 		if err != nil {
 			return c.Status(404).JSON(fiber.Map{"status": "error"})
 		}
@@ -408,10 +445,16 @@ func setupRoutes(app *fiber.App) {
 		if err := c.BodyParser(&body); err != nil {
 			return c.Status(400).JSON(fiber.Map{"status": "error"})
 		}
-		name := strings.ReplaceAll(body["filename"], ".xml", "")
-		name = strings.ReplaceAll(name, ".py", "")
-		
-		basePath := findRaspPath() + "/strat/strategies/" + name
+		cleanName, err := sanitizeStratName(body["filename"])
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{"status": "error", "message": err.Error()})
+		}
+		strategiesDir := filepath.Clean(filepath.Join(findRaspPath(), "strat", "strategies"))
+		basePath := filepath.Clean(filepath.Join(strategiesDir, cleanName))
+		if !strings.HasPrefix(basePath, strategiesDir+string(filepath.Separator)) {
+			return c.Status(403).JSON(fiber.Map{"status": "error", "message": "accès interdit"})
+		}
+		_ = os.MkdirAll(strategiesDir, 0755)
 		err1 := os.WriteFile(basePath+".xml", []byte(body["xml"]), 0644)
 		err2 := os.WriteFile(basePath+".py", []byte(body["code"]), 0644)
 		if err1 != nil || err2 != nil {
@@ -474,8 +517,12 @@ func setupRoutes(app *fiber.App) {
 		if err := c.BodyParser(&body); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 		}
+		act, ok := body["action"].(string)
+		if !ok || strings.TrimSpace(act) == "" {
+			return c.Status(400).JSON(fiber.Map{"error": "champ 'action' manquant ou invalide"})
+		}
 		// On transmet directement l'action matérielle (ex: type: "play_audio", file: "intro.mp3")
-		envoyerAuRobot(body["action"].(string), body["data"])
+		envoyerAuRobot(act, body["data"])
 		return c.JSON(fiber.Map{"status": "sent_to_robot"})
 	})
 

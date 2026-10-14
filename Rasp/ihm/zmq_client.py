@@ -14,6 +14,8 @@ class ZmqClient(threading.Thread):
         # ZMQ PUSH to push telemetry and updates up to the server
         self.push_socket = self.context.socket(zmq.PUSH)
         self.push_socket.connect(f"tcp://{server_ip}:5555")
+        # 3. Verrou pour assurer la thread-safety du socket PUSH partagé
+        self.push_lock = threading.Lock()
         
         # ZMQ SUB to receive commands down from the server
         self.sub_socket = self.context.socket(zmq.SUB)
@@ -167,15 +169,14 @@ class ZmqClient(threading.Thread):
 
             elif cmd_type == "goto":
                 try:
-                    from strat.actions import RobotActions
                     x = float(payload.get("x", 0))
                     y = float(payload.get("y", 0))
                     theta = float(payload.get("theta", 0))
-                    print(f"[ZMQ CLIENT] GOTO command -> ({x}, {y}, {theta})")
-                    actions = RobotActions()
-                    actions.goto(x, y, theta, manual=True)
+                    print(f"[ZMQ CLIENT] GOTO manuel -> ({x}, {y}, {theta})")
+                    # Lancement dans un thread séparé pour ne PAS bloquer la réception ZMQ (traitement immédiat du STOP)
+                    threading.Thread(target=self._run_manual_goto, args=(x, y, theta), daemon=True).start()
                 except Exception as e:
-                    print(f"[ZMQ CLIENT] Erreur exécution goto : {e}")
+                    print(f"[ZMQ CLIENT] Erreur lancement goto : {e}")
 
             elif cmd_type == "set_robot_pos":
                 try:
@@ -215,15 +216,29 @@ class ZmqClient(threading.Thread):
         except Exception as e:
             print(f"[ZMQ CLIENT] Erreur traitement message : {e}")
 
+    def _run_manual_goto(self, x, y, theta):
+        try:
+            from strat.actions import esp
+            if esp:
+                # Coordonnées manuelles absolues : pas de symétrie JAUNE et pas d'écrasement de is_returning
+                esp.goto(x, y, theta, manual=True)
+            else:
+                print(f"[ZMQ CLIENT] GOTO simulé ({x}, {y}, {theta})")
+        except Exception as e:
+            print(f"[ZMQ CLIENT] Erreur exécution goto manuel : {e}")
+
     def send_event(self, event_type, event_data):
         try:
             packet = {
                 "type": event_type,
                 "data": event_data
             }
-            self.push_socket.send_json(packet, zmq.NOBLOCK)
-        except Exception as e:
+            with self.push_lock:
+                self.push_socket.send_json(packet, zmq.NOBLOCK)
+        except zmq.Again:
             pass
+        except Exception as e:
+            print(f"[ZMQ CLIENT] Erreur send_event ({event_type}): {e}")
 
     def _sender_loop(self):
         while self.running:
