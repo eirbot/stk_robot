@@ -3,6 +3,7 @@ import json
 import threading
 import time
 import ihm.shared as shared
+from utils.system_info import get_voltage_float, get_battery_current, get_ip
 
 class ZmqClient(threading.Thread):
     def __init__(self, server_ip="127.0.0.1"):
@@ -24,6 +25,9 @@ class ZmqClient(threading.Thread):
         
         self.running = True
         self.last_sent_state = {}
+        # IP mise en cache : get_ip() ouvre des sockets, inutile de l'appeler à 10 Hz
+        self._cached_ip = None
+        self._cached_ip_time = 0.0
 
     def run(self):
         print(f"[ZMQ CLIENT] Démarrage... PUSH -> {self.server_ip}:5555, SUB -> {self.server_ip}:5556")
@@ -49,7 +53,9 @@ class ZmqClient(threading.Thread):
             if not cmd_type:
                 return
 
-            print(f"[ZMQ CLIENT] Commande reçue : {cmd_type} -> {payload}")
+            # cmd_vel arrive à 20 Hz : ne pas l'afficher (chaque print repart en new_log vers l'IHM)
+            if cmd_type != "cmd_vel":
+                print(f"[ZMQ CLIENT] Commande reçue : {cmd_type} -> {payload}")
             
             if cmd_type == "config_update":
                 if payload:
@@ -253,16 +259,19 @@ class ZmqClient(threading.Thread):
                     "tirette": shared.state.get("tirette", "WAIT_INSERT"),
                     "imu_yaw": 0.0
                 }
+                telemetry_data["voltage"] = get_voltage_float()
                 try:
-                    from utils.system_info import get_voltage_float, get_battery_current, get_ip
-                    telemetry_data["voltage"] = get_voltage_float()
+                    telemetry_data["current"] = float(get_battery_current())
+                except Exception:
+                    telemetry_data["current"] = 0.0
+                now = time.time()
+                if self._cached_ip is None or now - self._cached_ip_time >= 5.0:
                     try:
-                        telemetry_data["current"] = float(get_battery_current())
-                    except:
-                        telemetry_data["current"] = 0.0
-                    telemetry_data["rasp_ip"] = get_ip()
-                except Exception as e:
-                    telemetry_data["rasp_ip"] = "Err"
+                        self._cached_ip = get_ip()
+                    except Exception:
+                        self._cached_ip = "Err"
+                    self._cached_ip_time = now
+                telemetry_data["rasp_ip"] = self._cached_ip
 
                 self.send_event("telemetry", telemetry_data)
 

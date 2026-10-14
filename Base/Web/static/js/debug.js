@@ -206,7 +206,7 @@ function appendLog(msg, type = 'info') {
     let cls = 'log-info';
     if (type === 'warn' || msg.includes('[WARN]')) cls = 'log-warn';
     if (type === 'err' || msg.includes('[ERR]')) cls = 'log-err';
-    div.innerHTML = `<span class="log-time">${timeStr}</span> <span class="${cls}">${msg}</span>`;
+    div.innerHTML = `<span class="log-time">${timeStr}</span> <span class="${cls}">${escapeHtml(msg)}</span>`;
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
 }
@@ -218,7 +218,8 @@ window.socket.on('new_log', (log) => {
 
 // Infos système & mise à jour du graphique et des statuts périphériques
 window.socket.on('sys_info', (data) => {
-    if (currentChart) {
+    // Le sys_info virtuel (dérivé de la télémétrie à 10 Hz) n'a pas de courant : on l'ignore pour le graphe
+    if (currentChart && data.current !== undefined) {
         const now = new Date().toLocaleTimeString();
         currentChart.data.labels.push(now);
         currentChart.data.datasets[0].data.push(parseFloat(data.current));
@@ -227,7 +228,7 @@ window.socket.on('sys_info', (data) => {
             currentChart.data.labels.shift();
             currentChart.data.datasets[0].data.shift();
         }
-        currentChart.update();
+        currentChart.update('none'); // Sans animation : redessin bien moins coûteux
     }
     if (data.devs && document.getElementById('status-lidar')) {
         updateDevStatus('status-lidar', data.devs.lidar);

@@ -273,16 +273,13 @@ class ESPActionneurs:
         print("[ACTIONNEURS] 🎧 Thread d'écoute démarré.")
         while self.running:
             try:
-                if self.ser.in_waiting > 0:
-                    ligne = self.ser.readline().decode('utf-8', errors='ignore').strip()
-                    if ligne:
-                        self._process_message(ligne)
+                # readline bloquant (timeout série) : réveil dès qu'une ligne arrive, sans polling
+                ligne = self.ser.readline().decode('utf-8', errors='ignore').strip()
+                if ligne:
+                    self._process_message(ligne)
             except Exception as e:
                 print(f"[ACTIONNEURS] Exception in rx loop: {e}")
-                # Évite que le thread ne crash silencieusement en cas de bruit série
-                pass 
-                
-            time.sleep(0.005) # Petite pause pour ne pas manger 100% du CPU
+                time.sleep(0.05) # Évite une boucle à vide si le port est en erreur
 
     def _process_message(self, msg):
         """Déchiffre le message et met à jour l'état partagé du robot."""

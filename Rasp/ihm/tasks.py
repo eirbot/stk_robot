@@ -57,14 +57,15 @@ def background_loop():
                      state["bat_low"] = False
                      send_led_cmd("COLOR:0,255,0") # Retour au vert
 
+            ip = get_ip()
             send_sys_info({
                 'cpu': f"{psutil.cpu_percent()}%", 
                 'temp': get_cpu_temp(),
                 'volt': get_battery_voltage(), 
                 'volt_float': volts,
                 'current': get_battery_current(),
-                'ip': get_ip(),
-                'rasp_ip': get_ip(),
+                'ip': ip,
+                'rasp_ip': ip,
                 'devs': devs
             })
 

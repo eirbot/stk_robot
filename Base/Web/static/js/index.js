@@ -123,8 +123,8 @@ window.socket.on('state_update', (state) => {
                 voltStr = window.lastVolt;
             }
             const rIp = (state.telemetry && state.telemetry.rasp_ip) || window.raspIP || '';
-            const ipPart = rIp ? `<span class="sys-info-sep">|</span><span class="sys-info-item">${rIp}</span>` : '';
-            sysInfoEl.innerHTML = `<span class="sys-info-item">${stratName}</span>${ipPart}<span class="sys-info-sep">|</span><span class="sys-info-item sys-info-volt">${voltStr}</span>`;
+            const ipPart = rIp ? `<span class="sys-info-sep">|</span><span class="sys-info-item">${escapeHtml(rIp)}</span>` : '';
+            sysInfoEl.innerHTML = `<span class="sys-info-item">${escapeHtml(stratName)}</span>${ipPart}<span class="sys-info-sep">|</span><span class="sys-info-item sys-info-volt">${voltStr}</span>`;
         }
     }
 });

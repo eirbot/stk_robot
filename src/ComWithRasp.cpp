@@ -1,5 +1,18 @@
 #include "ComWithRasp.hpp"
 
+// Traces de debug série : à 115200 bauds elles coûtent ~8 ms d'UART par commande
+#define COM_DEBUG 0
+
+// Trame "T x y theta" écrite en un seul appel : évite qu'elle s'entremêle avec
+// un "D"/"A" envoyé par GoToTask depuis une autre tâche
+static void SendPose() {
+  float x, y, angle;
+  mot.GetPosition(x, y, angle);
+  char buf[64];
+  snprintf(buf, sizeof(buf), "T %.2f %.2f %.2f\n", x, y, angle * RAD_TO_DEG);
+  Serial.print(buf);
+}
+
 ComWithRasp::ComWithRasp() { Serial.begin(115200); }
 
 void ComWithRasp::StartCom() {
@@ -31,7 +44,9 @@ void ComWithRasp::Receive() {
               '\0'; // On met le caractère de fin de chaîne obligatoire en C
           // On transfère le tableau sécurisé dans ta variable String habituelle
           commande = String(rx_buffer);
+#if COM_DEBUG
           Serial.println("-> Ligne complete securisee : [" + commande + "]");
+#endif
           // On lance ton découpage
           processLine();
           // On remet le curseur du tableau à zéro pour le prochain message
@@ -50,13 +65,12 @@ void ComWithRasp::Receive() {
         }
       }
     }
-    // On rend la main à FreeRTOS
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    // On rend la main à FreeRTOS (1 ms : latence de lecture minimale)
+    vTaskDelay(pdMS_TO_TICKS(1));
   }
 }
 
 void ComWithRasp::TelemetryLoop() {
-  float x, y, angle;
   int telemetryCounter = 0;
 
   while (1) {
@@ -66,14 +80,7 @@ void ComWithRasp::TelemetryLoop() {
     telemetryCounter++;
     if (telemetryCounter >= 5) { // 5 * 20ms = 100ms (10 Hz)
       telemetryCounter = 0;
-      mot.GetPosition(x, y, angle);
-
-      Serial.print("T ");
-      Serial.print(x);
-      Serial.print(" ");
-      Serial.print(y);
-      Serial.print(" ");
-      Serial.println(angle * RAD_TO_DEG);
+      SendPose();
     }
 
     vTaskDelay(pdMS_TO_TICKS(20));
@@ -126,6 +133,7 @@ void ComWithRasp::processLine() {
   }
 
   // 4. Affichage de contrôle
+#if COM_DEBUG
   Serial.print("-> Commande reconnue : '");
   Serial.print(command);
   Serial.print("' | Parametres [");
@@ -135,6 +143,7 @@ void ComWithRasp::processLine() {
       Serial.print(", ");
   }
   Serial.println("]");
+#endif
 
   // 5. Exécution
   processCommand(command, params);
@@ -145,7 +154,9 @@ void ComWithRasp::processCommand(const String &cmd,
   if (cmd == "G" && params.size() == 3) {
     mot.StopVelocity();
     if (!isMoving && goToTaskHandle == NULL) {
+#if COM_DEBUG
       Serial.println("GoToPosition (async)");
+#endif
       isMoving = true;
       FLAG_STOP = false;
 
@@ -175,16 +186,22 @@ void ComWithRasp::processCommand(const String &cmd,
     } else {
       LiDAR_state = (LiDAR_state == 0) ? 1 : 0; // Legacy toggle
     }
+#if COM_DEBUG
     Serial.print("LiDAR Mode: ");
     Serial.println(LiDAR_state);
+#endif
   } else if (cmd == "S" && params.size() == 3) {
+#if COM_DEBUG
     Serial.println("SetPos");
+#endif
     serialGoto.SetPos((float)params[0], (float)params[1], (float)params[2]);
   } else if (cmd == "H") {
+#if COM_DEBUG
     Serial.println("Halt");
+#endif
+    FLAG_STOP = true; // Levé avant Stop() pour que GoToTask n'enchaîne pas le segment suivant
     mot.StopVelocity();
     mot.Stop();
-    FLAG_STOP = true;
   } else {
     Serial.println("Commande inconnue");
   }
@@ -202,7 +219,8 @@ void ComWithRasp::GoToTask(void *pvParameters) {
   // Lancement du déplacement bloquant DANS CE THREAD séparé
   bool success = serialGoto.Go(args->x, args->y, args->angle);
 
-  // Fin du déplacement
+  // Fin du déplacement : pose finale envoyée avant D/A pour que la strat lise une position à jour
+  SendPose();
   if (success) {
     Serial.println("D"); // Done
   } else {

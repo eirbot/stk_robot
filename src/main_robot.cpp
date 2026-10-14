@@ -52,4 +52,5 @@ void setup() {
   comRasp.StartTelemetry();
 }
 
-void loop() {}
+// Tout tourne dans des tâches FreeRTOS : on supprime la tâche loop() pour libérer le cœur
+void loop() { vTaskDelete(NULL); }

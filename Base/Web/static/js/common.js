@@ -1,3 +1,8 @@
+// Échappe une chaîne avant insertion via innerHTML (logs, IP, noms venant du robot)
+function escapeHtml(v) {
+    return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 // --- SocketWrapper to emulate Socket.IO client using standard HTML5 WebSockets ---
 class SocketWrapper {
     constructor() {
@@ -193,7 +198,7 @@ function updateSysInfoDisplay(rawVolt) {
         if (fv !== '--.-V') window.lastVolt = fv;
     }
     const v = window.lastVolt || '--.-V';
-    sysInfoEl.innerHTML = `<span class="sys-info-item">Base: ${baseIp}</span><span class="sys-info-sep">|</span><span class="sys-info-item">Robot: ${raspIp}</span><span class="sys-info-sep">|</span><span class="sys-info-item sys-info-volt">${v}</span>`;
+    sysInfoEl.innerHTML = `<span class="sys-info-item">Base: ${escapeHtml(baseIp)}</span><span class="sys-info-sep">|</span><span class="sys-info-item">Robot: ${escapeHtml(raspIp)}</span><span class="sys-info-sep">|</span><span class="sys-info-item sys-info-volt">${v}</span>`;
 }
 
 // --- MISE À JOUR COMMUNE DES INFOS SYSTEME (IP & Batterie) SUR PC ---

@@ -28,6 +28,14 @@ class LidarCollisionThread(threading.Thread):
         shared.state['obstacle_detected'] = False
         shared.state['obstacle_type'] = 0
 
+    def _send_esp_state(self, new_state):
+        # N'envoie "L x" que sur changement (+ rafraîchissement 0,5 s) pour ne pas saturer la série
+        now = time.time()
+        if new_state != getattr(self, "_esp_state", None) or now - getattr(self, "_esp_state_time", 0.0) > 0.5:
+            self.robot.set_lidar_state(new_state)
+            self._esp_state = new_state
+            self._esp_state_time = now
+
     def run(self):
         print(f"[LIDAR THREAD] Démarrage de la surveillance. Seuil = {self.seuil_mm} mm")
         last_log_time = time.time()
@@ -148,8 +156,8 @@ class LidarCollisionThread(threading.Thread):
                             print(f"[🛑 OBSTACLE] Type {this_point_type} à {dist:.0f} mm (Mode: {mode})")
                             shared.state["obstacle_detected"] = True
                             shared.state["obstacle_type"] = this_point_type
-                            self.robot.set_lidar_state(this_point_type)
-                            
+                        self._send_esp_state(this_point_type)
+
                     else:
                         # Délai de sécurité avant de relancer l'ESP32
                         if shared.state.get("obstacle_detected", False):
@@ -157,7 +165,7 @@ class LidarCollisionThread(threading.Thread):
                                 print(f"[✅ LIBRE] Voie libre confirmée !")
                                 shared.state["obstacle_detected"] = False
                                 shared.state["obstacle_type"] = 0
-                        self.robot.set_lidar_state(0)
+                        self._send_esp_state(0)
                         
             except socket.timeout:
                 if shared.state.get("lidar_mode", "OFF") != "OFF":

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -17,6 +18,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 )
+
+// Sérialise les flashs ESP (route /api/flash_esp)
+var flashMutex sync.Mutex
 
 // 5. Copie sérialisée sous verrou pour éviter 'concurrent map iteration and write'
 func getConfigCopyLocked() json.RawMessage {
@@ -596,6 +600,15 @@ func setupRoutes(app *fiber.App) {
 
 	// Route API pour flasher les ESPs (Motor / Actionneurs) depuis la base déportée via la Raspberry Pi
 	app.Post("/api/flash_esp/:target", func(c *fiber.Ctx) error {
+		// Un seul flash à la fois : deux pio/esptool en parallèle sur le même port série échouent
+		if !flashMutex.TryLock() {
+			return c.Status(409).JSON(fiber.Map{"status": "error", "msg": "Un flash est déjà en cours"})
+		}
+		defer flashMutex.Unlock()
+		// Borne la durée totale (compilation + ssh + flash) pour ne pas bloquer le handler indéfiniment
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+
 		target := strings.ToLower(c.Params("target"))
 
 		var envName, serialPort, label string
@@ -632,7 +645,7 @@ func setupRoutes(app *fiber.App) {
 
 		// 3. Compilation avec PlatformIO pour l'environnement demandé
 		fmt.Printf("[FLASH] Démarrage compilation PlatformIO pour '%s' dans %s...\n", envName, projectRoot)
-		buildCmd := exec.Command(pioPath, "run", "-e", envName)
+		buildCmd := exec.CommandContext(ctx, pioPath, "run", "-e", envName)
 		buildCmd.Dir = projectRoot
 		buildOut, err := buildCmd.CombinedOutput()
 		if err != nil {
@@ -650,16 +663,16 @@ func setupRoutes(app *fiber.App) {
 		globalState.Lock()
 		raspIP := globalState.Telemetry.RaspIP
 		globalState.Unlock()
-		if raspIP == "" || raspIP == "??" || raspIP == "Err" {
+		if !isValidIP(raspIP) {
 			raspIP = getRaspIPFromDHCP()
 		}
-		if raspIP == "" || raspIP == "??" || raspIP == "Err" {
+		if !isValidIP(raspIP) {
 			raspIP = "192.168.10.89"
 		}
 
 		// 5. Transfert des binaires (.bin) vers la Rasp
 		remoteDir := fmt.Sprintf("/tmp/esp_flash/%s", envName)
-		mkdirCmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
+		mkdirCmd := exec.CommandContext(ctx, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
 			fmt.Sprintf("eirbot@%s", raspIP), fmt.Sprintf("mkdir -p %s", remoteDir))
 		if out, err := mkdirCmd.CombinedOutput(); err != nil {
 			return c.JSON(fiber.Map{
@@ -683,7 +696,7 @@ func setupRoutes(app *fiber.App) {
 		scpArgs := []string{"-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5"}
 		scpArgs = append(scpArgs, binFiles...)
 		scpArgs = append(scpArgs, fmt.Sprintf("eirbot@%s:%s/", raspIP, remoteDir))
-		scpCmd := exec.Command("scp", scpArgs...)
+		scpCmd := exec.CommandContext(ctx, "scp", scpArgs...)
 		if out, err := scpCmd.CombinedOutput(); err != nil {
 			return c.JSON(fiber.Map{
 				"status": "error",
@@ -694,7 +707,7 @@ func setupRoutes(app *fiber.App) {
 		}
 
 		// 6. Libération du port série sur la Rasp (fuser -k pour libérer main_robot.py si actif)
-		freeCmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
+		freeCmd := exec.CommandContext(ctx, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
 			fmt.Sprintf("eirbot@%s", raspIP), fmt.Sprintf("sudo fuser -k %s 2>/dev/null; sleep 0.5", serialPort))
 		_ = freeCmd.Run()
 
@@ -707,7 +720,7 @@ func setupRoutes(app *fiber.App) {
 		)
 
 		fmt.Printf("[FLASH] Envoi de la commande de flash sur la Rasp (%s sur %s)...\n", envName, serialPort)
-		flashCmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=30",
+		flashCmd := exec.CommandContext(ctx, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=30",
 			fmt.Sprintf("eirbot@%s", raspIP), flashScript)
 		flashOut, err := flashCmd.CombinedOutput()
 		if err != nil {

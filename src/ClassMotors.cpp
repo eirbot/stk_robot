@@ -92,7 +92,7 @@ void ClassMotors::vMotors(void *pvParameters) {
             instance->UpdateOdometry();
             lastOdoUpdate = xTaskGetTickCount();
           }
-          vTaskDelay(pdMS_TO_TICKS(5));
+          vTaskDelay(pdMS_TO_TICKS(1)); // Détection de fin de segment au plus tôt
         }
         instance->UpdateOdometry();
       } else if (taskParams.distance ==
@@ -116,12 +116,12 @@ void ClassMotors::vMotors(void *pvParameters) {
             instance->UpdateOdometry();
             lastOdoUpdate = xTaskGetTickCount();
           }
-          vTaskDelay(pdMS_TO_TICKS(5));
+          vTaskDelay(pdMS_TO_TICKS(1));
         }
         instance->UpdateOdometry();
       }
 
-      vTaskDelay(pdMS_TO_TICKS(10));
+      // Pas de pause entre segments : xQueueReceive bloque déjà quand la file est vide
     }
   }
 }
@@ -156,7 +156,7 @@ void ClassMotors::WaitUntilDone() {
   while ((uxQueueMessagesWaiting(xQueue) > 0 || moteurGauche->isRunning() ||
           moteurDroit->isRunning()) &&
          !FLAG_STOP) {
-    vTaskDelay(pdMS_TO_TICKS(10));
+    vTaskDelay(pdMS_TO_TICKS(1));
   }
 }
 

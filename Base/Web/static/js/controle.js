@@ -141,6 +141,7 @@ function handlePointerMove(e) {
     currentVtheta = Math.round(-normX * angularMax);
 
     updateGauges(currentVx, currentVtheta);
+    maybeSendNow();
 }
 
 // =======================================================
@@ -284,6 +285,7 @@ function evaluateKeyboardMovement() {
     }
 
     updateGauges(currentVx, currentVtheta);
+    maybeSendNow();
 }
 
 // =======================================================
@@ -306,6 +308,19 @@ function tickTransmission() {
         const armId = parseInt(currentTarget.split('_')[1], 10);
         handleArmJoystickControl(armId);
     }
+}
+
+// Envoi immédiat dès que la consigne change (plafonné à ~60 Hz) au lieu d'attendre
+// le prochain tick de 50 ms ; tickTransmission reste le maintien en vie (watchdog ESP 500 ms)
+let lastImmediateSendTs = 0;
+function maybeSendNow() {
+    if (currentTarget !== 'robot') return;
+    if (currentVx === lastSentVx && currentVtheta === lastSentVtheta) return;
+    const t = performance.now();
+    if (t - lastImmediateSendTs < 15) return;
+    lastImmediateSendTs = t;
+    sendCmdVel(currentVx, currentVtheta);
+    if (currentVx !== 0 || currentVtheta !== 0) zeroSendCount = 0;
 }
 
 function sendCmdVel(vx, vtheta) {

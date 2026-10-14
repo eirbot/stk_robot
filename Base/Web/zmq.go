@@ -35,12 +35,10 @@ func pipelineReceptionRobot() {
 				if err := json.Unmarshal(msgObj.Data, &tel); err == nil {
 					globalState.Lock()
 					prevTirette := globalState.Telemetry.Tirette
-					if tel.RaspIP == "" || tel.RaspIP == "Err" || tel.RaspIP == "??" {
-						if globalState.Telemetry.RaspIP != "" {
-							tel.RaspIP = globalState.Telemetry.RaspIP
-						} else {
-							tel.RaspIP = getRaspIPFromDHCP()
-						}
+					// IP invalide : on garde la précédente (la goroutine DHCP de main.go la tient à jour).
+					// Pas de lecture des baux DHCP ici : on est sous verrou, à 10 Hz.
+					if !isValidIP(tel.RaspIP) {
+						tel.RaspIP = globalState.Telemetry.RaspIP
 					}
 					globalState.Telemetry = tel
 
@@ -142,7 +140,7 @@ func pipelineReceptionRobot() {
 						if update.IMUYaw != nil {
 							globalState.Telemetry.IMUYaw = *update.IMUYaw
 						}
-						if update.RaspIP != nil {
+						if update.RaspIP != nil && isValidIP(*update.RaspIP) {
 							globalState.Telemetry.RaspIP = *update.RaspIP
 						}
 					}
@@ -155,9 +153,26 @@ func pipelineReceptionRobot() {
 						globalState.FsmState = "RUNNING"
 					}
 
+					// Paquet allégé (timer_str change toutes les 100 ms en match) :
+					// la Config n'est jointe que si le robot l'a modifiée
+					data := map[string]interface{}{
+						"match_running":     globalState.MatchRunning,
+						"match_finished":    globalState.MatchFinished,
+						"score_current":     globalState.ScoreCurrent,
+						"team":              globalState.Team,
+						"timer_str":         globalState.TimerStr,
+						"fsm_state":         globalState.FsmState,
+						"obstacle_detected": globalState.ObstacleDetected,
+						"obstacle_type":     globalState.ObstacleType,
+						"telemetry":         globalState.Telemetry,
+						"vision_pose":       globalState.VisionPose,
+					}
+					if update.Config != nil {
+						data["config"] = globalState.Config
+					}
 					packet, _ := json.Marshal(map[string]interface{}{
 						"type": "state_update",
-						"data": &globalState,
+						"data": data,
 					})
 					globalState.Unlock()
 
@@ -251,6 +266,9 @@ func pipelineReceptionRobot() {
 			if err := json.Unmarshal([]byte(msg), &tel); err == nil {
 				globalState.Lock()
 				prevTirette := globalState.Telemetry.Tirette
+				if !isValidIP(tel.RaspIP) {
+					tel.RaspIP = globalState.Telemetry.RaspIP
+				}
 				globalState.Telemetry = tel
 				if prevTirette == "ARMED" && tel.Tirette == "TRIGGERED" &&
 					!globalState.MatchRunning && !globalState.MatchFinished &&

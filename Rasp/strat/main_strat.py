@@ -53,6 +53,7 @@ def strat_loop():
     # On initialise l'état dans le partagé pour l'affichage Web
     shared.state["fsm_state"] = "WAIT_START"
     
+    last_scan = 0.0
     while True:
         # On synchronise l'état local avec l'IHM à chaque tour de boucle
         current_state = shared.state["fsm_state"]
@@ -64,14 +65,18 @@ def strat_loop():
             # Pour faire simple : on refresh à chaque tour de boucle lent? Non trop bourrin.
             # On le fait juste avant de démarrer ? Non car l'IHM en a besoin.
             # Disons qu'on refresh refresh souvent en mode WAIT
-            shared.strategies_list = discover_strategies()
+            # Scan des stratégies limité à 1 Hz, mais tirette/start réactifs (boucle à 100 Hz)
+            now = time.time()
+            if now - last_scan >= 1.0:
+                shared.strategies_list = discover_strategies()
+                last_scan = now
 
             if shared.state["match_running"]:
                 print(f"[STRAT] GO ! Lancement : {shared.state['strat_id']}")
                 robot.is_returning = False
                 shared.state["fsm_state"] = "RUNNING" # Update Etat
             else:
-                time.sleep(1.0) # Scan toutes les secondes
+                time.sleep(0.01)
 
         # --- ETAT 2 : MATCH ---
         elif current_state == "RUNNING":
@@ -81,7 +86,9 @@ def strat_loop():
                 
                 # Import dynamique ET Reload
                 # On ré-explore pour être sûr que la strat existe (cas création récente)
-                available = discover_strategies()
+                available = shared.strategies_list
+                if strat_name not in available:
+                    available = discover_strategies()
                 
                 if strat_name in available:
                     full_mod_path = f"strat.strategies.{strat_name}"
