@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -57,6 +58,7 @@ func saveConfigToFile(cfg map[string]interface{}) {
 
 var (
 	visionCmd   *exec.Cmd
+	visionDone  chan struct{} // Fermé quand le worker se termine
 	visionMutex sync.Mutex
 )
 
@@ -139,10 +141,8 @@ func startVisionWorker() (int, error) {
 	visionMutex.Lock()
 	defer visionMutex.Unlock()
 
-	if visionCmd != nil && visionCmd.Process != nil {
-		if visionCmd.ProcessState == nil || !visionCmd.ProcessState.Exited() {
-			return visionCmd.Process.Pid, nil
-		}
+	if visionAlive() {
+		return visionCmd.Process.Pid, nil
 	}
 
 	visionDir := findVisionDir()
@@ -150,22 +150,60 @@ func startVisionWorker() (int, error) {
 		return 0, fmt.Errorf("dossier Base/Vision introuvable")
 	}
 
-	binPath, err := ensureVisionWorkerCompiled(visionDir)
-	if err != nil {
-		return 0, fmt.Errorf("impossible de préparer le binaire C++ : %w", err)
+	// Vision déportée (sous-module Python/uv) en priorité, sinon worker C++
+	var cmd *exec.Cmd
+	label := ""
+	if uvPath := findUv(); uvPath != "" && fileExists(filepath.Join(visionDir, "vision_deporte", "pyproject.toml")) {
+		absDir, _ := filepath.Abs(visionDir)
+		cmd = exec.Command(uvPath, "run", "--project", "vision_deporte", "--with", "pyzmq",
+			"python", "vision_deporte_worker.py")
+		cmd.Dir = absDir
+		label = "vision_deporte (uv)"
+	} else {
+		binPath, err := ensureVisionWorkerCompiled(visionDir)
+		if err != nil {
+			return 0, fmt.Errorf("impossible de préparer le binaire C++ : %w", err)
+		}
+		cmd = exec.Command(binPath)
+		cmd.Dir = filepath.Dir(binPath)
+		label = "vision_worker C++ (" + binPath + ")"
 	}
-
-	cmd := exec.Command(binPath)
-	cmd.Dir = filepath.Dir(binPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	// Groupe de processus dédié : uv lance python en enfant, il faut tuer les deux.
+	// Pdeathsig : le worker s'arrête aussi si base_stk meurt (sinon il garde la caméra et le port 8082)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pdeathsig: syscall.SIGTERM}
 
 	if err := cmd.Start(); err != nil {
 		return 0, err
 	}
-	visionCmd = cmd
-	fmt.Printf("[VISION] 🚀 Processus vision_worker C++ démarré (PID: %d, Path: %s)\n", cmd.Process.Pid, binPath)
+	done := make(chan struct{})
+	visionCmd, visionDone = cmd, done
+	go func() { _ = cmd.Wait(); close(done) }()
+	fmt.Printf("[VISION] 🚀 Processus %s démarré (PID: %d)\n", label, cmd.Process.Pid)
 	return cmd.Process.Pid, nil
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func findUv() string {
+	if p, err := exec.LookPath("uv"); err == nil {
+		return p
+	}
+	if home, err := os.UserHomeDir(); err == nil {
+		for _, p := range []string{
+			filepath.Join(home, ".local", "bin", "uv"),
+			filepath.Join(home, ".cargo", "bin", "uv"),
+		} {
+			if fileExists(p) {
+				return p
+			}
+		}
+	}
+	return ""
 }
 
 func stopVisionWorker() {
@@ -174,10 +212,28 @@ func stopVisionWorker() {
 
 	if visionCmd != nil && visionCmd.Process != nil {
 		pid := visionCmd.Process.Pid
-		_ = visionCmd.Process.Kill()
-		_ = visionCmd.Wait()
+		_ = syscall.Kill(-pid, syscall.SIGTERM) // Tout le groupe (uv + python)
+		select {
+		case <-visionDone:
+		case <-time.After(3 * time.Second):
+			_ = syscall.Kill(-pid, syscall.SIGKILL)
+			<-visionDone
+		}
 		fmt.Printf("[VISION] Processus vision_worker (PID: %d) arrêté\n", pid)
 		visionCmd = nil
+	}
+}
+
+// À appeler sous visionMutex
+func visionAlive() bool {
+	if visionCmd == nil || visionCmd.Process == nil {
+		return false
+	}
+	select {
+	case <-visionDone:
+		return false
+	default:
+		return true
 	}
 }
 
@@ -185,10 +241,8 @@ func isVisionWorkerRunning() (bool, int) {
 	visionMutex.Lock()
 	defer visionMutex.Unlock()
 
-	if visionCmd != nil && visionCmd.Process != nil {
-		if visionCmd.ProcessState == nil || !visionCmd.ProcessState.Exited() {
-			return true, visionCmd.Process.Pid
-		}
+	if visionAlive() {
+		return true, visionCmd.Process.Pid
 	}
 	return false, 0
 }

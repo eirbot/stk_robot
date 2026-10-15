@@ -1,0 +1,3 @@
+[submodule "Base/Vision/vision_deporte"]
+	path = Base/Vision/vision_deporte
+	url = https://github.com/antonythiery/vision_deporte.git
