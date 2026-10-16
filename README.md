@@ -64,7 +64,7 @@ Plus besoin de recompiler le code entre deux matchs !
 ### 🌐 Dashboard de Contrôle
 
 - Interface Web accessible via Wi-Fi (`http://<ip_robot>:5000`).
-- Retour vidéo, état des capteurs, scores et logs en direct.
+- Retour vidéo, état des capteurs et logs en direct.
 - Lancement et arrêt d'urgence à distance.
 
 ### 📍 Navigation Avancée

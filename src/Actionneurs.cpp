@@ -2,6 +2,7 @@
 
 PCF8575 pcf(0x20, &Wire);
 volatile bool IntDetected = false;
+volatile bool actionneursBloques = false;
 
 Actionneur act1 = {ServoE, ServoF, Verin31EXT, Verin32EXT, asc1_stp, asc1_dirEXT, sns_asc_1EXT, true};
 Actionneur act2 = {ServoA, ServoB, Verin11EXT, Verin12EXT, asc2_stp, asc2_dirEXT, sns_asc_2EXT, false};

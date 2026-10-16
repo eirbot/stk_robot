@@ -62,7 +62,6 @@ type FullState struct {
 	sync.Mutex
 	MatchRunning     bool                   `json:"match_running"`
 	MatchFinished    bool                   `json:"match_finished"`
-	ScoreCurrent     int                    `json:"score_current"`
 	Team             string                 `json:"team"`
 	TimerStr         string                 `json:"timer_str"`
 	FsmState         string                 `json:"fsm_state"`
@@ -82,7 +81,6 @@ type RobotMessage struct {
 type StateUpdate struct {
 	MatchRunning     *bool                   `json:"match_running"`
 	MatchFinished    *bool                   `json:"match_finished"`
-	ScoreCurrent     *int                    `json:"score_current"`
 	Team             *string                 `json:"team"`
 	TimerStr         *string                 `json:"timer_str"`
 	FsmState         *string                 `json:"fsm_state"`

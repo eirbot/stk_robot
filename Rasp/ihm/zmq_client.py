@@ -75,18 +75,22 @@ class ZmqClient(threading.Thread):
                     shared.state["fsm_state"] = "STOPPED"
                     shared.state["tirette"] = "WAIT_INSERT"
                     try:
-                        from strat.actions import esp
+                        from strat.actions import esp, actionneurs
                         if esp:
                             esp.stop_robot()
+                        if actionneurs:
+                            actionneurs.bloquer()
                     except Exception as e:
                         pass
                 elif act == "reset":
                     shared.state["fsm_state"] = "WAIT_START"
-                    shared.state["score_current"] = 0
                     shared.state["timer_str"] = "100.0"
                     shared.state["match_finished"] = False
                     shared.state["match_running"] = False
                     shared.state["tirette"] = "WAIT_INSERT"
+                    from strat.actions import actionneurs
+                    if actionneurs:
+                        actionneurs.debloquer()
                 elif act == "tirette":
                     shared.state["tirette"] = "TRIGGERED"
                     shared.state["match_running"] = True
@@ -100,9 +104,6 @@ class ZmqClient(threading.Thread):
                     except Exception as e:
                         print(f"[ZMQ CLIENT] Erreur action init : {e}")
 
-            elif cmd_type == "update_score":
-                score = payload.get("score_current", 0)
-                shared.state["score_current"] = score
 
             elif cmd_type == "cmd_vel":
                 try:
@@ -279,7 +280,6 @@ class ZmqClient(threading.Thread):
                 current_state = {
                     "match_running": shared.state.get("match_running", False),
                     "match_finished": shared.state.get("match_finished", False),
-                    "score_current": shared.state.get("score_current", 0),
                     "timer_str": shared.state.get("timer_str", "100.0"),
                     "fsm_state": shared.state.get("fsm_state", "INIT"),
                     "obstacle_detected": shared.state.get("obstacle_detected", False),

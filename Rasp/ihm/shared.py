@@ -59,7 +59,6 @@ lidar_process = None
 state = {
     "config": cfg,
     "team": cfg.get("team", "BLEUE"),
-    "score_current": 0,
     "match_running": False,
     "match_finished": False,
     "timer_str": "100.0",
@@ -68,7 +67,6 @@ state = {
     "lidar_mode": cfg.get("lidar_mode", "MATCH"),
     "music_enabled": cfg.get("music_enabled", True),
     "leds_enabled": cfg.get("leds_enabled", True),
-    "manual_score_enabled": cfg.get("manual_score_enabled", True),
     "strat_id": "strat_homologation", 
     "fsm_state": "INIT",
     "strat_mode": cfg.get("strat_mode", "DYNAMIC"),
@@ -134,9 +132,6 @@ def update_config_from_server(new_cfg):
     if "leds_enabled" in new_cfg:
         state["leds_enabled"] = new_cfg["leds_enabled"]
         
-    # 6. Score manuel activé
-    if "manual_score_enabled" in new_cfg:
-        state["manual_score_enabled"] = new_cfg["manual_score_enabled"]
         
     # 7. Mode stratégie (Statique / Dynamique)
     if "strat_mode" in new_cfg:

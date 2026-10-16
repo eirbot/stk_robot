@@ -77,6 +77,16 @@ void ComWithRasp::TelemetryLoop() {
     mot.UpdateOdometry();
     mot.CheckWatchdog();
 
+    // Rasp muette pendant un GoTo : on ne reçoit plus l'état LiDAR, on s'arrête
+    if (heartbeatSeen && (isMoving || goToTaskHandle != NULL) &&
+        millis() - lastRxMillis > RASP_TIMEOUT_MS) {
+      FLAG_STOP = true;
+      mot.StopVelocity();
+      mot.Stop();
+      Serial.println("-> WATCHDOG: plus de nouvelles de la Rasp, arret GoTo");
+      heartbeatSeen = false; // Réarmé au prochain "K"
+    }
+
     telemetryCounter++;
     if (telemetryCounter >= 5) { // 5 * 20ms = 100ms (10 Hz)
       telemetryCounter = 0;
@@ -93,6 +103,7 @@ void ComWithRasp::Send() {
 }
 
 void ComWithRasp::processLine() {
+  lastRxMillis = millis();
   commande.trim();
   String command = "";
   std::vector<int> params;
@@ -195,6 +206,9 @@ void ComWithRasp::processCommand(const String &cmd,
     Serial.println("SetPos");
 #endif
     serialGoto.SetPos((float)params[0], (float)params[1], (float)params[2]);
+  } else if (cmd == "K") {
+    // Heartbeat de la Rasp (lastRxMillis déjà mis à jour par processLine)
+    heartbeatSeen = true;
   } else if (cmd == "H") {
 #if COM_DEBUG
     Serial.println("Halt");

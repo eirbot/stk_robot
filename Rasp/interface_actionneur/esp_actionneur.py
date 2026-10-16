@@ -58,6 +58,13 @@ class ESPActionneurs:
         """Alias pour send, compatible avec les appels génériques."""
         self.send(cmd)
 
+    def bloquer(self):
+        """Fin de match / STOP : l'ESP interrompt le mouvement en cours et ignore la suite."""
+        self.send("X")
+
+    def debloquer(self):
+        self.send("U")
+
     def init_robot(self):
         self.send("I")
         # Attend que l'ESP ait fini et que le flag soit levé

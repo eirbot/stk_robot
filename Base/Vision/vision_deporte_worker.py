@@ -28,6 +28,7 @@ from urllib.parse import parse_qs, urlparse
 import cv2
 import numpy as np
 import zmq
+from scipy.spatial.transform import Rotation
 
 # Le code de vision importe ses modules à plat (from computePosition import ...)
 VISION_SRC = Path(__file__).resolve().parent / "vision_deporte" / "src" / "vision_deporte"
@@ -40,6 +41,8 @@ from tools.detectArucos import arucoDirectory, detectArucos  # noqa: E402
 # --- CONFIGURATION ---
 # ==============================================================================
 CAMERA_ID = int(os.environ.get("VISION_CAMERA_ID", "0"))
+# Fenêtre MuJoCo (viewer d'Antony) sur l'écran local de la base (visible en VNC)
+VIEWER_ON = os.environ.get("VISION_VIEWER", "1") not in ("0", "false", "no", "off")
 TAG_ID_ROBOT = 2
 TABLE_TAG_IDS = (20, 21, 22, 23)
 
@@ -56,13 +59,10 @@ CAMERA_PRESETS = {
 
 def table_to_base(pos_m, theta_deg):
     """
-    Repère de sortie de computePosition (m, tourné de -90° par Rzn : x' part
-    du bord Y=0 vers l'intérieur, y' le long de la table, centré)
-    -> repère base/IHM (mm, X de -1500 à 1500, Y de 0 à 2000, theta en degrés,
-    0 = X+, +90 = Y+). Tags Eurobot : 20/21 à Y=600, 22/23 à Y=1400.
+    Convention MuJoCo / computePosition conservée telle quelle (repère table
+    avec la rotation Rzn) : seulement m -> mm, theta en degrés inchangé.
     """
-    theta = (90.0 - theta_deg + 180.0) % 360.0 - 180.0
-    return pos_m[1] * 1000.0, pos_m[0] * 1000.0, theta
+    return pos_m[0] * 1000.0, pos_m[1] * 1000.0, theta_deg
 
 
 # ==============================================================================
@@ -331,6 +331,30 @@ def die_with_parent():
         pass
 
 
+def ensure_display():
+    """base_stk lancé en ssh : viser l'écran :0 de la session graphique."""
+    if os.environ.get("DISPLAY"):
+        return
+    os.environ["DISPLAY"] = ":0"
+    if not os.environ.get("XAUTHORITY"):
+        candidates = [p for p in Path("/tmp").glob("xauth_*") if p.is_file() and p.stat().st_uid == os.getuid()]
+        candidates += [p for p in [Path.home() / ".Xauthority"] if p.exists()]
+        if candidates:
+            os.environ["XAUTHORITY"] = str(max(candidates, key=lambda p: p.stat().st_mtime))
+
+
+def make_compute_position():
+    if VIEWER_ON:
+        ensure_display()
+        try:
+            cp = computePosition(mujocoOn=True)
+            print(f"[MUJOCO] Viewer ouvert sur {os.environ.get('DISPLAY')}", flush=True)
+            return cp
+        except Exception as e:
+            print(f"[MUJOCO] Viewer indisponible ({e}), poursuite sans affichage.", flush=True)
+    return computePosition(mujocoOn=False)
+
+
 def main():
     die_with_parent()
     base_params = dict(np.load(VISION_SRC / "tools" / "cameraParams.npz"))
@@ -350,7 +374,7 @@ def main():
     frame_buffer.set_active_preset(preset_key, CAMERA_PRESETS[preset_key]["label"])
 
     detector = detectArucos(scaled_camera_params(base_params, w, h))
-    compute_pos = computePosition(mujocoOn=False)
+    compute_pos = make_compute_position()
     fps = 0.0
     print("[MAIN] Pipeline vision déportée prêt.", flush=True)
 
@@ -366,7 +390,8 @@ def main():
 
         if reset_filter.is_set():
             reset_filter.clear()
-            compute_pos = computePosition(mujocoOn=False)
+            compute_pos.posTable = np.array([0.0, 0.0, 0.0])
+            compute_pos.R_world_table = Rotation.identity()
 
         ok, frame = cap.read()
         if not ok:
@@ -390,6 +415,12 @@ def main():
             result = compute_pos.detectToRobotPosition(detector.detectedArucos, known_ids)
             if isinstance(result, tuple):
                 robot = table_to_base(result[0], float(result[1]))
+
+        # Affichage seul : pas de mj_step (contrairement à main.py), sinon la physique
+        # fait bouger le robot simulé (freejoint), dont computePosition lit la pose.
+        # update_mujoco fait déjà mj_forward. Fermer la fenêtre n'arrête pas la vision.
+        if compute_pos.mujocoOn and compute_pos.viewer.is_running():
+            compute_pos.viewer.sync()
 
         if robot is not None:
             msg = {"type": "vision_update",

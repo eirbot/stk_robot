@@ -844,7 +844,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var f = document.getElementById('filename').value;
         if (!f) return;
         var c = Blockly.Python.workspaceToCode(workspace).replace(/^/gm, "    ");
-        var final = `from strat.actions import RobotActions\nimport time\nMETADATA={"name":"${f}","score":0}\ndef run(robot: RobotActions):\n    print("Start ${f}")\n${c}\n    print("End")`;
+        var final = `from strat.actions import RobotActions\nimport time\nMETADATA={"name":"${f}"}\ndef run(robot: RobotActions):\n    print("Start ${f}")\n${c}\n    print("End")`;
 
         fetch('/api/save_strat', {
             method: 'POST',

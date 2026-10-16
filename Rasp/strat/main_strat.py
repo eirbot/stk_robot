@@ -6,7 +6,7 @@ import glob
 import threading
 import sys
 import ihm.shared as shared
-from strat.actions import RobotActions, EndOfMatchException
+from strat.actions import RobotActions, EndOfMatchException, actionneurs
 
 # Dossier des stratégies (relatif au main)
 STRAT_DIR = "strat/strategies"
@@ -38,7 +38,7 @@ def discover_strategies():
             else:
                 mod = importlib.import_module(full_mod_path)
 
-            meta = getattr(mod, "METADATA", {"name": mod_name, "score": 0})
+            meta = getattr(mod, "METADATA", {"name": mod_name})
             strats[mod_name] = meta
             
         except Exception as e:
@@ -74,6 +74,9 @@ def strat_loop():
             if shared.state["match_running"]:
                 print(f"[STRAT] GO ! Lancement : {shared.state['strat_id']}")
                 robot.is_returning = False
+                # Le match précédent a pu bloquer les actionneurs (fin à 100 s / STOP)
+                if actionneurs:
+                    actionneurs.debloquer()
                 shared.state["fsm_state"] = "RUNNING" # Update Etat
             else:
                 time.sleep(0.01)

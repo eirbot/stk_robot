@@ -350,7 +350,6 @@ func setupRoutes(app *fiber.App) {
 		} else if act == "reset" {
 			globalState.MatchRunning = false
 			globalState.MatchFinished = false
-			globalState.ScoreCurrent = 0
 			globalState.FsmState = "WAIT_START"
 			envoyerAuRobot("action", "reset")
 		} else if act == "tirette" {
@@ -363,24 +362,6 @@ func setupRoutes(app *fiber.App) {
 		if len(cfgCopy) > 0 {
 			envoyerAuRobot("config_update", cfgCopy)
 		}
-
-		broadcastState()
-		return c.JSON(fiber.Map{"status": "ok"})
-	})
-
-	app.Post("/api/score_edit", func(c *fiber.Ctx) error {
-		var body map[string]int
-		if err := c.BodyParser(&body); err != nil {
-			return c.Status(400).JSON(fiber.Map{"error": err.Error()})
-		}
-		delta := body["delta"]
-		globalState.Lock()
-		globalState.ScoreCurrent += delta
-		if globalState.ScoreCurrent < 0 {
-			globalState.ScoreCurrent = 0
-		}
-		envoyerAuRobot("update_score", map[string]int{"score_current": globalState.ScoreCurrent})
-		globalState.Unlock()
 
 		broadcastState()
 		return c.JSON(fiber.Map{"status": "ok"})

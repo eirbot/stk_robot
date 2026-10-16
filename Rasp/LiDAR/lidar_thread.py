@@ -170,8 +170,10 @@ class LidarCollisionThread(threading.Thread):
             except socket.timeout:
                 if shared.state.get("lidar_mode", "OFF") != "OFF":
                     print("[⚠️ ALERTE] Perte de com LiDAR. Arrêt par sécurité.")
-                    # Si le C++ crash vraiment, tu pourras envisager de couper les moteurs ici
-                    # self.robot.set_lidar_state(1) 
+                    # Sans LiDAR on ne peut plus éviter : on bloque les moteurs jusqu'au retour des trames
+                    shared.state["obstacle_detected"] = True
+                    shared.state["obstacle_type"] = 1
+                    self._send_esp_state(1)
             except Exception as e:
                 if self.running:
                     print(f"[LIDAR THREAD] Erreur : {e}")

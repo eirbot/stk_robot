@@ -1,6 +1,6 @@
 from strat.actions import RobotActions
 import time
-METADATA={"name":"3b_pouss_plus","score":0}
+METADATA={"name":"3b_pouss_plus"}
 def run(robot: RobotActions):
     print("Start 3b_pouss_plus")
     robot.set_pos(148, 1149, 0)

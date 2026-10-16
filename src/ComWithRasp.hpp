@@ -27,6 +27,11 @@ private:
   static constexpr int MAX_COMMAND_LENGTH = 64;
   volatile bool isMoving = false;
   TaskHandle_t goToTaskHandle = NULL;
+
+  // Watchdog liaison Rasp : armé au premier heartbeat "K" reçu
+  static constexpr unsigned long RASP_TIMEOUT_MS = 1000;
+  volatile unsigned long lastRxMillis = 0;
+  volatile bool heartbeatSeen = false;
 };
 
 #endif

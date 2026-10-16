@@ -57,7 +57,6 @@ func pipelineReceptionRobot() {
 						"data": map[string]interface{}{
 							"match_running":     globalState.MatchRunning,
 							"match_finished":    globalState.MatchFinished,
-							"score_current":     globalState.ScoreCurrent,
 							"team":              globalState.Team,
 							"timer_str":         globalState.TimerStr,
 							"fsm_state":         globalState.FsmState,
@@ -97,9 +96,6 @@ func pipelineReceptionRobot() {
 					}
 					if update.MatchFinished != nil {
 						globalState.MatchFinished = *update.MatchFinished
-					}
-					if update.ScoreCurrent != nil {
-						globalState.ScoreCurrent = *update.ScoreCurrent
 					}
 					if update.Team != nil {
 						globalState.Team = *update.Team
@@ -158,7 +154,6 @@ func pipelineReceptionRobot() {
 					data := map[string]interface{}{
 						"match_running":     globalState.MatchRunning,
 						"match_finished":    globalState.MatchFinished,
-						"score_current":     globalState.ScoreCurrent,
 						"team":              globalState.Team,
 						"timer_str":         globalState.TimerStr,
 						"fsm_state":         globalState.FsmState,
@@ -203,7 +198,6 @@ func pipelineReceptionRobot() {
 					} else if act == "reset" {
 						globalState.MatchRunning = false
 						globalState.MatchFinished = false
-						globalState.ScoreCurrent = 0
 						globalState.FsmState = "WAIT_START"
 					}
 					globalState.Unlock()
@@ -281,7 +275,6 @@ func pipelineReceptionRobot() {
 					"data": map[string]interface{}{
 						"match_running":     globalState.MatchRunning,
 						"match_finished":    globalState.MatchFinished,
-						"score_current":     globalState.ScoreCurrent,
 						"team":              globalState.Team,
 						"timer_str":         globalState.TimerStr,
 						"fsm_state":         globalState.FsmState,

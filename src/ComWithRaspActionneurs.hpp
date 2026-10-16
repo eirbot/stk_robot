@@ -15,6 +15,7 @@ public:
 
 private:
   void Receive();     // Lecture UART dans une boucle
+  void Execute();     // Exécute les commandes de cmdQueue une par une
   void TelemetryLoop(); // Envoi périodique de la télémétrie
   void processLine(); // Découpe et traite la commande
   void processCommand(const String &cmd, const std::vector<int> &params);
@@ -25,6 +26,9 @@ private:
   char rcv;
   static constexpr int MAX_COMMAND_LENGTH = 64;
   volatile bool isMoving = false;
+  // Lignes reçues en attente d'exécution : la lecture reste réactive pendant
+  // qu'une commande bloquante (ascenseur, servo) s'exécute
+  QueueHandle_t cmdQueue = NULL;
 };
 
 #endif

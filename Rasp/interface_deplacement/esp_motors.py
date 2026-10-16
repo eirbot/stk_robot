@@ -30,6 +30,9 @@ class ESPMotors:
             self.running = True
             self.rx_thread = threading.Thread(target=self._receive_loop, daemon=True, name="ESP_Rx_Thread")
             self.rx_thread.start()
+
+            # Heartbeat : sans lui l'ESP stoppe tout GoTo en cours au bout de 1 s
+            threading.Thread(target=self._heartbeat_loop, daemon=True, name="ESP_Heartbeat").start()
             
         except serial.SerialException as e:
             print(f"[MOTORS] ❌ Erreur critique : Impossible d'ouvrir {self.port} -> {e}")
@@ -99,6 +102,11 @@ class ESPMotors:
         self.send(f"L {val}")
 
     # --- Tâche de fond (Thread) ---
+
+    def _heartbeat_loop(self):
+        while self.running:
+            self.send("K")
+            time.sleep(0.2)
     
     def _receive_loop(self):
         """Boucle tournant en arrière-plan pour traiter les retours de l'ESP."""

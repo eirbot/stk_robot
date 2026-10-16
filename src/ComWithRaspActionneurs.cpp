@@ -4,9 +4,25 @@
 ComWithRasp::ComWithRasp() { Serial.begin(115200); }
 
 void ComWithRasp::StartCom() {
+  cmdQueue = xQueueCreate(16, 64);
   // Crée une tâche FreeRTOS qui appelle this->Receive()
   xTaskCreate([](void *obj) { static_cast<ComWithRasp *>(obj)->Receive(); },
               "ComWithRasp", 4000, this, 1, NULL);
+  xTaskCreate([](void *obj) { static_cast<ComWithRasp *>(obj)->Execute(); },
+              "ComExecute", 4096, this, 1, NULL);
+}
+
+void ComWithRasp::Execute() {
+  char cmd_buffer[64];
+  while (1) {
+    if (xQueueReceive(cmdQueue, cmd_buffer, portMAX_DELAY) == pdTRUE) {
+      commande = String(cmd_buffer);
+      Serial.println("-> Ligne complete securisee pour actionneurs : [" + commande + "]");
+      // On lance ton découpage
+      processLine();
+      commande = ""; // On nettoie au cas où
+    }
+  }
 }
 
 void ComWithRasp::Receive() {
@@ -23,14 +39,19 @@ void ComWithRasp::Receive() {
         if (rx_index > 0) {
           rx_buffer[rx_index] =
               '\0'; // On met le caractère de fin de chaîne obligatoire en C
-          // On transfère le tableau sécurisé dans ta variable String habituelle
-          commande = String(rx_buffer);
-          Serial.println("-> Ligne complete securisee pour actionneurs : [" + commande + "]");
-          // On lance ton découpage
-          processLine();
+          if (strcmp(rx_buffer, "X") == 0) {
+            // Stop immédiat : interrompt le mouvement en cours et jette la file
+            actionneursBloques = true;
+            xQueueReset(cmdQueue);
+            Serial.println("-> STOP actionneurs");
+          } else if (strcmp(rx_buffer, "U") == 0) {
+            actionneursBloques = false;
+            Serial.println("-> Actionneurs debloques");
+          } else if (xQueueSend(cmdQueue, rx_buffer, 0) != pdTRUE) {
+            Serial.println("-> ERREUR : File de commandes pleine !");
+          }
           // On remet le curseur du tableau à zéro pour le prochain message
           rx_index = 0;
-          commande = ""; // On nettoie au cas où
         }
       } else {
         // C'est une lettre normale, on la range dans le tableau
@@ -112,6 +133,13 @@ void ComWithRasp::processLine() {
 void ComWithRasp::processCommand(const String &cmd,
                                  const std::vector<int> &params) {
   int actioStatus = 0;
+  if (cmd == "I") {
+    actionneursBloques = false; // Une init réarme les actionneurs
+  } else if (actionneursBloques) {
+    Serial.println("-> Actionneurs bloques, commande ignoree");
+    return;
+  }
+
   if (cmd == "G" && params.size() == 1) {
     if((int)params[0]==1){
       act1.closePiston();

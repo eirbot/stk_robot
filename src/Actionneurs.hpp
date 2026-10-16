@@ -9,6 +9,8 @@
 
 extern PCF8575 pcf;
 extern volatile bool IntDetected;
+// Levé par la commande "X" (fin de match / stop) : plus aucun mouvement jusqu'à "U" ou "I"
+extern volatile bool actionneursBloques;
 
 struct Actionneur {
   uint8_t p9G, p17G, v1, v2, stp, dir, sns;
@@ -39,7 +41,11 @@ struct Actionneur {
     canMove = (sns_status == LOW);
   }
 
-  void servo_9G(int angle) { servo9G.write(angle); }
+  void servo_9G(int angle) {
+    if (!actionneursBloques) {
+      servo9G.write(angle);
+    }
+  }
 
   void soft_servo(int objectif) {
     while (abs(objectif - p17G_status) >= 1) {
@@ -47,6 +53,9 @@ struct Actionneur {
         p17G_status += 1;
       } else {
         p17G_status -= 1;
+      }
+      if (actionneursBloques) {
+        break;
       }
       servo17G.write(p17G_status);
       delay(10);
@@ -67,17 +76,23 @@ struct Actionneur {
   }
 
   void fairePas() {
-    if (canMove) {
+    if (canMove && !actionneursBloques) {
       digitalWrite(stp, !digitalRead(stp));
     }
   }
 
   void closePiston() {
+    if (actionneursBloques) {
+      return;
+    }
     pcf.write(v1, HIGH);
     pcf.write(v2, LOW);
   }
 
   void openPiston() {
+    if (actionneursBloques) {
+      return;
+    }
     pcf.write(v1, LOW);
     pcf.write(v2, HIGH);
   }
@@ -85,7 +100,7 @@ struct Actionneur {
   void goUp(int steps) {
     pcf.write(dir, dir_elevator ? LOW : HIGH);
     canMove = true;
-    for (int k = 0; k < steps; k++) {
+    for (int k = 0; k < steps && !actionneursBloques; k++) {
       this->fairePas();
       delayMicroseconds(100);
     }
@@ -96,7 +111,7 @@ struct Actionneur {
     canMove = true;
     sns_read();
     if (sns_status == LOW) {
-      for (int k = 0; k < steps; k++) {
+      for (int k = 0; k < steps && !actionneursBloques; k++) {
         this->fairePas();
         delayMicroseconds(50);
         if (IntDetected) {

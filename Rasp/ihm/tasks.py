@@ -18,6 +18,10 @@ def background_loop():
             remaining = 100.0 - elapsed
             if remaining <= 0:
                 state["timer_str"] = "0.0"; state["match_running"] = False; state["match_finished"] = True
+                # Règlement H.3 : à 100 s, arrêt des moteurs ET des actionneurs
+                from strat.actions import esp, actionneurs
+                if esp: esp.stop_robot()
+                if actionneurs: actionneurs.bloquer()
                 if state["music_enabled"] and audio: audio.stop(); audio.play('end')
                 send_led_cmd("MATCH_STOP")
             else:
