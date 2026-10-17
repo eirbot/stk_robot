@@ -1,15 +1,17 @@
 /* =======================================================
-   EIRBOT 2026 — BASE DE DESIGN COMMUNE
-   Tokens, typo, composants (carte, bouton, badge, chip, tuile).
+   EIRBOT 2026 — BASE DE DESIGN COMMUNE (thème « STK »)
+   Inspiré de l'ambiance des menus de SuperTuxKart : ciel bleu,
+   panneaux cartoon à gros contours, boutons de jeu en relief,
+   damier d'arrivée. Aucune image ni logo du jeu n'est repris.
    Les classes historiques (.btn-nav, .btn-back, .card...) sont
    conservées et restylées pour les pages pas encore migrées.
    Pas de backdrop-filter : trop coûteux sur téléphone et sur la Rasp.
    ======================================================= */
 
 @font-face {
-    font-family: 'Outfit';
-    src: url('/static/fonts/outfit.woff2') format('woff2');
-    font-weight: 100 900;
+    font-family: 'Fredoka';
+    src: url('/static/fonts/fredoka.woff2') format('woff2');
+    font-weight: 300 700;
     font-display: swap;
 }
 
@@ -21,49 +23,60 @@
 }
 
 :root {
-    /* Surfaces */
-    --bg: #0d1117;
-    --surface: #161b22;
-    --surface-2: #1c232c;
-    --surface-3: #242c37;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.16);
+    /* Ciel */
+    --sky-top: #5ccbff;
+    --sky-mid: #2a8be6;
+    --sky-bottom: #123f9a;
+
+    /* Panneaux */
+    --ink: #071a3d;               /* contours et ombres "cartoon" */
+    --surface: #0f3274;
+    --surface-2: #164190;
+    --surface-3: #1e52ad;
+    --border: rgba(255, 255, 255, 0.14);
+    --border-strong: #8fd3ff;
 
     /* Texte */
-    --text: #f0f6fc;
-    --text-muted: #8b949e;
-    --text-faint: #5c6670;
+    --text: #ffffff;
+    --text-muted: #b9dcff;
+    --text-faint: #7fa8d6;
 
-    /* Couleurs */
-    --accent: #00d2ff;
-    --blue: #2196f3;
-    --yellow: #ffc107;
-    --success: #00e676;
-    --success-strong: #1f9d55;
-    --warning: #ffb703;
-    --danger: #ff334b;
-    --danger-strong: #d7263d;
-    --timer: #ffcb6b;
+    /* Couleurs de jeu */
+    --accent: #ffd23f;            /* jaune/or des menus */
+    --orange: #ff8c1a;
+    --blue: #2f8cff;
+    --yellow: #ffd23f;
+    --success: #3fe05a;
+    --success-strong: #27b23d;
+    --warning: #ffb21a;
+    --danger: #ff4d5e;
+    --danger-strong: #e8263a;
+    --cyan: #3ee0ff;
+    --timer: #ffe14d;
 
     /* Couleur de l'équipe courante (redéfinie par body.mode-JAUNE) */
     --team: var(--blue);
-    --team-soft: rgba(33, 150, 243, 0.15);
-    --team-text: #fff;
+    --team-ink: #0a3d8f;
+    --team-text: #ffffff;
 
     /* Typo */
-    --font: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font: 'Fredoka', 'Nunito', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
 
     /* Formes */
-    --radius: 14px;
-    --radius-sm: 9px;
-    --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    --radius: 20px;
+    --radius-sm: 14px;
+    --outline: 3px;
+    --drop: 0 6px 0 var(--ink);
+    --gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.06) 48%, rgba(0, 0, 0, 0) 52%);
+    --gloss-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 45%);
+    --checker: repeating-conic-gradient(#ffffff 0 25%, #10131a 0 50%) 0 0 / 14px 14px;
 }
 
 body.mode-JAUNE {
     --team: var(--yellow);
-    --team-soft: rgba(255, 193, 7, 0.15);
-    --team-text: #1a1300;
+    --team-ink: #8a5a00;
+    --team-text: #2a1a00;
 }
 
 /* =======================================================
@@ -71,10 +84,15 @@ body.mode-JAUNE {
    ======================================================= */
 html {
     -webkit-text-size-adjust: 100%;
+    background: var(--sky-bottom);
 }
 
 body {
-    background-color: var(--bg);
+    background:
+        radial-gradient(ellipse 60% 18% at 15% 12%, rgba(255, 255, 255, 0.18), transparent 70%),
+        radial-gradient(ellipse 45% 14% at 85% 22%, rgba(255, 255, 255, 0.14), transparent 70%),
+        linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 38%, var(--sky-bottom) 100%);
+    background-attachment: fixed;
     color: var(--text);
     font-family: var(--font);
     text-align: center;
@@ -84,8 +102,6 @@ body {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    border-top: 3px solid var(--team);
-    transition: border-color 0.3s;
     font-size: 2vh; /* Échelle historique, utilisée par les pages non migrées */
 }
 
@@ -103,43 +119,68 @@ button, a, select, input {
     display: none !important;
 }
 
+/* Texte "cartoon" : contour foncé */
+.outlined {
+    text-shadow:
+        2px 2px 0 var(--ink), -2px 2px 0 var(--ink),
+        2px -2px 0 var(--ink), -2px -2px 0 var(--ink),
+        0 4px 0 var(--ink);
+}
+
 /* =======================================================
-   EN-TÊTE
+   EN-TÊTE + BANDE DAMIER
    ======================================================= */
 .header {
-    background: var(--surface);
+    background: linear-gradient(180deg, #123a82, #0b285e);
     padding: 10px 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
     z-index: 100;
+    border-bottom: var(--outline) solid var(--ink);
+}
+
+.header::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(-8px - var(--outline));
+    height: 8px;
+    background: var(--checker);
+    border-bottom: 2px solid var(--ink);
+    opacity: 0.9;
 }
 
 .brand {
-    font-weight: 900;
-    font-size: 1.35rem;
-    letter-spacing: 1px;
+    font-weight: 700;
+    font-size: 1.6rem;
+    letter-spacing: 1.5px;
     display: flex;
     align-items: center;
     gap: 10px;
+    color: var(--accent);
+    text-shadow:
+        2px 2px 0 var(--ink), -2px 2px 0 var(--ink),
+        2px -2px 0 var(--ink), -2px -2px 0 var(--ink),
+        0 4px 0 var(--ink);
 }
 
 .brand-dot {
-    width: 12px;
-    height: 12px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     background: var(--team);
-    box-shadow: 0 0 10px var(--team);
+    border: var(--outline) solid var(--ink);
 }
 
 .page-title {
-    font-size: 1.15rem;
-    font-weight: 800;
-    letter-spacing: 0.5px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 1px;
     margin: 0;
 }
 
@@ -151,13 +192,13 @@ button, a, select, input {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: var(--text-muted);
+    color: var(--text);
 }
 
 .sys-info-item {
     display: inline-block;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
+    background: var(--surface);
+    border: 2px solid var(--ink);
     border-radius: 999px;
     padding: 3px 10px;
 }
@@ -165,7 +206,8 @@ button, a, select, input {
 .sys-info-volt {
     min-width: 7ch;
     text-align: center;
-    color: var(--text);
+    color: var(--accent);
+    font-weight: 700;
 }
 
 .sys-info-sep {
@@ -173,99 +215,120 @@ button, a, select, input {
 }
 
 /* =======================================================
-   CARTES
+   PANNEAUX
    ======================================================= */
 .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--gloss-soft), var(--surface);
+    border: var(--outline) solid var(--ink);
+    box-shadow: inset 0 0 0 2px rgba(143, 211, 255, 0.35), var(--drop);
     border-radius: var(--radius);
     padding: 18px;
-    margin-bottom: 10px;
-    box-shadow: var(--shadow);
+    margin-bottom: 14px;
 }
 
 .card-title {
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 700;
     margin: 0 0 14px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px dashed rgba(143, 211, 255, 0.35);
     display: flex;
     align-items: center;
     gap: 8px;
     text-align: left;
+    color: var(--accent);
 }
 
 /* =======================================================
-   BOUTONS
+   BOUTONS DE JEU (relief + contour, s'enfoncent au clic)
    ======================================================= */
 .btn {
+    --btn: var(--surface-3);
+    --btn-text: #fff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     padding: 12px 18px;
     border-radius: var(--radius-sm);
-    border: 1px solid var(--border-strong);
-    background: var(--surface-2);
-    color: var(--text);
-    font-size: 1rem;
+    border: var(--outline) solid var(--ink);
+    background: var(--gloss), var(--btn);
+    color: var(--btn-text);
+    box-shadow: 0 5px 0 var(--ink);
+    font-size: 1.05rem;
     font-weight: 700;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.6px;
     text-decoration: none;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
     cursor: pointer;
-    transition: transform 0.08s, filter 0.15s, background 0.15s;
+    transition: transform 0.06s, box-shadow 0.06s, filter 0.15s;
     user-select: none;
+    margin-bottom: 5px; /* place pour l'ombre en relief */
 }
 
 .btn:hover {
-    filter: brightness(1.12);
+    filter: brightness(1.1);
 }
 
 .btn:active {
-    transform: scale(0.97);
+    transform: translateY(4px);
+    box-shadow: 0 1px 0 var(--ink);
 }
 
 .btn:disabled {
-    opacity: 0.5;
+    filter: grayscale(0.6) brightness(0.8);
     cursor: default;
 }
 
-.btn-primary { background: var(--accent); border-color: transparent; color: #001a22; }
-.btn-success { background: var(--success-strong); border-color: transparent; color: #fff; }
-.btn-danger  { background: var(--danger-strong); border-color: transparent; color: #fff; }
-.btn-warning { background: var(--warning); border-color: transparent; color: #1a1300; }
-.btn-team    { background: var(--team); border-color: transparent; color: var(--team-text); }
-.btn-ghost   { background: transparent; }
+.btn-primary { --btn: var(--accent); --btn-text: #2a1a00; text-shadow: none; }
+.btn-success { --btn: var(--success-strong); }
+.btn-danger  { --btn: var(--danger-strong); }
+.btn-warning { --btn: var(--orange); }
+.btn-team    { --btn: var(--team); --btn-text: var(--team-text); }
+.btn-ghost   { --btn: var(--surface); }
 
 .btn-lg {
-    padding: 18px 22px;
-    font-size: 1.5rem;
-    font-weight: 900;
-    letter-spacing: 1px;
+    padding: 16px 22px;
+    font-size: 1.7rem;
+    letter-spacing: 1.5px;
     border-radius: var(--radius);
+    box-shadow: 0 7px 0 var(--ink);
+    margin-bottom: 7px;
+}
+
+.btn-lg:active {
+    transform: translateY(6px);
+    box-shadow: 0 1px 0 var(--ink);
 }
 
 .btn-sm {
     padding: 6px 12px;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    box-shadow: 0 3px 0 var(--ink);
+    margin-bottom: 3px;
 }
 
 /* Historique */
 .btn-back {
-    background: var(--surface-2);
-    color: var(--text);
+    background: var(--gloss), var(--surface-3);
+    color: #fff;
     text-decoration: none;
-    padding: 7px 14px;
+    padding: 6px 14px;
     border-radius: var(--radius-sm);
-    border: 1px solid var(--border-strong);
-    font-size: 0.9rem;
-    font-weight: 600;
+    border: var(--outline) solid var(--ink);
+    box-shadow: 0 4px 0 var(--ink);
+    font-size: 0.95rem;
+    font-weight: 700;
     white-space: nowrap;
 }
 
+.btn-back:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--ink);
+}
+
 .btn-nav {
-    background: var(--blue);
+    background: var(--gloss), var(--blue);
     text-decoration: none;
     display: flex;
     align-items: center;
@@ -273,14 +336,17 @@ button, a, select, input {
     font-weight: 700;
     color: white;
     border-radius: var(--radius-sm);
-    padding: 20px;
+    border: var(--outline) solid var(--ink);
+    box-shadow: 0 5px 0 var(--ink);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+    padding: 18px;
     font-size: 1.2em;
     transition: filter 0.15s;
 }
 
 .btn-nav:hover,
 .btn-back:hover {
-    filter: brightness(1.12);
+    filter: brightness(1.1);
 }
 
 .btn-tiny {
@@ -288,43 +354,44 @@ button, a, select, input {
     font-size: 0.8em;
     padding: 2px 8px;
     margin-left: 5px;
-    border: none;
+    border: 2px solid var(--ink);
     color: white;
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: 8px;
 }
 
 .btn-sys {
-    background: var(--surface-3);
+    background: var(--gloss), var(--surface-3);
     font-size: 0.9em;
     padding: 10px;
-    border: 1px solid var(--border-strong);
+    border: var(--outline) solid var(--ink);
+    box-shadow: 0 4px 0 var(--ink);
     border-radius: var(--radius-sm);
     color: white;
     cursor: pointer;
 }
 
 /* =======================================================
-   BADGES & CHIPS
+   BADGES
    ======================================================= */
 .badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
+    padding: 4px 14px;
     border-radius: 999px;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 700;
-    letter-spacing: 0.4px;
-    border: 1px solid var(--border-strong);
+    letter-spacing: 0.5px;
+    border: 2px solid var(--ink);
     background: var(--surface-2);
-    color: var(--text-muted);
+    color: var(--text);
 }
 
-.badge-ok     { color: var(--success); border-color: rgba(0, 230, 118, 0.4); background: rgba(0, 230, 118, 0.1); }
-.badge-warn   { color: var(--warning); border-color: rgba(255, 183, 3, 0.45); background: rgba(255, 183, 3, 0.1); }
-.badge-danger { color: var(--danger);  border-color: rgba(255, 51, 75, 0.45); background: rgba(255, 51, 75, 0.1); }
-.badge-info   { color: var(--accent);  border-color: rgba(0, 210, 255, 0.4); background: rgba(0, 210, 255, 0.08); }
+.badge-ok     { background: var(--success-strong); color: #fff; }
+.badge-warn   { background: var(--orange); color: #fff; }
+.badge-danger { background: var(--danger-strong); color: #fff; }
+.badge-info   { background: var(--accent); color: #2a1a00; }
 
 /* =======================================================
    FORMULAIRES
@@ -333,10 +400,11 @@ select,
 .strat-select {
     background: var(--surface-2);
     color: var(--text);
-    border: 1px solid var(--border-strong);
+    border: 2px solid var(--ink);
     padding: 7px 10px;
     font-size: 1rem;
-    border-radius: var(--radius-sm);
+    font-weight: 600;
+    border-radius: 12px;
 }
 
 .strat-select {
@@ -346,9 +414,6 @@ select,
 /* =======================================================
    ÉQUIPE : FIN DE MATCH (RESPIRATION)
    ======================================================= */
-.mode-BLEUE { border-color: var(--blue); }
-.mode-JAUNE { border-color: var(--yellow); }
-
 body.breathing-BLEUE,
 body.breathing-JAUNE {
     animation: breathe 2s infinite ease-in-out;
@@ -390,12 +455,8 @@ body.breathing-JAUNE {
         padding: 12px;
     }
 
-    .btn-back {
-        padding: 8px 12px;
-    }
-
     .btn-lg {
-        font-size: 1.3rem;
-        padding: 16px;
+        font-size: 1.4rem;
+        padding: 14px;
     }
 }

@@ -1,5 +1,5 @@
 /* =======================================================
-   ACCUEIL — match (gauche) + pilotage (droite)
+   ACCUEIL — match (gauche) + pilotage (droite), thème STK
    Trois cibles : PC, téléphone (< 600 px), écran 7" du robot (?mode=robot)
    ======================================================= */
 
@@ -7,8 +7,8 @@
     flex: 1;
     display: grid;
     grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
-    gap: 20px;
-    padding: 20px;
+    gap: 22px;
+    padding: 30px 20px 20px;
     width: 100%;
     max-width: 1400px;
     margin: 0 auto;
@@ -18,26 +18,30 @@
 
 /* ---------- Panneau match ---------- */
 .dashboard {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--gloss-soft), var(--surface);
+    border: var(--outline) solid var(--ink);
+    box-shadow: inset 0 0 0 2px rgba(143, 211, 255, 0.35), var(--drop);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 18px;
-    padding: 28px 20px;
+    gap: 20px;
+    padding: 30px 20px;
     position: relative;
     overflow: hidden;
 }
 
-/* Halo discret de la couleur d'équipe */
-.dashboard::before {
+/* Damier d'arrivée en bas du panneau */
+.dashboard::after {
     content: '';
     position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at 50% 0%, var(--team-soft), transparent 65%);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 14px;
+    background: var(--checker);
+    opacity: 0.18;
     pointer-events: none;
 }
 
@@ -47,41 +51,49 @@
 
 .team-box {
     font-family: var(--font);
-    font-size: 2rem;
-    font-weight: 900;
-    letter-spacing: 1.5px;
-    padding: 10px 34px;
+    font-size: 2.1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 8px 36px 10px;
     border-radius: 999px;
-    border: none;
-    background: var(--team);
+    border: var(--outline) solid var(--ink);
+    background: var(--gloss), var(--team);
     color: var(--team-text);
+    box-shadow: 0 6px 0 var(--ink);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
     cursor: pointer;
-    box-shadow: 0 0 24px var(--team-soft);
-    transition: transform 0.1s, background 0.3s;
+    transition: transform 0.06s, box-shadow 0.06s;
 }
 
 .team-box:active {
-    transform: scale(0.97);
+    transform: translateY(5px);
+    box-shadow: 0 1px 0 var(--ink);
 }
 
+/* Chrono façon compteur de course */
 .timer-box {
-    font-family: var(--font-mono);
+    font-family: var(--font);
     font-variant-numeric: tabular-nums;
-    font-size: clamp(4.5rem, 14vw, 10rem);
-    font-weight: 800;
+    font-size: clamp(5rem, 15vw, 11rem);
+    font-weight: 700;
     color: var(--timer);
     line-height: 1;
-    letter-spacing: 2px;
-    text-shadow: 0 0 30px rgba(255, 203, 107, 0.3);
+    letter-spacing: 3px;
+    -webkit-text-stroke: 3px var(--ink);
+    paint-order: stroke fill;
+    text-shadow: 0 8px 0 var(--ink);
 }
 
 .test-mode-badge {
-    padding: 6px 16px;
+    padding: 6px 18px;
     border-radius: 999px;
-    background: var(--warning);
-    color: #1a1300;
-    font-weight: 900;
-    font-size: 0.95rem;
+    border: var(--outline) solid var(--ink);
+    background: var(--gloss), var(--orange);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 0 var(--ink);
     animation: blink 1.5s infinite;
 }
 
@@ -98,16 +110,16 @@
     display: inline-flex;
     align-items: baseline;
     gap: 6px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    background: var(--ink);
+    border: 2px solid rgba(143, 211, 255, 0.45);
+    border-radius: 12px;
     padding: 6px 14px;
     font-size: 1.15rem;
 }
 
 .pos-label {
-    color: var(--accent);
-    font-weight: 700;
+    color: var(--cyan);
+    font-weight: 800;
 }
 
 .pos-val {
@@ -125,7 +137,7 @@
 .side {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
     min-width: 0;
 }
 
@@ -148,9 +160,8 @@
 
 .status-label {
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     font-weight: 700;
-    text-transform: uppercase;
     letter-spacing: 1px;
 }
 
@@ -158,8 +169,7 @@
     margin: 0;
     min-width: 0;
     max-width: 65%;
-    color: var(--warning) !important;
-    font-weight: 700;
+    color: var(--accent) !important;
 }
 
 .strat-display {
@@ -169,11 +179,11 @@
 
 /* Tirette (classes posées par index.js) */
 .tirette-box {
-    padding: 5px 12px;
+    padding: 4px 14px;
     border-radius: 999px;
-    font-size: 0.85rem;
-    font-weight: 800;
-    border: 1px solid var(--border-strong);
+    font-size: 0.9rem;
+    font-weight: 700;
+    border: 2px solid var(--ink);
 }
 
 .status-non-armed {
@@ -182,32 +192,30 @@
 }
 
 .status-armed {
-    background: rgba(0, 230, 118, 0.15);
-    color: var(--success);
-    border-color: rgba(0, 230, 118, 0.5);
+    background: var(--success-strong);
+    color: #fff;
     animation: blink 1s infinite;
 }
 
 .status-triggered {
-    background: rgba(0, 210, 255, 0.12);
-    color: var(--accent);
-    border-color: rgba(0, 210, 255, 0.5);
+    background: var(--accent);
+    color: #2a1a00;
 }
 
 .actions-card {
     display: grid;
-    gap: 10px;
+    gap: 8px;
 }
 
 .actions-card .btn {
     width: 100%;
 }
 
-/* Tuiles de navigation */
+/* Tuiles de navigation (menu de jeu) */
 .nav-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 12px;
 }
 
 .tile {
@@ -218,37 +226,47 @@
     column-gap: 12px;
     align-items: center;
     text-align: left;
-    padding: 14px;
-    border-radius: var(--radius);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--tile);
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    background: var(--gloss), var(--surface-2);
+    border: var(--outline) solid var(--ink);
+    box-shadow: 0 5px 0 var(--ink);
     color: var(--text);
     text-decoration: none;
-    transition: background 0.15s, transform 0.08s;
+    transition: transform 0.06s, box-shadow 0.06s, filter 0.15s;
+    margin-bottom: 5px;
 }
 
 .tile:hover {
-    background: var(--surface-2);
+    filter: brightness(1.12);
 }
 
 .tile:active {
-    transform: scale(0.98);
+    transform: translateY(4px);
+    box-shadow: 0 1px 0 var(--ink);
 }
 
 .tile-icon {
     grid-row: span 2;
-    font-size: 1.6rem;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: var(--tile);
+    border: var(--outline) solid var(--ink);
 }
 
 .tile-label {
-    font-weight: 800;
-    font-size: 1rem;
+    font-weight: 700;
+    font-size: 1.1rem;
 }
 
 .tile-sub {
     color: var(--text-muted);
-    font-size: 0.78rem;
+    font-size: 0.8rem;
 }
 
 .robot-buttons-bar {
@@ -269,23 +287,25 @@
    ======================================================= */
 @media (max-width: 600px) {
     .home {
-        padding: 10px;
-        gap: 10px;
+        padding: 24px 10px 10px;
+        gap: 12px;
         font-size: 15px;
     }
 
     .dashboard {
-        padding: 18px 10px;
-        gap: 12px;
+        padding: 20px 10px 24px;
+        gap: 14px;
     }
 
     .team-box {
         font-size: 1.5rem;
-        padding: 8px 26px;
+        padding: 6px 26px 8px;
     }
 
     .timer-box {
-        font-size: 26vw;
+        font-size: 25vw;
+        -webkit-text-stroke-width: 2px;
+        text-shadow: 0 6px 0 var(--ink);
     }
 
     .pos-item {
@@ -298,12 +318,19 @@
     }
 
     .tile {
-        padding: 12px 10px;
+        padding: 10px;
         column-gap: 8px;
     }
 
+    .tile {
+        grid-template-rows: auto;
+    }
+
     .tile-icon {
-        font-size: 1.3rem;
+        grid-row: auto;
+        width: 38px;
+        height: 38px;
+        font-size: 1.2rem;
     }
 
     .tile-sub {
@@ -315,7 +342,6 @@
    ÉCRAN 7" DU ROBOT (?mode=robot)
    ======================================================= */
 body.robot-screen {
-    border: none !important;
     overflow: hidden !important;
 }
 
@@ -335,16 +361,16 @@ body.robot-screen .header {
     z-index: 10;
 }
 
+body.robot-screen .header::after,
 body.robot-screen .brand {
     display: none;
 }
 
 body.robot-screen .sys-info {
-    font-size: 3.6vh;
+    font-size: 3.4vh;
     width: 100%;
     justify-content: center;
     gap: 1.5vw;
-    color: var(--text);
 }
 
 body.robot-screen .sys-info-volt {
@@ -364,15 +390,19 @@ body.robot-screen .dashboard {
     border: none;
     border-radius: 0;
     box-shadow: none;
-    background: var(--bg);
+    background: transparent;
     justify-content: space-evenly;
     padding: 9vh 3vw 1vh;
     gap: 0;
 }
 
+body.robot-screen .dashboard::after {
+    display: none;
+}
+
 body.robot-screen .team-box {
     font-size: 6vh;
-    padding: 1.2vh 6vw;
+    padding: 0.8vh 6vw 1.2vh;
 }
 
 body.robot-screen .timer-box {
@@ -385,7 +415,7 @@ body.robot-screen .test-mode-badge {
 
 body.robot-screen .pos-item {
     font-size: 4vh;
-    padding: 1vh 2.5vw;
+    padding: 0.8vh 2.5vw;
 }
 
 body.robot-screen .pos-val {
@@ -402,8 +432,8 @@ body.robot-screen .robot-buttons-bar {
     width: 100vw;
     height: 14vh;
     box-sizing: border-box;
-    background: var(--surface);
-    border-top: 1px solid var(--border-strong);
+    background: linear-gradient(180deg, #123a82, #0b285e);
+    border-top: var(--outline) solid var(--ink);
     z-index: 100;
 }
 
@@ -412,7 +442,7 @@ body.robot-screen .robot-btn-hint {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border-right: 1px solid var(--border);
+    border-right: 2px solid var(--ink);
     padding: 0.5vh 1vw;
     position: relative;
     user-select: none;
@@ -424,31 +454,32 @@ body.robot-screen .robot-btn-hint:last-child {
 }
 
 body.robot-screen .robot-btn-hint:active {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.12);
 }
 
 body.robot-screen .btn-badge {
     position: absolute;
     top: 0.8vh;
     left: 1vw;
-    width: 2.8vh;
-    height: 2.8vh;
+    width: 3vh;
+    height: 3vh;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--surface-3);
-    color: var(--text-muted);
+    background: var(--accent);
+    color: #2a1a00;
+    border: 2px solid var(--ink);
     font-size: 1.7vh;
-    font-weight: 800;
-    font-family: var(--font-mono);
+    font-weight: 700;
 }
 
 body.robot-screen .btn-main {
-    font-size: 2.8vh;
-    font-weight: 900;
+    font-size: 3vh;
+    font-weight: 700;
     letter-spacing: 0.5px;
     margin-top: 0.4vh;
+    text-shadow: 0 2px 0 var(--ink);
 }
 
 body.robot-screen .btn-sub {
@@ -458,7 +489,7 @@ body.robot-screen .btn-sub {
 }
 
 body.robot-screen .btn-hint-team .btn-main  { color: var(--team); }
-body.robot-screen .btn-hint-strat .btn-main { color: var(--warning); }
+body.robot-screen .btn-hint-strat .btn-main { color: var(--accent); }
 body.robot-screen .btn-hint-power .btn-main { color: var(--danger); }
 body.robot-screen .btn-hint-init .btn-main  { color: var(--success); }
 
