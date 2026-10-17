@@ -25,13 +25,15 @@ class ZmqClient(threading.Thread):
         self.context = zmq.Context()
         # ZMQ PUSH to push telemetry and updates up to the server
         self.push_socket = self.context.socket(zmq.PUSH)
-        self.push_socket.connect(f"tcp://{server_ip}:5555")
+        self.push_port = os.environ.get("STK_ZMQ_ROBOT_PORT", "5555")  # mêmes variables que la base
+        self.sub_port = os.environ.get("STK_ZMQ_BASE_PORT", "5556")
+        self.push_socket.connect(f"tcp://{server_ip}:{self.push_port}")
         # 3. Verrou pour assurer la thread-safety du socket PUSH partagé
         self.push_lock = threading.Lock()
         
         # ZMQ SUB to receive commands down from the server
         self.sub_socket = self.context.socket(zmq.SUB)
-        self.sub_socket.connect(f"tcp://{server_ip}:5556")
+        self.sub_socket.connect(f"tcp://{server_ip}:{self.sub_port}")
         self.sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
         
         self.running = True
@@ -44,7 +46,7 @@ class ZmqClient(threading.Thread):
         self._cached_ip_time = 0.0
 
     def run(self):
-        print(f"[ZMQ CLIENT] Démarrage... PUSH -> {self.server_ip}:5555, SUB -> {self.server_ip}:5556")
+        print(f"[ZMQ CLIENT] Démarrage... PUSH -> {self.server_ip}:{self.push_port}, SUB -> {self.server_ip}:{self.sub_port}")
         
         # Lancement du thread d'envoi périodique de l'état (telemetry + state)
         self.sender_thread = threading.Thread(target=self._sender_loop, daemon=True)

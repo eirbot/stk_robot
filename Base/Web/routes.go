@@ -48,14 +48,6 @@ func broadcastState() {
 	}
 }
 
-func saveConfigToFile(cfg map[string]interface{}) {
-	configData, err := json.MarshalIndent(cfg, "", "    ")
-	if err == nil {
-		path := findRaspPath() + "/config.json"
-		_ = os.WriteFile(path, configData, 0644)
-	}
-}
-
 var (
 	visionCmd   *exec.Cmd
 	visionDone  chan struct{} // Fermé quand le worker se termine
@@ -325,96 +317,37 @@ func setupRoutes(app *fiber.App) {
 	})
 
 	// API REST pour les actions initiées depuis l'IHM Web
+	// Le robot est la source de vérité : la base transmet les ordres et attend
+	// l'instantané « robot_state » qu'il publie en retour (cf. robotstate.go).
 	app.Post("/api/action/:act", func(c *fiber.Ctx) error {
 		act := c.Params("act")
-
-		globalState.Lock()
-		var cfgCopy json.RawMessage
-		if act == "team" {
-			if globalState.Team == "BLEUE" {
-				globalState.Team = "JAUNE"
-			} else {
-				globalState.Team = "BLEUE"
-			}
-			if globalState.Config != nil {
-				globalState.Config["team"] = globalState.Team
-				saveConfigToFile(globalState.Config)
-				cfgCopy = getConfigCopyLocked()
-			}
-		} else if act == "start" {
-			globalState.MatchRunning = true
-			globalState.FsmState = "RUNNING"
-			envoyerAuRobot("action", "start")
-		} else if act == "stop" {
-			globalState.MatchRunning = false
-			globalState.FsmState = "STOPPED"
-			envoyerAuRobot("action", "stop")
-		} else if act == "reset" {
-			globalState.MatchRunning = false
-			globalState.MatchFinished = false
-			globalState.FsmState = "WAIT_START"
-			envoyerAuRobot("action", "reset")
-		} else if act == "tirette" {
-			envoyerAuRobot("action", "tirette")
-		} else if act == "init" {
-			envoyerAuRobot("action", "init")
+		switch act {
+		case "start", "stop", "reset", "team", "tirette", "init":
+		default:
+			return c.Status(400).JSON(fiber.Map{"status": "error", "msg": "Action inconnue : " + act})
 		}
-		globalState.Unlock()
-
-		if len(cfgCopy) > 0 {
-			envoyerAuRobot("config_update", cfgCopy)
+		if !robotIsOnline() {
+			return c.Status(503).JSON(fiber.Map{"status": "error", "msg": "Robot hors ligne : action impossible"})
 		}
-
-		broadcastState()
+		envoyerAuRobot("action", act)
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
 
 	app.Post("/api/config_edit", func(c *fiber.Ctx) error {
 		var body map[string]interface{}
 		if err := c.BodyParser(&body); err != nil {
-			return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+			return c.Status(400).JSON(fiber.Map{"status": "error", "msg": err.Error()})
 		}
-
 		key, okKey := body["key"].(string)
 		val, okVal := body["val"]
-
-		if okKey && okVal && val != nil {
-			globalState.Lock()
-			if globalState.Config == nil {
-				globalState.Config = make(map[string]interface{})
-			}
-
-			// Helper to set nested or flat key in config map
-			keys := strings.Split(key, ".")
-			curr := globalState.Config
-			for i := 0; i < len(keys)-1; i++ {
-				k := keys[i]
-				nextMap, ok := curr[k].(map[string]interface{})
-				if !ok {
-					newMap := make(map[string]interface{})
-					curr[k] = newMap
-					curr = newMap
-				} else {
-					curr = nextMap
-				}
-			}
-			curr[keys[len(keys)-1]] = val
-
-			// Special side-effects
-			if key == "team" {
-				if strVal, ok := val.(string); ok {
-					globalState.Team = strVal
-				}
-			}
-
-			saveConfigToFile(globalState.Config)
-			globalState.Unlock()
-
-			// Notifier le robot avec uniquement la clé modifiée pour ne pas écraser d'autres états (LED, strat_id)
-			envoyerAuRobot("config_update", map[string]interface{}{key: val})
-			broadcastState()
+		if !okKey || !okVal || val == nil {
+			return c.Status(400).JSON(fiber.Map{"status": "error", "msg": "key et val requis"})
 		}
-
+		if !robotIsOnline() {
+			return c.Status(503).JSON(fiber.Map{"status": "error", "msg": "Robot hors ligne : réglage impossible"})
+		}
+		// Le robot valide, enregistre (config.json du robot) et republie sa config
+		envoyerAuRobot("config_edit", map[string]interface{}{"key": key, "val": val})
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
 
@@ -640,7 +573,17 @@ func setupRoutes(app *fiber.App) {
 
 	// Version du binaire de la base (injectée par Base/build.sh)
 	app.Get("/api/version", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{"base": buildVersion})
+		globalState.Lock()
+		robot := globalState.RobotVersion
+		globalState.Unlock()
+		return c.JSON(fiber.Map{"base": buildVersion, "robot": robot})
+	})
+
+	// État vu par la base (miroir du robot) : diagnostic, tests, deploy.sh status
+	app.Get("/api/state", func(c *fiber.Ctx) error {
+		globalState.Lock()
+		defer globalState.Unlock()
+		return c.JSON(&globalState)
 	})
 
 	// Route API pour mettre à jour le code Python de la Rasp depuis la base :

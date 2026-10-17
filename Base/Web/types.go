@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 )
 
 // Structure de la Télémétrie Montante (provenant du Robot)
@@ -71,6 +72,17 @@ type FullState struct {
 	VisionPose       VisionPose             `json:"vision_pose"`
 	Config           map[string]interface{} `json:"config"`
 	ServerIP         string                 `json:"server_ip"`
+
+	// Miroir de l'état publié par le robot (robot_state, cf. robotstate.go)
+	TiretteMsg    string            `json:"tirette_msg"`
+	StratMode     string            `json:"strat_mode"`
+	StaticStrat   interface{}       `json:"static_strat"`
+	StratID       interface{}       `json:"strat_id"`
+	TestMode      bool              `json:"test_mode"`
+	BatLow        bool              `json:"bat_low"`
+	RobotOnline   bool              `json:"robot_online"`
+	RobotVersion  map[string]string `json:"robot_version"`
+	LastRobotSeen time.Time         `json:"-"`
 }
 
 type RobotMessage struct {

@@ -25,6 +25,12 @@ var (
 	// LAN de la base (dnsmasq)
 	lanPrefix = envOr("STK_LAN_PREFIX", "192.168.10.")
 	baseLanIP = envOr("STK_BASE_IP", "192.168.10.2")
+
+	// Ports (autres valeurs : tests de bout en bout à côté d'une base déjà lancée).
+	// Les mêmes variables STK_ZMQ_* sont lues par Rasp/ihm/zmq_client.py.
+	httpPort     = envOr("STK_HTTP_PORT", "8080")
+	zmqRobotPort = envOr("STK_ZMQ_ROBOT_PORT", "5555") // robot -> base (PULL)
+	zmqBasePort  = envOr("STK_ZMQ_BASE_PORT", "5556")  // base -> robot (PUB)
 )
 
 func envOr(key, def string) string {

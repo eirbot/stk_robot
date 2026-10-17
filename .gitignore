@@ -27,3 +27,5 @@ Base/Vision/vision_worker
 Base/base_stk
 # Driver LiDAR : compilé sur la Rasp (aarch64) par main_robot.py
 Rasp/LiDAR/lidar_udp
+# Dernière config reçue du robot (affichage hors ligne), écrite par base_stk
+Base/robot_config_cache.json

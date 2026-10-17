@@ -115,11 +115,40 @@ let localState = {};
 
 // --- FONCTIONS PARTAGÉES ---
 function sendAction(act) {
-    // Petit feedback visuel console
     console.log("Envoi action :", act);
-    // Use fetch API instead of socket.emit because the server exposes a REST endpoint
-    fetch('/api/action/' + act, { method: 'POST' });
+    fetch('/api/action/' + act, { method: 'POST' });  // erreurs affichées par le fetch ci-dessous
 }
+
+// --- NOTIFICATIONS ---
+function toast(msg, type) {
+    let box = document.getElementById('toast-box');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'toast-box';
+        document.body.appendChild(box);
+    }
+    const el = document.createElement('div');
+    el.className = 'toast toast-' + (type || 'info');
+    el.textContent = msg;
+    box.appendChild(el);
+    setTimeout(() => el.classList.add('toast-out'), 3500);
+    setTimeout(() => el.remove(), 4000);
+}
+
+// Le robot est la source de vérité : la base peut refuser une commande (robot hors ligne,
+// réglage invalide...). Toute réponse en erreur des routes de commande est affichée.
+(function () {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = function (url, opts) {
+        const p = nativeFetch(url, opts);
+        if (typeof url === 'string' && /^\/api\/(action|config_edit)/.test(url)) {
+            p.then(r => {
+                if (!r.ok) r.clone().json().then(b => toast(b.msg || ('Erreur ' + r.status), 'err')).catch(() => toast('Erreur ' + r.status, 'err'));
+            }).catch(() => toast('Base injoignable', 'err'));
+        }
+        return p;
+    };
+})();
 
 // --- LOGIQUE PARTAGÉE STRATÉGIES ---
 function loadBlocklyStrats(selectId) {
@@ -153,6 +182,10 @@ function loadBlocklyStrats(selectId) {
 window.socket.on('state_update', (state) => {
     if (!state) return;
     if (state.config) window.localConfig = state.config;
+    if (state.robot_online !== undefined && state.robot_online !== window.robotOnline) {
+        window.robotOnline = state.robot_online;
+        updateSysInfoDisplay();
+    }
     localState = Object.assign(localState, state);
     if (window.localConfig && !localState.config) localState.config = window.localConfig;
 
@@ -222,7 +255,7 @@ function updateSysInfoDisplay(rawVolt) {
         if (fv !== '--.-V') window.lastVolt = fv;
     }
     const v = window.lastVolt || '--.-V';
-    const html = `<span class="sys-info-item">Base: ${escapeHtml(baseIp)}</span><span class="sys-info-sep">|</span><span class="sys-info-item">Robot: ${escapeHtml(raspIp)}</span><span class="sys-info-sep">|</span><span class="sys-info-item sys-info-volt">${v}</span>`;
+    const html = `<span class="sys-info-item">Base: ${escapeHtml(baseIp)}</span><span class="sys-info-sep">|</span><span class="sys-info-item${window.robotOnline === false ? ' sys-info-offline' : ''}">Robot: ${window.robotOnline === false ? 'hors ligne' : escapeHtml(raspIp)}</span><span class="sys-info-sep">|</span><span class="sys-info-item sys-info-volt">${v}</span>`;
     if (html !== window._lastSysInfoHtml) {
         window._lastSysInfoHtml = html;
         sysInfoEl.innerHTML = html;

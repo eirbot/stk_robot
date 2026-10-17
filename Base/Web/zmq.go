@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -15,8 +14,8 @@ func pipelineReceptionRobot() {
 	receiver, _ := zmq.NewSocket(zmq.PULL)
 	defer receiver.Close()
 	// Le PC ouvre le port de réception
-	receiver.Bind("tcp://*:5555")
-	fmt.Println("[ZMQ PULL] En attente de la télémétrie du robot (Port 5555)...")
+	receiver.Bind("tcp://*:" + zmqRobotPort)
+	fmt.Printf("[ZMQ PULL] En attente de la télémétrie du robot (Port %s)...\n", zmqRobotPort)
 
 	var lastVisionBroadcast time.Time
 	for {
@@ -30,13 +29,16 @@ func pipelineReceptionRobot() {
 		if err := json.Unmarshal([]byte(msg), &msgObj); err != nil {
 			isGeneric = false
 		}
+		if noteRobotMessage() {
+			fmt.Println("[ROBOT] En ligne")
+			broadcastState()
+		}
 
 		if isGeneric {
 			if msgObj.Type == "telemetry" {
 				var tel RobotTelemetry
 				if err := json.Unmarshal(msgObj.Data, &tel); err == nil {
 					globalState.Lock()
-					prevTirette := globalState.Telemetry.Tirette
 					// IP invalide : on garde la précédente (la goroutine DHCP de main.go la tient à jour).
 					// Pas de lecture des baux DHCP ici : on est sous verrou, à 10 Hz.
 					if !isValidIP(tel.RaspIP) {
@@ -44,13 +46,6 @@ func pipelineReceptionRobot() {
 					}
 					globalState.Telemetry = tel
 
-					// 1. Détection FRONT : uniquement transition ARMED -> TRIGGERED et match non fini/non stoppé
-					if prevTirette == "ARMED" && tel.Tirette == "TRIGGERED" &&
-						!globalState.MatchRunning && !globalState.MatchFinished &&
-						globalState.FsmState != "FINISHED" && globalState.FsmState != "STOPPED" {
-						globalState.MatchRunning = true
-						globalState.FsmState = "RUNNING"
-					}
 
 					// Allègement trame : pour la télémétrie haute fréquence (10Hz),
 					// on n'embarque pas le dictionnaire Config complet (économise ~88% de bande passante et CPU client)
@@ -102,7 +97,6 @@ func pipelineReceptionRobot() {
 				var update StateUpdate
 				if err := json.Unmarshal(msgObj.Data, &update); err == nil {
 					globalState.Lock()
-					prevTirette := globalState.Telemetry.Tirette
 					if update.MatchRunning != nil {
 						globalState.MatchRunning = *update.MatchRunning
 					}
@@ -153,13 +147,6 @@ func pipelineReceptionRobot() {
 						}
 					}
 
-					// 1. Détection FRONT : uniquement transition ARMED -> TRIGGERED et match non fini/non stoppé
-					if prevTirette == "ARMED" && globalState.Telemetry.Tirette == "TRIGGERED" &&
-						!globalState.MatchRunning && !globalState.MatchFinished &&
-						globalState.FsmState != "FINISHED" && globalState.FsmState != "STOPPED" {
-						globalState.MatchRunning = true
-						globalState.FsmState = "RUNNING"
-					}
 
 					// Paquet allégé (timer_str change toutes les 100 ms en match) :
 					// la Config n'est jointe que si le robot l'a modifiée
@@ -185,82 +172,14 @@ func pipelineReceptionRobot() {
 
 					globalHub.Broadcast(packet)
 				}
-			} else if msgObj.Type == "action" {
-				var act string
-				if err := json.Unmarshal(msgObj.Data, &act); err == nil {
-					globalState.Lock()
-					var cfgPayload json.RawMessage
-					if act == "team" {
-						if globalState.Team == "BLEUE" {
-							globalState.Team = "JAUNE"
-						} else {
-							globalState.Team = "BLEUE"
-						}
-						if globalState.Config != nil {
-							globalState.Config["team"] = globalState.Team
-							saveConfigToFile(globalState.Config)
-							cfgPayload = getConfigCopyLocked()
-						}
-					} else if act == "start" {
-						globalState.MatchRunning = true
-						globalState.FsmState = "RUNNING"
-					} else if act == "stop" {
-						globalState.MatchRunning = false
-						globalState.FsmState = "STOPPED"
-					} else if act == "reset" {
-						globalState.MatchRunning = false
-						globalState.MatchFinished = false
-						globalState.FsmState = "WAIT_START"
-					}
-					globalState.Unlock()
-
-					if len(cfgPayload) > 0 {
-						envoyerAuRobot("config_update", cfgPayload)
-					}
-					if act != "team" {
-						envoyerAuRobot("action", act)
-					}
+			} else if msgObj.Type == "robot_state" {
+				// Instantané complet publié par le robot (source de vérité) : appliqué tel quel
+				var snap RobotSnapshot
+				if err := json.Unmarshal(msgObj.Data, &snap); err == nil {
+					applyRobotSnapshot(snap)
 					broadcastState()
-				}
-			} else if msgObj.Type == "config_edit" {
-				var body map[string]interface{}
-				if err := json.Unmarshal(msgObj.Data, &body); err == nil {
-					key, okKey := body["key"].(string)
-					val, okVal := body["val"]
-
-					if okKey && okVal && val != nil {
-						globalState.Lock()
-						if globalState.Config == nil {
-							globalState.Config = make(map[string]interface{})
-						}
-
-						keys := strings.Split(key, ".")
-						curr := globalState.Config
-						for i := 0; i < len(keys)-1; i++ {
-							k := keys[i]
-							nextMap, ok := curr[k].(map[string]interface{})
-							if !ok {
-								newMap := make(map[string]interface{})
-								curr[k] = newMap
-								curr = newMap
-							} else {
-								curr = nextMap
-							}
-						}
-						curr[keys[len(keys)-1]] = val
-
-						if key == "team" {
-							if strVal, ok := val.(string); ok {
-								globalState.Team = strVal
-							}
-						}
-
-						saveConfigToFile(globalState.Config)
-						globalState.Unlock()
-
-						// Ne pas renvoyer config_update au robot : c'est le robot qui vient d'émettre config_edit
-						broadcastState()
-					}
+				} else {
+					fmt.Printf("[ZMQ] robot_state illisible : %v\n", err)
 				}
 			} else {
 				// Relay any other message types (new_log, sys_info) directly to web clients
@@ -271,17 +190,10 @@ func pipelineReceptionRobot() {
 			var tel RobotTelemetry
 			if err := json.Unmarshal([]byte(msg), &tel); err == nil {
 				globalState.Lock()
-				prevTirette := globalState.Telemetry.Tirette
 				if !isValidIP(tel.RaspIP) {
 					tel.RaspIP = globalState.Telemetry.RaspIP
 				}
 				globalState.Telemetry = tel
-				if prevTirette == "ARMED" && tel.Tirette == "TRIGGERED" &&
-					!globalState.MatchRunning && !globalState.MatchFinished &&
-					globalState.FsmState != "FINISHED" && globalState.FsmState != "STOPPED" {
-					globalState.MatchRunning = true
-					globalState.FsmState = "RUNNING"
-				}
 				packet, _ := json.Marshal(map[string]interface{}{
 					"type": "state_update",
 					"data": map[string]interface{}{

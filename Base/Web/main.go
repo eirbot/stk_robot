@@ -32,21 +32,6 @@ func findRaspPath() string {
 	return "../Rasp" // Par défaut
 }
 
-func loadConfig() map[string]interface{} {
-	path := findRaspPath() + "/config.json"
-	content, err := os.ReadFile(path)
-	if err != nil {
-		log.Printf("Impossible de lire config.json à l'adresse %s : %v", path, err)
-		return make(map[string]interface{})
-	}
-	var cfg map[string]interface{}
-	if err := json.Unmarshal(content, &cfg); err != nil {
-		log.Printf("Impossible de décoder config.json : %v", err)
-		return make(map[string]interface{})
-	}
-	return cfg
-}
-
 func main() {
 	// Charger la configuration globale
 	globalState.Lock()
@@ -61,7 +46,7 @@ func main() {
 	}
 	globalState.Unlock()
 	fmt.Printf("[VERSION] base_stk %s (projet : %s)\n", buildVersion, findProjectRoot())
-	fmt.Printf("[NET] Base Déportée joignable sur : http://%s:8080\n", globalState.ServerIP)
+	fmt.Printf("[NET] Base Déportée joignable sur : http://%s:%s\n", globalState.ServerIP, httpPort)
 	if dhcpIP != "" {
 		fmt.Printf("[NET] IP Robot détectée via DHCP : %s\n", dhcpIP)
 	}
@@ -94,17 +79,19 @@ func main() {
 	}
 	defer zmqPublisher.Close()
 	
-	err = zmqPublisher.Bind("tcp://*:5556")
+	err = zmqPublisher.Bind("tcp://*:" + zmqBasePort)
 	if err != nil {
-		log.Fatalf("Impossible de lier le socket ZMQ PUB au port 5556 : %v", err)
+		log.Fatalf("Impossible de lier le socket ZMQ PUB au port %s : %v", zmqBasePort, err)
 	}
-	fmt.Println("[ZMQ PUB] Canal d'ordres initialisé (Port 5556)...")
+	fmt.Printf("[ZMQ PUB] Canal d'ordres initialisé (Port %s)...\n", zmqBasePort)
 
 	// Lancement de l'écoute du robot en tâche de fond
 	go pipelineReceptionRobot()
+	go watchRobotLink()
 
 	// Démarrage automatique du module de vision si la caméra USB est branchée
-	if _, err := os.Stat("/dev/video0"); err == nil {
+	// STK_NO_VISION=1 : pas de démarrage auto de la caméra (tests, PC de dev avec webcam)
+	if _, err := os.Stat("/dev/video0"); err == nil && os.Getenv("STK_NO_VISION") == "" {
 		go func() {
 			time.Sleep(1 * time.Second) // Attente de l'ouverture des sockets ZMQ
 			_, _ = startVisionWorker()
@@ -127,9 +114,11 @@ func main() {
 	// Configuration des routes (définies dans routes.go)
 	setupRoutes(app)
 
-	go redirectPort80()
+	if httpPort == "8080" {
+		go redirectPort80()
+	}
 
-	log.Fatal(app.Listen(":8080"))
+	log.Fatal(app.Listen(":" + httpPort))
 }
 
 // http://stk.eirbot (port 80) -> http://stk.eirbot:8080, pour ne pas avoir à taper le port.

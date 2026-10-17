@@ -1104,3 +1104,18 @@ function handleFullscreenChange() {
     updateContainerFullscreenUI('container-zenithale', isZenithaleFs);
     updateContainerFullscreenUI('container-embarquee', isEmbarqueeFs);
 }
+
+// --- Versions du code (base : binaire ; robot : fichier VERSION écrit au déploiement) ---
+async function refreshCodeVersions() {
+    const el = document.getElementById('code-versions');
+    if (!el) return;
+    try {
+        const v = await (await fetch('/api/version')).json();
+        const robot = v.robot && v.robot.commit ? `${v.robot.commit}${v.robot.date ? ' (' + v.robot.date.slice(0, 16).replace('T', ' ') + ')' : ''}` : 'inconnue';
+        setText(el, `Base : ${v.base || 'inconnue'} · Robot : ${robot}`);
+    } catch (e) {
+        setText(el, 'Versions indisponibles');
+    }
+}
+refreshCodeVersions();
+setInterval(refreshCodeVersions, 10000);
