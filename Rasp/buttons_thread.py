@@ -234,6 +234,9 @@ class ButtonsThread:
             
         new_id = available[next_idx]
         print(f"[BUTTONS] Demande Changement Stratégie -> {new_id} au serveur Go...")
+        # Appliqué localement tout de suite : la base ne renvoie pas config_update au robot
+        # pour un config_edit qui vient de lui
+        shared.update_config_from_server({"static_strat": new_id})
         if shared.zmq_client_instance:
             shared.zmq_client_instance.send_event("config_edit", {"key": "static_strat", "val": new_id})
 

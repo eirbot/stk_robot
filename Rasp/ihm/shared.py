@@ -77,10 +77,11 @@ state = {
     "lidar_mode": cfg.get("lidar_mode", "MATCH"),
     "music_enabled": cfg.get("music_enabled", True),
     "leds_enabled": cfg.get("leds_enabled", True),
-    "strat_id": "strat_homologation", 
     "fsm_state": "INIT",
     "strat_mode": cfg.get("strat_mode", "DYNAMIC"),
-    "strat_id": cfg.get("strat_id", 1)
+    "static_strat": cfg.get("static_strat"),
+    # En STATIC on démarre directement sur la strat de la config (sinon le robot lançait « 1 »)
+    "strat_id": cfg.get("static_strat") if cfg.get("strat_mode") == "STATIC" and cfg.get("static_strat") else cfg.get("strat_id", 1)
 }
 
 # Position Robot Partagée (Mise à jour par le Main, Lue par l'IHM)
