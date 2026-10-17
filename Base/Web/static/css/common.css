@@ -1,10 +1,10 @@
 /* =======================================================
-   EIRBOT 2026 — BASE DE DESIGN COMMUNE (thème « STK »)
-   Inspiré de l'ambiance des menus de SuperTuxKart : ciel bleu,
-   panneaux cartoon à gros contours, boutons de jeu en relief,
-   damier d'arrivée. Aucune image ni logo du jeu n'est repris.
-   Les classes historiques (.btn-nav, .btn-back, .card...) sont
-   conservées et restylées pour les pages pas encore migrées.
+   EIRBOT 2026 — BASE DE DESIGN COMMUNE + THÈMES
+   Un thème = un jeu de variables (html[data-theme="..."], posé par theme.js).
+   Les composants (carte, bouton, badge, tuile...) n'utilisent QUE ces
+   variables : ajouter un thème = ajouter un bloc de variables.
+   Les classes historiques (.btn-nav, .btn-back, .card...) sont conservées
+   pour les pages pas encore migrées.
    Pas de backdrop-filter : trop coûteux sur téléphone et sur la Rasp.
    ======================================================= */
 
@@ -16,33 +16,64 @@
 }
 
 @font-face {
+    font-family: 'Outfit';
+    src: url('/static/fonts/outfit.woff2') format('woff2');
+    font-weight: 100 900;
+    font-display: swap;
+}
+
+@font-face {
     font-family: 'JetBrains Mono';
     src: url('/static/fonts/jetbrains-mono.woff2') format('woff2');
     font-weight: 100 800;
     font-display: swap;
 }
 
+/* =======================================================
+   THÈME « STK (jour) » — par défaut
+   Inspiré des menus de SuperTuxKart (aucune image ni logo repris)
+   ======================================================= */
 :root {
-    /* Ciel */
-    --sky-top: #5ccbff;
-    --sky-mid: #2a8be6;
-    --sky-bottom: #123f9a;
+    /* Fond de page */
+    --page-bg:
+        radial-gradient(ellipse 60% 18% at 15% 12%, rgba(255, 255, 255, 0.18), transparent 70%),
+        radial-gradient(ellipse 45% 14% at 85% 22%, rgba(255, 255, 255, 0.14), transparent 70%),
+        linear-gradient(180deg, #5ccbff 0%, #2a8be6 38%, #123f9a 100%);
+    --page-bg-flat: #123f9a;
+    --header-bg: linear-gradient(180deg, #123a82, #0b285e);
 
-    /* Panneaux */
-    --ink: #071a3d;               /* contours et ombres "cartoon" */
+    /* Surfaces */
     --surface: #0f3274;
     --surface-2: #164190;
     --surface-3: #1e52ad;
     --border: rgba(255, 255, 255, 0.14);
     --border-strong: #8fd3ff;
 
+    /* Contours et relief "cartoon" */
+    --line: #071a3d;              /* couleur des contours */
+    --line-w: 3px;                /* épaisseur des contours */
+    --ink: #071a3d;               /* couleur du relief (ombre pleine sous les éléments) */
+    --depth: 6px;                 /* hauteur du relief des panneaux */
+    --press: 4px;                 /* enfoncement d'un bouton au clic */
+    --panel-highlight: inset 0 0 0 2px rgba(143, 211, 255, 0.35);
+    --soft-shadow: 0 0 0 transparent;
+    --gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.06) 48%, rgba(0, 0, 0, 0) 52%);
+    --gloss-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 45%);
+    --text-stroke: 3px;
+    --btn-text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+    --checker: repeating-conic-gradient(#ffffff 0 25%, #10131a 0 50%) 0 0 / 14px 14px;
+    --checker-opacity: 0.9;
+    --chip-bg: #071a3d;             /* fond des pastilles de données */
+
     /* Texte */
     --text: #ffffff;
     --text-muted: #b9dcff;
     --text-faint: #7fa8d6;
+    --brand: #ffd23f;
 
-    /* Couleurs de jeu */
-    --accent: #ffd23f;            /* jaune/or des menus */
+    /* Couleurs */
+    --accent: #ffd23f;
+    --accent-text: #2a1a00;
     --orange: #ff8c1a;
     --blue: #2f8cff;
     --yellow: #ffd23f;
@@ -54,28 +85,107 @@
     --cyan: #3ee0ff;
     --timer: #ffe14d;
 
-    /* Couleur de l'équipe courante (redéfinie par body.mode-JAUNE) */
-    --team: var(--blue);
-    --team-ink: #0a3d8f;
-    --team-text: #ffffff;
-
-    /* Typo */
+    /* Typo et formes */
     --font: 'Fredoka', 'Nunito', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
-
-    /* Formes */
+    --font-weight-title: 700;
     --radius: 20px;
     --radius-sm: 14px;
-    --outline: 3px;
-    --drop: 0 6px 0 var(--ink);
-    --gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.06) 48%, rgba(0, 0, 0, 0) 52%);
-    --gloss-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 45%);
-    --checker: repeating-conic-gradient(#ffffff 0 25%, #10131a 0 50%) 0 0 / 14px 14px;
+
+    /* Couleur de l'équipe courante */
+    --team: var(--blue);
+    --team-text: #ffffff;
 }
 
+/* =======================================================
+   THÈME « STK (nuit) » : même style, ciel de nuit et néons
+   ======================================================= */
+html[data-theme="nuit"] {
+    --page-bg:
+        radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.9) 0 1px, transparent 2px),
+        radial-gradient(circle at 72% 9%, rgba(255, 255, 255, 0.8) 0 1px, transparent 2px),
+        radial-gradient(circle at 88% 30%, rgba(255, 255, 255, 0.7) 0 1px, transparent 2px),
+        radial-gradient(circle at 40% 24%, rgba(255, 255, 255, 0.6) 0 1px, transparent 2px),
+        radial-gradient(ellipse 50% 30% at 80% 0%, rgba(255, 79, 216, 0.25), transparent 70%),
+        linear-gradient(180deg, #1a0f3d 0%, #2b1563 45%, #120a2e 100%);
+    --page-bg-flat: #120a2e;
+    --header-bg: linear-gradient(180deg, #2a1660, #170c3a);
+
+    --surface: #24135a;
+    --surface-2: #2f1a72;
+    --surface-3: #3d238f;
+    --border-strong: #c39bff;
+    --line: #0a0420;
+    --ink: #0a0420;
+    --panel-highlight: inset 0 0 0 2px rgba(195, 155, 255, 0.35);
+    --chip-bg: #0a0420;
+
+    --text-muted: #d2c2ff;
+    --text-faint: #9a86d6;
+    --brand: #ff4fd8;
+
+    --accent: #3ee0ff;
+    --accent-text: #00222b;
+    --blue: #4d8dff;
+    --cyan: #3ee0ff;
+    --timer: #ff4fd8;
+}
+
+/* =======================================================
+   THÈME « Sombre » : sobre, sans contours ni relief
+   ======================================================= */
+html[data-theme="sombre"] {
+    --page-bg: #0d1117;
+    --page-bg-flat: #0d1117;
+    --header-bg: #161b22;
+
+    --surface: #161b22;
+    --surface-2: #1c232c;
+    --surface-3: #242c37;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+
+    --line: rgba(255, 255, 255, 0.1);
+    --line-w: 1px;
+    --ink: transparent;
+    --depth: 0px;
+    --press: 1px;
+    --panel-highlight: inset 0 0 0 0 transparent;
+    --soft-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    --gloss: none;
+    --gloss-soft: none;
+    --text-stroke: 0px;
+    --btn-text-shadow: none;
+    --checker-opacity: 0;
+    --chip-bg: #1c232c;
+
+    --text: #f0f6fc;
+    --text-muted: #8b949e;
+    --text-faint: #5c6670;
+    --brand: #f0f6fc;
+
+    --accent: #00d2ff;
+    --accent-text: #001a22;
+    --orange: #ff9800;
+    --blue: #2196f3;
+    --yellow: #ffc107;
+    --success: #00e676;
+    --success-strong: #1f9d55;
+    --warning: #ffb703;
+    --danger: #ff334b;
+    --danger-strong: #d7263d;
+    --cyan: #00d2ff;
+    --timer: #ffcb6b;
+
+    --font: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-weight-title: 800;
+    --radius: 14px;
+    --radius-sm: 9px;
+}
+
+/* Équipe JAUNE (tous thèmes) */
 body.mode-JAUNE {
     --team: var(--yellow);
-    --team-ink: #8a5a00;
     --team-text: #2a1a00;
 }
 
@@ -84,14 +194,11 @@ body.mode-JAUNE {
    ======================================================= */
 html {
     -webkit-text-size-adjust: 100%;
-    background: var(--sky-bottom);
+    background: var(--page-bg-flat);
 }
 
 body {
-    background:
-        radial-gradient(ellipse 60% 18% at 15% 12%, rgba(255, 255, 255, 0.18), transparent 70%),
-        radial-gradient(ellipse 45% 14% at 85% 22%, rgba(255, 255, 255, 0.14), transparent 70%),
-        linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 38%, var(--sky-bottom) 100%);
+    background: var(--page-bg);
     background-attachment: fixed;
     color: var(--text);
     font-family: var(--font);
@@ -119,19 +226,11 @@ button, a, select, input {
     display: none !important;
 }
 
-/* Texte "cartoon" : contour foncé */
-.outlined {
-    text-shadow:
-        2px 2px 0 var(--ink), -2px 2px 0 var(--ink),
-        2px -2px 0 var(--ink), -2px -2px 0 var(--ink),
-        0 4px 0 var(--ink);
-}
-
 /* =======================================================
    EN-TÊTE + BANDE DAMIER
    ======================================================= */
 .header {
-    background: linear-gradient(180deg, #123a82, #0b285e);
+    background: var(--header-bg);
     padding: 10px 18px;
     display: flex;
     justify-content: space-between;
@@ -140,7 +239,7 @@ button, a, select, input {
     position: sticky;
     top: 0;
     z-index: 100;
-    border-bottom: var(--outline) solid var(--ink);
+    border-bottom: var(--line-w) solid var(--line);
 }
 
 .header::after {
@@ -148,25 +247,35 @@ button, a, select, input {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: calc(-8px - var(--outline));
+    bottom: calc(-8px - var(--line-w));
     height: 8px;
     background: var(--checker);
     border-bottom: 2px solid var(--ink);
-    opacity: 0.9;
+    opacity: var(--checker-opacity);
+    pointer-events: none;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
 }
 
 .brand {
-    font-weight: 700;
+    font-weight: var(--font-weight-title);
     font-size: 1.6rem;
     letter-spacing: 1.5px;
     display: flex;
     align-items: center;
     gap: 10px;
-    color: var(--accent);
+    color: var(--brand);
     text-shadow:
-        2px 2px 0 var(--ink), -2px 2px 0 var(--ink),
-        2px -2px 0 var(--ink), -2px -2px 0 var(--ink),
-        0 4px 0 var(--ink);
+        calc(var(--text-stroke) * 0.67) calc(var(--text-stroke) * 0.67) 0 var(--ink),
+        calc(var(--text-stroke) * -0.67) calc(var(--text-stroke) * 0.67) 0 var(--ink),
+        calc(var(--text-stroke) * 0.67) calc(var(--text-stroke) * -0.67) 0 var(--ink),
+        calc(var(--text-stroke) * -0.67) calc(var(--text-stroke) * -0.67) 0 var(--ink),
+        0 calc(var(--text-stroke) * 1.33) 0 var(--ink);
 }
 
 .brand-dot {
@@ -174,12 +283,12 @@ button, a, select, input {
     height: 16px;
     border-radius: 50%;
     background: var(--team);
-    border: var(--outline) solid var(--ink);
+    border: var(--line-w) solid var(--line);
 }
 
 .page-title {
     font-size: 1.3rem;
-    font-weight: 700;
+    font-weight: var(--font-weight-title);
     letter-spacing: 1px;
     margin: 0;
 }
@@ -198,7 +307,7 @@ button, a, select, input {
 .sys-info-item {
     display: inline-block;
     background: var(--surface);
-    border: 2px solid var(--ink);
+    border: 2px solid var(--line);
     border-radius: 999px;
     padding: 3px 10px;
 }
@@ -214,13 +323,19 @@ button, a, select, input {
     display: none; /* Remplacé par les pastilles */
 }
 
+/* Sélecteur de thème (rempli par theme.js) */
+.theme-select {
+    font-size: 0.85rem;
+    padding: 4px 8px;
+}
+
 /* =======================================================
    PANNEAUX
    ======================================================= */
 .card {
     background: var(--gloss-soft), var(--surface);
-    border: var(--outline) solid var(--ink);
-    box-shadow: inset 0 0 0 2px rgba(143, 211, 255, 0.35), var(--drop);
+    border: var(--line-w) solid var(--line);
+    box-shadow: var(--panel-highlight), 0 var(--depth) 0 var(--ink), var(--soft-shadow);
     border-radius: var(--radius);
     padding: 18px;
     margin-bottom: 14px;
@@ -228,10 +343,10 @@ button, a, select, input {
 
 .card-title {
     font-size: 1.1rem;
-    font-weight: 700;
+    font-weight: var(--font-weight-title);
     margin: 0 0 14px;
     padding-bottom: 10px;
-    border-bottom: 2px dashed rgba(143, 211, 255, 0.35);
+    border-bottom: 2px dashed var(--border);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -240,30 +355,31 @@ button, a, select, input {
 }
 
 /* =======================================================
-   BOUTONS DE JEU (relief + contour, s'enfoncent au clic)
+   BOUTONS (relief + contour selon le thème, s'enfoncent au clic)
    ======================================================= */
 .btn {
     --btn: var(--surface-3);
     --btn-text: #fff;
+    --btn-depth: calc(var(--depth) - 1px);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     padding: 12px 18px;
     border-radius: var(--radius-sm);
-    border: var(--outline) solid var(--ink);
+    border: var(--line-w) solid var(--line);
     background: var(--gloss), var(--btn);
     color: var(--btn-text);
-    box-shadow: 0 5px 0 var(--ink);
+    box-shadow: 0 var(--btn-depth) 0 var(--ink);
     font-size: 1.05rem;
     font-weight: 700;
     letter-spacing: 0.6px;
     text-decoration: none;
-    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+    text-shadow: var(--btn-text-shadow);
     cursor: pointer;
     transition: transform 0.06s, box-shadow 0.06s, filter 0.15s;
     user-select: none;
-    margin-bottom: 5px; /* place pour l'ombre en relief */
+    margin-bottom: var(--btn-depth); /* place pour le relief */
 }
 
 .btn:hover {
@@ -271,8 +387,8 @@ button, a, select, input {
 }
 
 .btn:active {
-    transform: translateY(4px);
-    box-shadow: 0 1px 0 var(--ink);
+    transform: translateY(var(--press));
+    box-shadow: 0 calc(var(--btn-depth) - var(--press)) 0 var(--ink);
 }
 
 .btn:disabled {
@@ -280,7 +396,7 @@ button, a, select, input {
     cursor: default;
 }
 
-.btn-primary { --btn: var(--accent); --btn-text: #2a1a00; text-shadow: none; }
+.btn-primary { --btn: var(--accent); --btn-text: var(--accent-text); text-shadow: none; }
 .btn-success { --btn: var(--success-strong); }
 .btn-danger  { --btn: var(--danger-strong); }
 .btn-warning { --btn: var(--orange); }
@@ -288,24 +404,17 @@ button, a, select, input {
 .btn-ghost   { --btn: var(--surface); }
 
 .btn-lg {
+    --btn-depth: calc(var(--depth) + 1px);
     padding: 16px 22px;
     font-size: 1.7rem;
     letter-spacing: 1.5px;
     border-radius: var(--radius);
-    box-shadow: 0 7px 0 var(--ink);
-    margin-bottom: 7px;
-}
-
-.btn-lg:active {
-    transform: translateY(6px);
-    box-shadow: 0 1px 0 var(--ink);
 }
 
 .btn-sm {
+    --btn-depth: calc(var(--depth) / 2);
     padding: 6px 12px;
     font-size: 0.9rem;
-    box-shadow: 0 3px 0 var(--ink);
-    margin-bottom: 3px;
 }
 
 /* Historique */
@@ -315,15 +424,15 @@ button, a, select, input {
     text-decoration: none;
     padding: 6px 14px;
     border-radius: var(--radius-sm);
-    border: var(--outline) solid var(--ink);
-    box-shadow: 0 4px 0 var(--ink);
+    border: var(--line-w) solid var(--line);
+    box-shadow: 0 calc(var(--depth) - 2px) 0 var(--ink);
     font-size: 0.95rem;
     font-weight: 700;
     white-space: nowrap;
 }
 
 .btn-back:active {
-    transform: translateY(3px);
+    transform: translateY(var(--press));
     box-shadow: 0 1px 0 var(--ink);
 }
 
@@ -336,9 +445,8 @@ button, a, select, input {
     font-weight: 700;
     color: white;
     border-radius: var(--radius-sm);
-    border: var(--outline) solid var(--ink);
-    box-shadow: 0 5px 0 var(--ink);
-    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+    border: var(--line-w) solid var(--line);
+    box-shadow: 0 calc(var(--depth) - 1px) 0 var(--ink);
     padding: 18px;
     font-size: 1.2em;
     transition: filter 0.15s;
@@ -354,7 +462,7 @@ button, a, select, input {
     font-size: 0.8em;
     padding: 2px 8px;
     margin-left: 5px;
-    border: 2px solid var(--ink);
+    border: 2px solid var(--line);
     color: white;
     cursor: pointer;
     border-radius: 8px;
@@ -364,8 +472,8 @@ button, a, select, input {
     background: var(--gloss), var(--surface-3);
     font-size: 0.9em;
     padding: 10px;
-    border: var(--outline) solid var(--ink);
-    box-shadow: 0 4px 0 var(--ink);
+    border: var(--line-w) solid var(--line);
+    box-shadow: 0 calc(var(--depth) - 2px) 0 var(--ink);
     border-radius: var(--radius-sm);
     color: white;
     cursor: pointer;
@@ -383,7 +491,7 @@ button, a, select, input {
     font-size: 0.9rem;
     font-weight: 700;
     letter-spacing: 0.5px;
-    border: 2px solid var(--ink);
+    border: 2px solid var(--line);
     background: var(--surface-2);
     color: var(--text);
 }
@@ -391,7 +499,7 @@ button, a, select, input {
 .badge-ok     { background: var(--success-strong); color: #fff; }
 .badge-warn   { background: var(--orange); color: #fff; }
 .badge-danger { background: var(--danger-strong); color: #fff; }
-.badge-info   { background: var(--accent); color: #2a1a00; }
+.badge-info   { background: var(--accent); color: var(--accent-text); }
 
 /* =======================================================
    FORMULAIRES
@@ -400,7 +508,7 @@ select,
 .strat-select {
     background: var(--surface-2);
     color: var(--text);
-    border: 2px solid var(--ink);
+    border: 2px solid var(--line);
     padding: 7px 10px;
     font-size: 1rem;
     font-weight: 600;
@@ -441,6 +549,12 @@ body.breathing-JAUNE {
         flex-wrap: wrap;
         gap: 6px 10px;
         padding: 8px 10px;
+    }
+
+    .header-right {
+        width: 100%;
+        flex-direction: column;
+        gap: 6px;
     }
 
     .sys-info {

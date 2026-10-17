@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DEBUG & CONFIG</title>
-    <link rel="stylesheet" href="/static/css/common.css?v=2.7">
+    <script src="/static/js/theme.js?v=1"></script>
+    <link rel="stylesheet" href="/static/css/common.css?v=5.0">
     <link rel="stylesheet" href="/static/css/debug.css?v=2.7">
 
     <style>
@@ -547,6 +548,10 @@
                     style="width:80%; accent-color: #E91E63;"
                     oninput="document.getElementById('bright-val').innerText=this.value"
                     onchange="updateBrightness(this.value)">
+            </div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:15px;">
+                <label>🎨 Thème :</label>
+                <select class="theme-select" data-theme-select></select>
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px; justify-content: center;">
                 <button id="btn-flash-motors" onclick="flashESP('motors')" class="btn-flash">Flash MOTEURS</button>

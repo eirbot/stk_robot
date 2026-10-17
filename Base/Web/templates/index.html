@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>EIRBOT 2026</title>
     <link rel="preload" href="/static/fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/static/css/common.css?v=4.1">
-    <link rel="stylesheet" href="/static/css/index.css?v=4.1">
+    <script src="/static/js/theme.js?v=1"></script>
+    <link rel="stylesheet" href="/static/css/common.css?v=5.0">
+    <link rel="stylesheet" href="/static/css/index.css?v=5.0">
 
     <script src="/static/js/common.js?v=2.5" defer></script>
     <script src="/static/js/index.js?v=3.0" defer></script>
@@ -16,7 +17,10 @@
 <body class="mode-BLEUE">
     <header class="header">
         <div class="brand"><span class="brand-dot"></span>EIRBOT</div>
-        <div class="sys-info" id="sys-info">...</div>
+        <div class="header-right">
+            <div class="sys-info" id="sys-info">...</div>
+            <select class="theme-select pc-only" data-theme-select title="Thème de l'interface"></select>
+        </div>
     </header>
 
     <main class="home">
