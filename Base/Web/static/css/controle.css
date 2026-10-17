@@ -8,6 +8,23 @@
    badge-gamepad, active, targeted...) sont conservées telles quelles.
    ======================================================= */
 
+/* Valeurs de données posées sur un sous-panneau clair/sombre (pas sur une
+   pastille) : --cyan partout, sauf en STK jour où --cyan est l'orange,
+   illisible sur gris clair -> texte du thème. */
+:root {
+    --ctl-data: var(--cyan);
+}
+
+html[data-theme="stk"] {
+    --ctl-data: var(--text);
+}
+
+/* Le thème Sombre ne définit pas --btn-fg (hérite du noir de STK jour) :
+   texte noir sur boutons sombres. Correctif local à la page. */
+html[data-theme="sombre"] {
+    --btn-fg: var(--text);
+}
+
 body {
     overflow-x: hidden;
     user-select: none;
@@ -38,7 +55,7 @@ body {
     border-radius: 999px;
     border: 2px solid var(--border);
     background: var(--chip-bg);
-    color: var(--text-muted);
+    color: var(--chip-muted);
     white-space: nowrap;
     transition: color 0.2s, border-color 0.2s;
 }
@@ -201,7 +218,7 @@ body {
 
 .tb-num {
     background: var(--chip-bg);
-    color: var(--text);
+    color: var(--chip-text);
     font-size: 0.7rem;
     font-family: var(--font-mono);
     padding: 1px 6px;
@@ -230,7 +247,7 @@ body {
     width: 290px;
     height: 290px;
     border-radius: 50%;
-    background: radial-gradient(circle, var(--surface-2) 0%, var(--chip-bg) 85%);
+    background: radial-gradient(circle, var(--surface-3) 0%, var(--chip-bg) 80%);
     border: var(--line-w) solid var(--line);
     box-shadow: inset 0 0 0 4px var(--surface-3), 0 var(--depth) 0 var(--ink), var(--soft-shadow);
     cursor: grab;
@@ -253,16 +270,16 @@ body {
     width: 170px;
     height: 170px;
     border-radius: 50%;
-    border: 2px dashed var(--border-strong);
-    opacity: 0.6;
+    border: 2px dashed var(--chip-muted);
+    opacity: 0.5;
     pointer-events: none;
 }
 
 .joystick-crosshair-h,
 .joystick-crosshair-v {
     position: absolute;
-    background: var(--border-strong);
-    opacity: 0.35;
+    background: var(--chip-muted);
+    opacity: 0.3;
     pointer-events: none;
 }
 
@@ -286,7 +303,7 @@ body {
     position: absolute;
     font-size: 0.7rem;
     font-weight: 700;
-    color: var(--text-muted);
+    color: var(--chip-text);
     pointer-events: none;
     letter-spacing: 1px;
     white-space: nowrap;
@@ -447,7 +464,7 @@ body {
 
 .gauge-label {
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: var(--chip-muted);
     display: block;
     margin-bottom: 6px;
 }
@@ -457,13 +474,13 @@ body {
     font-variant-numeric: tabular-nums;
     font-size: 1.6rem;
     font-weight: 800;
-    color: var(--text);
+    color: var(--chip-text);
     margin-bottom: 8px;
 }
 
 .gauge-value small {
     font-size: 0.85rem;
-    color: var(--text-muted);
+    color: var(--chip-muted);
     font-weight: 400;
 }
 
@@ -506,7 +523,7 @@ body {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-weight: 700;
-    color: var(--cyan);
+    color: var(--ctl-data);
 }
 
 /* ---------- Télémétrie ---------- */
@@ -526,7 +543,7 @@ body {
 
 .cell-label {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--chip-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -536,7 +553,7 @@ body {
     font-variant-numeric: tabular-nums;
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--text);
+    color: var(--chip-text);
 }
 
 .badge-status {
@@ -630,7 +647,7 @@ input[type="range"] {
     border-radius: 50%;
     top: 2px;
     left: 2px;
-    background: var(--text-muted);
+    background: var(--chip-muted);
     transition: transform 0.2s, background 0.2s;
 }
 
@@ -699,7 +716,7 @@ input[type="range"] {
 .actuator-feedback {
     font-size: 0.85rem;
     font-family: var(--font-mono);
-    color: var(--text-muted);
+    color: var(--chip-muted);
     background: var(--chip-bg);
     padding: 4px 12px;
     border-radius: 8px;
@@ -757,6 +774,10 @@ input[type="range"] {
     color: var(--accent);
 }
 
+html[data-theme="stk"] .actuator-card.targeted .act-title {
+    color: var(--text);
+}
+
 .act-card-header {
     display: flex;
     justify-content: space-between;
@@ -768,13 +789,13 @@ input[type="range"] {
 .act-title {
     font-weight: 800;
     font-size: 0.95rem;
-    color: var(--cyan);
+    color: var(--ctl-data);
     letter-spacing: 0.5px;
 }
 
 .act-badge {
     font-size: 0.7rem;
-    color: var(--text-muted);
+    color: var(--chip-muted);
     background: var(--chip-bg);
     border: 1px solid var(--border);
     padding: 2px 8px;
@@ -798,7 +819,7 @@ input[type="range"] {
 .val-badge {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    color: var(--cyan);
+    color: var(--ctl-data);
     font-weight: 700;
 }
 
@@ -911,7 +932,7 @@ input[type="range"] {
 
 .info-val {
     font-weight: 700;
-    color: var(--cyan);
+    color: var(--ctl-data);
     font-family: var(--font-mono);
 }
 
@@ -942,7 +963,7 @@ input[type="range"] {
 }
 
 .mapping-card b {
-    color: var(--cyan);
+    color: var(--ctl-data);
 }
 
 .gamepad-visualizer {
@@ -960,7 +981,7 @@ input[type="range"] {
 }
 
 .gp-vis-axis b {
-    color: var(--cyan);
+    color: var(--ctl-data);
 }
 
 .gp-buttons-indicator {

@@ -151,6 +151,9 @@ main {
     padding: 2px 6px;
     border-radius: 8px;
     font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .step-actions button:hover:not(:disabled) {

@@ -102,11 +102,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <div class="step-actions">
                     <div class="move-btns">
-                        <button onclick="moveStep(${index}, -1)" ${isFirst ? 'disabled style="opacity:0.3"' : ''}>⬆</button>
-                        <button onclick="moveStep(${index}, 1)" ${isLast ? 'disabled style="opacity:0.3"' : ''}>⬇</button>
+                        <button onclick="moveStep(${index}, -1)" ${isFirst ? 'disabled style="opacity:0.3"' : ''} title="Monter"><svg class="icon" style="transform: rotate(90deg)" aria-hidden="true"><use href="/static/icons/sprite.svg#i-arrow-left"></use></svg></button>
+                        <button onclick="moveStep(${index}, 1)" ${isLast ? 'disabled style="opacity:0.3"' : ''} title="Descendre"><svg class="icon" style="transform: rotate(-90deg)" aria-hidden="true"><use href="/static/icons/sprite.svg#i-arrow-left"></use></svg></button>
                     </div>
-                    <button onclick="copyStep(${index})">📋</button>
-                    <button onclick="deleteStep(${index})">❌</button>
+                    <button onclick="copyStep(${index})" title="Dupliquer">${icon('copy')}</button>
+                    <button onclick="deleteStep(${index})" title="Supprimer">${icon('trash-2')}</button>
                 </div>
             `;
             item.addEventListener("click", (e) => {

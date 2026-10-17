@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Studio Stratégie - Robot 2026</title>
-    <script src="/static/js/theme.js?v=2"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=5.3">
-    <link rel="stylesheet" href="/static/css/blockly.css?v=2.0">
+    <script src="/static/js/theme.js?v=3"></script>
+    <link rel="stylesheet" href="/static/css/common.css?v=6.2">
+    <link rel="stylesheet" href="/static/css/blockly.css?v=2.1">
 
     <script src="/static/js/vendor/blockly_compressed.js" defer></script>
     <script src="/static/js/vendor/blocks_compressed.js" defer></script>
@@ -18,8 +18,8 @@
 <body>
 
     <div class="header">
-        <a href="/" class="btn-back">⬅ RETOUR</a>
-        <div class="page-title">STRAT STUDIO 🧩</div>
+        <a href="/" class="btn-back"><svg class="icon"><use href="/static/icons/sprite.svg#i-arrow-left"></use></svg> Accueil</a>
+        <div class="page-title">STRAT STUDIO</div>
         <div class="sys-info" id="sys-info">...</div>
     </div>
 
@@ -28,24 +28,24 @@
             <select id="stratSelect" class="strat-select">
                 <option value="" disabled selected>Choisir...</option>
             </select>
-            <button id="loadBtn" class="btn btn-sm btn-primary">📂 Charger</button>
+            <button id="loadBtn" class="btn btn-sm btn-primary"><svg class="icon"><use href="/static/icons/sprite.svg#i-folder-open"></use></svg> Charger</button>
         </div>
 
         <div class="toolbar-spacer"></div>
 
         <div class="toolbar-group">
             <label class="check">
-                <input type="checkbox" id="symToggle"> 🟡 Symétrie (Jaune)
+                <input type="checkbox" id="symToggle"> Symétrie (Jaune)
             </label>
-            <button id="previewBtn" class="btn btn-sm">👁️ Voir Trajet</button>
-            <button id="simuBtn" class="btn btn-sm btn-warning">▶️ Simuler</button>
+            <button id="previewBtn" class="btn btn-sm"><svg class="icon"><use href="/static/icons/sprite.svg#i-route"></use></svg> Voir Trajet</button>
+            <button id="simuBtn" class="btn btn-sm btn-warning"><svg class="icon"><use href="/static/icons/sprite.svg#i-play"></use></svg> Simuler</button>
         </div>
 
         <div class="toolbar-sep"></div>
 
         <div class="toolbar-group">
             <input type="text" id="filename" placeholder="Nom de la strat" value="nouvelle_strat">
-            <button id="saveBtn" class="btn btn-sm btn-success">💾 Sauvegarder</button>
+            <button id="saveBtn" class="btn btn-sm btn-success"><svg class="icon"><use href="/static/icons/sprite.svg#i-save"></use></svg> Sauvegarder</button>
         </div>
 
         <div id="status"></div>
@@ -98,7 +98,7 @@
     <img id="imgRobot" src="/static/img/robot.png" style="display: none;">
 
     <script src="/static/js/common.js"></script>
-    <script src="/static/js/blockly.js?v=2.1"></script>
+    <script src="/static/js/blockly.js?v=2.2"></script>
 </body>
 
 </html>

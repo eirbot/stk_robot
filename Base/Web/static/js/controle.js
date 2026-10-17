@@ -342,8 +342,17 @@ function sendCmdVel(vx, vtheta) {
     }
 }
 
+// Badge avec icône du thème (window.icon de theme.js) : réécrit seulement si le contenu change
+function setIconText(el, name, text) {
+    if (!el) return;
+    const key = (name || '') + '|' + text;
+    if (el.dataset.content === key) return;
+    el.dataset.content = key;
+    el.innerHTML = (name && window.icon ? window.icon(name) + ' ' : '') + text;
+}
+
 function triggerEmergencyStop() {
-    console.warn("🛑 ARRÊT D'URGENCE MANUEL DÉCLENCHÉ");
+    console.warn("ARRÊT D'URGENCE MANUEL DÉCLENCHÉ");
     currentVx = 0;
     currentVtheta = 0;
     updateGauges(0, 0);
@@ -511,19 +520,19 @@ function initWebSocketEvents() {
             const obsDet = state.obstacle_detected || (obsType > 0);
 
             if (obsType === 1) {
-                setText(badgeLidar, "🛑 ARRÊT CRITIQUE");
+                setIconText(badgeLidar, "circle-stop", "ARRÊT CRITIQUE");
                 setClass(badgeLidar, "badge-status status-stop");
             } else if (obsType === 2) {
-                setText(badgeLidar, "⚠️ OBSTACLE AVANT");
+                setIconText(badgeLidar, "triangle-alert", "OBSTACLE AVANT");
                 setClass(badgeLidar, "badge-status status-alert");
             } else if (obsType === 3) {
-                setText(badgeLidar, "⚠️ OBSTACLE ARRIÈRE");
+                setIconText(badgeLidar, "triangle-alert", "OBSTACLE ARRIÈRE");
                 setClass(badgeLidar, "badge-status status-alert");
             } else if (obsDet) {
-                setText(badgeLidar, "⚠️ ATTENTION");
+                setIconText(badgeLidar, "triangle-alert", "ATTENTION");
                 setClass(badgeLidar, "badge-status status-alert");
             } else {
-                setText(badgeLidar, "LIBRE");
+                setIconText(badgeLidar, null, "LIBRE");
                 setClass(badgeLidar, "badge-status status-free");
             }
         }
@@ -544,18 +553,18 @@ let isGamepadModalOpen = false;
 
 function initGamepad() {
     window.addEventListener("gamepadconnected", (e) => {
-        console.log(`🎮 Manette connectée : ${e.gamepad.id} (index ${e.gamepad.index})`);
+        console.log(`Manette connectée : ${e.gamepad.id} (index ${e.gamepad.index})`);
         gamepadIndex = e.gamepad.index;
         updateGamepadBadge(true, e.gamepad.id);
-        showActuatorFeedback(`🎮 Manette détectée : ${e.gamepad.id}`);
+        showActuatorFeedback(`Manette détectée : ${e.gamepad.id}`);
     });
 
     window.addEventListener("gamepaddisconnected", (e) => {
-        console.log(`🎮 Manette déconnectée : ${e.gamepad.id}`);
+        console.log(`Manette déconnectée : ${e.gamepad.id}`);
         if (gamepadIndex === e.gamepad.index) {
             gamepadIndex = null;
             updateGamepadBadge(false);
-            showActuatorFeedback("🎮 Manette déconnectée");
+            showActuatorFeedback("Manette déconnectée");
         }
     });
 }
@@ -802,20 +811,20 @@ function showActuatorFeedback(text) {
 
 function getActuatorActionName(cmd, params) {
     switch (cmd) {
-        case 'pose_match': return '🏁 Pose Match lancée';
-        case 'pose_camera': return '📸 Pose Caméra déployée';
-        case 'pose_deploy': return '📦 Bras Déployés';
-        case 'pose_grab': return '📥 Prise des Kaplas';
-        case 'pose_poser': return '📤 Dépose des Kaplas';
-        case 'pose_ranger': return '🔒 Bras Rangés';
-        case 'init_robot': return '🔄 Homing Initialisation lancé';
-        case 'grab_all': return '🤏 Toutes les pinces serrées';
-        case 'release_all': return '✋ Toutes les pinces ouvertes';
-        case 'grab': return `🤏 Bras #${params.id} : Serrer`;
-        case 'release': return `✋ Bras #${params.id} : Ouvrir`;
-        case 'pivoter': return `🔄 Bras #${params.id} : Pivot ${params.sens}`;
-        case 'tourner': return `🔁 Bras #${params.id} : Rotation 9G`;
-        case 'ascenseur': return `⬆️ Bras #${params.id} : Hauteur ${params.hauteur}mm`;
+        case 'pose_match': return 'Pose Match lancée';
+        case 'pose_camera': return 'Pose Caméra déployée';
+        case 'pose_deploy': return 'Bras Déployés';
+        case 'pose_grab': return 'Prise des Kaplas';
+        case 'pose_poser': return 'Dépose des Kaplas';
+        case 'pose_ranger': return 'Bras Rangés';
+        case 'init_robot': return 'Homing Initialisation lancé';
+        case 'grab_all': return 'Toutes les pinces serrées';
+        case 'release_all': return 'Toutes les pinces ouvertes';
+        case 'grab': return `Bras #${params.id} : Serrer`;
+        case 'release': return `Bras #${params.id} : Ouvrir`;
+        case 'pivoter': return `Bras #${params.id} : Pivot ${params.sens}`;
+        case 'tourner': return `Bras #${params.id} : Rotation 9G`;
+        case 'ascenseur': return `Bras #${params.id} : Hauteur ${params.hauteur}mm`;
         default: return `Commande ${cmd}`;
     }
 }
@@ -871,15 +880,15 @@ function setControlTarget(target) {
         if (markS) markS.innerText = 'ARRIÈRE';
         if (markW) markW.innerText = 'GAUCHE';
         if (markE) markE.innerText = 'DROITE';
-        showActuatorFeedback("🤖 Mode : Base Robot (Déplacement)");
+        showActuatorFeedback("Mode : Base Robot (Déplacement)");
         highlightActuatorCard(null);
     } else {
         const armId = target.split('_')[1];
-        if (markN) markN.innerText = '▲ MONTER';
-        if (markS) markS.innerText = '▼ DESCENDRE';
-        if (markW) markW.innerText = '✋ OUVRIR';
-        if (markE) markE.innerText = '🤏 SERRER';
-        showActuatorFeedback(`🦾 Mode Joystick : Bras #${armId}`);
+        if (markN) markN.innerText = 'MONTER';
+        if (markS) markS.innerText = 'DESCENDRE';
+        if (markW) markW.innerText = 'OUVRIR';
+        if (markE) markE.innerText = 'SERRER';
+        showActuatorFeedback(`Mode Joystick : Bras #${armId}`);
 
         // Met en surbrillance la carte de l'actionneur ciblé
         highlightActuatorCard(armId);

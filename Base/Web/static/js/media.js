@@ -226,7 +226,8 @@ function renderFileList() {
 
         // Actions
         const playBtn = document.createElement('button');
-        playBtn.innerText = '▶';
+        playBtn.innerHTML = icon('play');
+        playBtn.title = 'Écouter';
         playBtn.onclick = (e) => { e.stopPropagation(); playPreview(file); };
 
         item.appendChild(nameSpan);

@@ -40,6 +40,10 @@
     cursor: pointer;
     margin-bottom: 0;
     transition: color 0.15s, background 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .tab-btn:hover {
@@ -143,9 +147,13 @@
     border-color: var(--line);
 }
 
-/* Bouton ▶ créé par media.js */
+/* Bouton lecture créé par media.js */
 .file-item button {
     flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
     background: var(--surface-3);
     color: var(--btn-fg);
     border: 2px solid var(--line);
@@ -173,8 +181,13 @@
     padding-bottom: 8px; /* place pour le relief des cartes */
 }
 
+/* Titre en cours : pastille de données (l'orange stk est illisible sur gris clair) */
 .now-playing {
-    color: var(--accent);
+    color: var(--cyan);
+    background: var(--chip-bg);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 6px 12px;
     font-weight: 700;
     margin: 6px 0 10px;
     white-space: nowrap;
@@ -409,7 +422,7 @@ input[type="color"]::-webkit-color-swatch {
     color: var(--text);
     border: var(--line-w) solid var(--line);
     box-shadow: 0 var(--depth) 0 var(--ink), var(--soft-shadow);
-    width: 220px;
+    width: 250px;
     z-index: 1000;
     border-radius: var(--radius-sm);
     overflow: hidden;
@@ -420,7 +433,7 @@ input[type="color"]::-webkit-color-swatch {
 .ctx-title {
     padding: 8px 12px;
     font-weight: 700;
-    color: var(--accent);
+    color: var(--text);
     background: var(--surface-2);
     font-size: 0.9em;
     overflow: hidden;
@@ -431,6 +444,9 @@ input[type="color"]::-webkit-color-swatch {
 .ctx-item {
     padding: 10px 12px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .ctx-item:hover {
@@ -474,6 +490,13 @@ html[data-theme="win95"] .context-menu {
 html[data-theme="win95"] .ctx-item:hover {
     background: #000080;
     color: #fff;
+}
+
+html[data-theme="win95"] .now-playing {
+    border: 2px solid;
+    border-color: var(--w95-sunken-color);
+    box-shadow: var(--w95-sunken-shadow);
+    border-radius: 0;
 }
 
 html[data-theme="win95"] .ctx-title {

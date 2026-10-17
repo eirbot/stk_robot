@@ -16,6 +16,13 @@
 }
 
 @font-face {
+    font-family: 'Luckiest Guy';
+    src: url('/static/fonts/luckiest-guy.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
     font-family: 'Outfit';
     src: url('/static/fonts/outfit.woff2') format('woff2');
     font-weight: 100 900;
@@ -33,65 +40,73 @@
    THÈME « STK (jour) » — par défaut
    Inspiré des menus de SuperTuxKart (aucune image ni logo repris)
    ======================================================= */
+/* Palette STK : orange #ff9300, noir #000000, gris #c2c2c8 ; police Luckiest Guy (titres) */
 :root {
     /* Fond de page */
     --page-bg:
-        radial-gradient(ellipse 60% 18% at 15% 12%, rgba(255, 255, 255, 0.18), transparent 70%),
-        radial-gradient(ellipse 45% 14% at 85% 22%, rgba(255, 255, 255, 0.14), transparent 70%),
-        linear-gradient(180deg, #5ccbff 0%, #2a8be6 38%, #123f9a 100%);
-    --page-bg-flat: #123f9a;
-    --header-bg: linear-gradient(180deg, #123a82, #0b285e);
+        repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0 18px, transparent 18px 36px),
+        linear-gradient(180deg, #d0d0d5 0%, #c2c2c8 45%, #ababb2 100%);
+    --page-bg-flat: #c2c2c8;
+    --header-bg: #000000;
+    --header-text: #ffffff;
 
     /* Surfaces */
-    --surface: #0f3274;
-    --surface-2: #164190;
-    --surface-3: #1e52ad;
-    --border: rgba(255, 255, 255, 0.14);
-    --border-strong: #8fd3ff;
+    --surface: #ececef;
+    --surface-2: #dcdce1;
+    --surface-3: #c2c2c8;
+    --border: rgba(0, 0, 0, 0.15);
+    --border-strong: #3a3a40;
+
+    /* Pastilles de données (fond sombre façon tableau de bord) */
+    --chip-bg: #000000;
+    --chip-text: #ffffff;
+    --chip-muted: #b9b9c0;
 
     /* Contours et relief "cartoon" */
-    --line: #071a3d;              /* couleur des contours */
+    --line: #000000;              /* couleur des contours */
     --line-w: 3px;                /* épaisseur des contours */
-    --ink: #071a3d;               /* couleur du relief (ombre pleine sous les éléments) */
+    --ink: #000000;               /* couleur du relief (ombre pleine sous les éléments) */
     --depth: 6px;                 /* hauteur du relief des panneaux */
     --press: 4px;                 /* enfoncement d'un bouton au clic */
-    --panel-highlight: inset 0 0 0 2px rgba(143, 211, 255, 0.35);
+    --panel-highlight: inset 0 0 0 2px rgba(255, 255, 255, 0.7);
     --soft-shadow: 0 0 0 transparent;
-    --gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.06) 48%, rgba(0, 0, 0, 0) 52%);
-    --gloss-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 45%);
+    --gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(0, 0, 0, 0) 52%);
+    --gloss-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 40%);
     --text-stroke: 3px;
-    --btn-text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
-    --checker: repeating-conic-gradient(#ffffff 0 25%, #10131a 0 50%) 0 0 / 14px 14px;
-    --checker-opacity: 0.9;
-    --chip-bg: #071a3d;             /* fond des pastilles de données */
+    --btn-text-shadow: none;
+    --checker: repeating-conic-gradient(#ffffff 0 25%, #000000 0 50%) 0 0 / 14px 14px;
+    --checker-opacity: 1;
 
     /* Texte */
-    --text: #ffffff;
-    --text-muted: #b9dcff;
-    --text-faint: #7fa8d6;
-    --brand: #ffd23f;
-    --btn-fg: #ffffff;             /* texte des boutons neutres */
+    --text: #000000;
+    --text-muted: #45454c;
+    --text-faint: #7a7a84;
+    --brand: #ff9300;
+    --btn-fg: #000000;             /* texte des boutons neutres */
+    --card-title-color: #000000;   /* orange sur gris clair : contraste trop faible */
 
     /* Couleurs */
-    --accent: #ffd23f;
-    --accent-text: #2a1a00;
-    --orange: #ff8c1a;
+    --accent: #ff9300;
+    --accent-text: #000000;
+    --orange: #ff9300;
     --blue: #2f8cff;
     --yellow: #ffd23f;
-    --success: #3fe05a;
-    --success-strong: #27b23d;
-    --warning: #ffb21a;
-    --danger: #ff4d5e;
-    --danger-strong: #e8263a;
-    --cyan: #3ee0ff;
-    --timer: #ffe14d;
+    --success: #2fbf4a;
+    --success-strong: #1f9d3a;
+    --warning: #ff9300;
+    --danger: #ff3b3b;
+    --danger-strong: #e01e1e;
+    --cyan: #ff9300;               /* étiquettes de données (sur pastilles noires) */
+    --timer: #ff9300;
 
     /* Typo et formes */
     --font: 'Fredoka', 'Nunito', system-ui, sans-serif;
+    --font-display: 'Luckiest Guy', 'Fredoka', system-ui, sans-serif;   /* titres, boutons, chrono */
     --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
-    --font-weight-title: 700;
-    --radius: 20px;
-    --radius-sm: 14px;
+    --font-weight-title: 400;
+    --display-spacing: 1.5px;
+    --radius: 18px;
+    --radius-sm: 12px;
 
     /* Couleur de l'équipe courante */
     --team: var(--blue);
@@ -102,6 +117,29 @@
    THÈME « STK (nuit) » : même style, ciel de nuit et néons
    ======================================================= */
 html[data-theme="nuit"] {
+    --card-title-color: var(--accent);
+    --header-text: #ffffff;
+    --chip-text: #ffffff;
+    --chip-muted: #d2c2ff;
+    --text: #ffffff;
+    --btn-fg: #ffffff;
+    --line-w: 3px;
+    --border: rgba(255, 255, 255, 0.14);
+    --gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.06) 48%, rgba(0, 0, 0, 0) 52%);
+    --gloss-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 45%);
+    --btn-text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+    --checker: repeating-conic-gradient(#ffffff 0 25%, #10131a 0 50%) 0 0 / 14px 14px;
+    --checker-opacity: 0.9;
+    --orange: #ff8c1a;
+    --success: #3fe05a;
+    --success-strong: #27b23d;
+    --warning: #ffb21a;
+    --danger: #ff4d5e;
+    --danger-strong: #e8263a;
+    --font: 'Fredoka', 'Nunito', system-ui, sans-serif;
+    --font-display: 'Fredoka', 'Nunito', system-ui, sans-serif;
+    --font-weight-title: 700;
+    --display-spacing: 1px;
     --page-bg:
         radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.9) 0 1px, transparent 2px),
         radial-gradient(circle at 72% 9%, rgba(255, 255, 255, 0.8) 0 1px, transparent 2px),
@@ -136,6 +174,13 @@ html[data-theme="nuit"] {
    THÈME « Sombre » : sobre, sans contours ni relief
    ======================================================= */
 html[data-theme="sombre"] {
+    --btn-fg: #f0f6fc;
+    --card-title-color: var(--accent);
+    --header-text: #f0f6fc;
+    --chip-text: #f0f6fc;
+    --chip-muted: #8b949e;
+    --font-display: 'Outfit', system-ui, sans-serif;
+    --display-spacing: 0.5px;
     --page-bg: #0d1117;
     --page-bg-flat: #0d1117;
     --header-bg: #161b22;
@@ -227,6 +272,21 @@ button, a, select, input {
     display: none !important;
 }
 
+/* Icônes : <svg class="icon"><use href="/static/icons/sprite.svg#i-NOM"></use></svg>
+   (ou window.icon('NOM') côté JS). Elles prennent la couleur du texte. */
+.icon {
+    width: 1.15em;
+    height: 1.15em;
+    flex: none;
+    vertical-align: -0.2em;
+    stroke-width: 2.25;
+}
+
+.icon-lg {
+    width: 1.6em;
+    height: 1.6em;
+}
+
 /* =======================================================
    EN-TÊTE + BANDE DAMIER
    ======================================================= */
@@ -241,6 +301,7 @@ button, a, select, input {
     top: 0;
     z-index: 100;
     border-bottom: var(--line-w) solid var(--line);
+    color: var(--header-text);
 }
 
 .header::after {
@@ -264,9 +325,10 @@ button, a, select, input {
 }
 
 .brand {
+    font-family: var(--font-display);
     font-weight: var(--font-weight-title);
-    font-size: 1.6rem;
-    letter-spacing: 1.5px;
+    font-size: 1.7rem;
+    letter-spacing: var(--display-spacing);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -288,9 +350,13 @@ button, a, select, input {
 }
 
 .page-title {
-    font-size: 1.3rem;
+    font-family: var(--font-display);
+    font-size: 1.35rem;
     font-weight: var(--font-weight-title);
-    letter-spacing: 1px;
+    letter-spacing: var(--display-spacing);
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin: 0;
 }
 
@@ -307,8 +373,9 @@ button, a, select, input {
 
 .sys-info-item {
     display: inline-block;
-    background: var(--surface);
-    border: 2px solid var(--line);
+    background: var(--chip-bg);
+    color: var(--chip-text);
+    border: 2px solid var(--border-strong);
     border-radius: 999px;
     padding: 3px 10px;
 }
@@ -327,7 +394,7 @@ button, a, select, input {
 /* Sélecteur de thème (rempli par theme.js) */
 .theme-select {
     font-size: 0.85rem;
-    padding: 4px 8px;
+    padding: 4px 28px 4px 8px;
 }
 
 /* =======================================================
@@ -343,8 +410,10 @@ button, a, select, input {
 }
 
 .card-title {
-    font-size: 1.1rem;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
     font-weight: var(--font-weight-title);
+    letter-spacing: var(--display-spacing);
     margin: 0 0 14px;
     padding-bottom: 10px;
     border-bottom: 2px dashed var(--border);
@@ -352,7 +421,7 @@ button, a, select, input {
     align-items: center;
     gap: 8px;
     text-align: left;
-    color: var(--accent);
+    color: var(--card-title-color);
 }
 
 /* =======================================================
@@ -372,9 +441,10 @@ button, a, select, input {
     background: var(--gloss), var(--btn);
     color: var(--btn-text);
     box-shadow: 0 var(--btn-depth) 0 var(--ink);
+    font-family: var(--font-display);
     font-size: 1.05rem;
-    font-weight: 700;
-    letter-spacing: 0.6px;
+    font-weight: var(--font-weight-title);
+    letter-spacing: var(--display-spacing);
     text-decoration: none;
     text-shadow: var(--btn-text-shadow);
     cursor: pointer;
@@ -421,15 +491,20 @@ button, a, select, input {
 /* Historique */
 .btn-back {
     background: var(--gloss), var(--surface-3);
-    color: #fff;
+    color: var(--btn-fg);
     text-decoration: none;
     padding: 6px 14px;
     border-radius: var(--radius-sm);
     border: var(--line-w) solid var(--line);
     box-shadow: 0 calc(var(--depth) - 2px) 0 var(--ink);
+    font-family: var(--font-display);
     font-size: 0.95rem;
-    font-weight: 700;
+    font-weight: var(--font-weight-title);
+    letter-spacing: var(--display-spacing);
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .btn-back:active {
@@ -507,13 +582,75 @@ button, a, select, input {
    ======================================================= */
 select,
 .strat-select {
-    background: var(--surface-2);
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: var(--surface-2);
+    /* Flèche dessinée en CSS : suit la couleur du texte du thème */
+    background-image:
+        linear-gradient(45deg, transparent 50%, currentColor 50%),
+        linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 17px) 55%, calc(100% - 12px) 55%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
     color: var(--text);
     border: 2px solid var(--line);
-    padding: 7px 10px;
+    padding: 7px 32px 7px 10px;
+    font-family: var(--font);
     font-size: 1rem;
     font-weight: 600;
     border-radius: 12px;
+    cursor: pointer;
+}
+
+/* Liste ouverte : couleurs du thème (respectées par Chromium et Firefox) */
+option {
+    background: var(--surface);
+    color: var(--text);
+}
+
+/* Chromium récent : liste ouverte entièrement stylable */
+@supports (appearance: base-select) {
+    select,
+    select.strat-select {
+        appearance: base-select;
+        white-space: nowrap;
+    }
+
+    /* Flèche native masquée : on garde la flèche CSS (identique sur tous les navigateurs) */
+    select::picker-icon {
+        display: none;
+    }
+
+    ::picker(select) {
+        appearance: base-select;
+        background: var(--surface);
+        color: var(--text);
+        border: var(--line-w) solid var(--line);
+        border-radius: var(--radius-sm);
+        box-shadow: 0 var(--depth) 0 var(--ink), var(--soft-shadow);
+        padding: 4px;
+        margin-top: 4px;
+    }
+
+    select option {
+        padding: 7px 10px;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+    select option:hover,
+    select option:focus-visible {
+        background: var(--surface-2);
+    }
+
+    select option:checked {
+        background: var(--accent);
+        color: var(--accent-text);
+    }
+
+    select option::checkmark {
+        display: none;
+    }
 }
 
 .strat-select {
@@ -648,6 +785,7 @@ input[type="radio"] {
     display: inline-flex;
     align-items: baseline;
     gap: 6px;
+    color: var(--chip-text);
     background: var(--chip-bg);
     border: 2px solid var(--border);
     border-radius: 10px;
@@ -657,7 +795,7 @@ input[type="radio"] {
 }
 
 .chip-label { color: var(--cyan); font-weight: 800; }
-.chip-unit  { color: var(--text-muted); font-size: 0.8em; }
+.chip-unit  { color: var(--chip-muted); font-size: 0.8em; }
 
 /* Voyants */
 .dot {
@@ -677,7 +815,7 @@ input[type="radio"] {
 /* Console / logs */
 .log-box {
     background: var(--chip-bg);
-    color: var(--text);
+    color: var(--chip-text);
     border: var(--line-w) solid var(--line);
     border-radius: var(--radius-sm);
     font-family: var(--font-mono);
@@ -715,6 +853,12 @@ input[type="radio"] {
    d'où les règles de composants ci-dessous en plus des variables.
    ======================================================= */
 html[data-theme="win95"] {
+    --card-title-color: #ffffff;
+    --header-text: #ffffff;
+    --chip-text: #000000;
+    --chip-muted: #404040;
+    --font-display: Tahoma, 'Microsoft Sans Serif', Arial, sans-serif;
+    --display-spacing: 0.3px;
     --page-bg: #008080;
     --page-bg-flat: #008080;
     --header-bg: linear-gradient(90deg, #000080, #1084d0);
@@ -835,7 +979,7 @@ html[data-theme="win95"] .zenithale-telemetry-panel {
     border-color: var(--w95-sunken-color) !important;
     box-shadow: var(--w95-sunken-shadow) !important;
     border-radius: 0 !important;
-    background: #ffffff;
+    background-color: #ffffff; /* background-color seul : garde la flèche CSS des <select> */
     color: #000;
 }
 
@@ -925,3 +1069,4 @@ html[data-theme="win95"] body.robot-screen .btn-hint-team .btn-main { color: #00
 html[data-theme="win95"] .header { color: #fff; }
 html[data-theme="win95"] .header .sys-info { color: #000; }
 html[data-theme="win95"] .video-placeholder { color: #c0c0c0 !important; }
+html[data-theme="win95"] select option { border-radius: 0; }

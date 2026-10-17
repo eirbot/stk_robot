@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>EIRBOT 2026</title>
     <link rel="preload" href="/static/fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
-    <script src="/static/js/theme.js?v=2"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=5.3">
-    <link rel="stylesheet" href="/static/css/index.css?v=5.0">
+    <script src="/static/js/theme.js?v=3"></script>
+    <link rel="stylesheet" href="/static/css/common.css?v=6.2">
+    <link rel="stylesheet" href="/static/css/index.css?v=6.1">
 
     <script src="/static/js/common.js?v=2.5" defer></script>
     <script src="/static/js/index.js?v=3.0" defer></script>
@@ -29,7 +29,7 @@
             <button id="team-display" class="team-box" onclick="sendAction('team')">...</button>
 
             <div id="timer" class="timer-box">100.0</div>
-            <div id="test-mode-badge" class="test-mode-badge hidden">🧪 MODE TEST : pas d'arrêt à 100 s</div>
+            <div id="test-mode-badge" class="test-mode-badge hidden"><svg class="icon"><use href="/static/icons/sprite.svg#i-flask-conical"></use></svg> MODE TEST : pas d'arrêt à 100 s</div>
 
             <div id="robot-pos-display" class="robot-pos-box">
                 <span class="pos-item"><span class="pos-label">X</span><span id="pos-x" class="pos-val">0</span><span class="pos-unit">mm</span></span>
@@ -57,19 +57,19 @@
             </div>
 
             <div class="card actions-card">
-                <button id="btn-start" class="btn btn-success btn-lg" onclick="sendAction('start')">▶ GO MATCH</button>
-                <button id="btn-stop" class="btn btn-danger btn-lg hidden" onclick="sendAction('stop')">■ STOP URGENCE</button>
-                <button id="btn-reset" class="btn btn-warning btn-lg hidden" onclick="sendAction('reset')">↺ RESET MATCH</button>
-                <button class="btn btn-team" onclick="sendAction('team')">⇄ Changer d'équipe</button>
+                <button id="btn-start" class="btn btn-success btn-lg" onclick="sendAction('start')"><svg class="icon"><use href="/static/icons/sprite.svg#i-play"></use></svg> GO MATCH</button>
+                <button id="btn-stop" class="btn btn-danger btn-lg hidden" onclick="sendAction('stop')"><svg class="icon"><use href="/static/icons/sprite.svg#i-circle-stop"></use></svg> STOP URGENCE</button>
+                <button id="btn-reset" class="btn btn-warning btn-lg hidden" onclick="sendAction('reset')"><svg class="icon"><use href="/static/icons/sprite.svg#i-rotate-ccw"></use></svg> RESET MATCH</button>
+                <button class="btn btn-team" onclick="sendAction('team')"><svg class="icon"><use href="/static/icons/sprite.svg#i-arrow-left-right"></use></svg> Changer d'équipe</button>
             </div>
 
             <nav class="nav-grid">
-                <a href="/controle" class="tile" style="--tile:#ff9800;"><span class="tile-icon">🕹️</span><span class="tile-label">Contrôle</span><span class="tile-sub">Joystick &amp; actionneurs</span></a>
-                <a href="/map" class="tile" style="--tile:#00bfa5;"><span class="tile-icon">🗺️</span><span class="tile-label">Carte</span><span class="tile-sub">Position en direct</span></a>
-                <a href="/debug" class="tile" style="--tile:#2196f3;"><span class="tile-icon">🛠️</span><span class="tile-label">Debug</span><span class="tile-sub">Config, vision, flash</span></a>
-                <a href="/blockly" class="tile" style="--tile:#7c4dff;"><span class="tile-icon">🧩</span><span class="tile-label">Strat Studio</span><span class="tile-sub">Créer une stratégie</span></a>
-                <a href="/led_studio" class="tile" style="--tile:#e91e63;"><span class="tile-icon">🎨</span><span class="tile-label">LED Studio</span><span class="tile-sub">Animations</span></a>
-                <a href="/media" class="tile" style="--tile:#9c27b0;"><span class="tile-icon">🎵</span><span class="tile-label">Sons</span><span class="tile-sub">Musiques du match</span></a>
+                <a href="/controle" class="tile" style="--tile:#ff9800;"><span class="tile-icon"><svg class="icon"><use href="/static/icons/sprite.svg#i-joystick"></use></svg></span><span class="tile-label">Contrôle</span><span class="tile-sub">Joystick &amp; actionneurs</span></a>
+                <a href="/map" class="tile" style="--tile:#00bfa5;"><span class="tile-icon"><svg class="icon"><use href="/static/icons/sprite.svg#i-map"></use></svg></span><span class="tile-label">Carte</span><span class="tile-sub">Position en direct</span></a>
+                <a href="/debug" class="tile" style="--tile:#2196f3;"><span class="tile-icon"><svg class="icon"><use href="/static/icons/sprite.svg#i-wrench"></use></svg></span><span class="tile-label">Debug</span><span class="tile-sub">Config, vision, flash</span></a>
+                <a href="/blockly" class="tile" style="--tile:#7c4dff;"><span class="tile-icon"><svg class="icon"><use href="/static/icons/sprite.svg#i-puzzle"></use></svg></span><span class="tile-label">Strat Studio</span><span class="tile-sub">Créer une stratégie</span></a>
+                <a href="/led_studio" class="tile" style="--tile:#e91e63;"><span class="tile-icon"><svg class="icon"><use href="/static/icons/sprite.svg#i-lightbulb"></use></svg></span><span class="tile-label">LED Studio</span><span class="tile-sub">Animations</span></a>
+                <a href="/media" class="tile" style="--tile:#9c27b0;"><span class="tile-icon"><svg class="icon"><use href="/static/icons/sprite.svg#i-music"></use></svg></span><span class="tile-label">Sons</span><span class="tile-sub">Musiques du match</span></a>
             </nav>
         </section>
     </main>

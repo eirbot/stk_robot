@@ -5,26 +5,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Simulation 3D - EIRBOT 2026</title>
-    <script src="/static/js/theme.js?v=2"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=5.3">
+    <script src="/static/js/theme.js?v=3"></script>
+    <link rel="stylesheet" href="/static/css/common.css?v=6.2">
     <link rel="stylesheet" href="/static/css/map.css?v=2.0">
     <!-- Three.js et composants locaux pour chargement instantané hors-ligne -->
     <script src="/static/js/vendor/three.min.js"></script>
     <script src="/static/js/vendor/OrbitControls.js"></script>
     <script src="/static/js/vendor/GLTFLoader.js"></script>
     <script src="/static/js/common.js?v=2.5" defer></script>
-    <script src="/static/js/map.js?v=1.6" defer></script>
+    <script src="/static/js/map.js?v=1.7" defer></script>
 </head>
 
 <body class="mode-BLEUE">
     <header class="header">
-        <a href="/" class="btn-back">⬅ RETOUR</a>
+        <a href="/" class="btn-back"><svg class="icon"><use href="/static/icons/sprite.svg#i-arrow-left"></use></svg> Accueil</a>
         <h1 class="page-title">CARTE 3D TEMPS RÉEL</h1>
         <div class="sys-info" id="sys-info">...</div>
     </header>
 
     <div id="simu3d-container">
-        <button class="btn btn-sm btn-primary btn-view-toggle" id="btn-view-toggle">Vue 2D (Dessus)</button>
+        <button class="btn btn-sm btn-primary btn-view-toggle" id="btn-view-toggle"><svg class="icon"><use href="/static/icons/sprite.svg#i-map"></use></svg> Vue 2D (Dessus)</button>
         <div id="coord-tooltip" class="coord-tooltip" style="display: none;">X: 0, Y: 0</div>
         <div class="info-pos" id="pos-text">Connexion au robot en cours...</div>
     </div>

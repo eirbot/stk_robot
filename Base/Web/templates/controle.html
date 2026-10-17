@@ -5,22 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>EIRBOT 2026 - Contrôle Manuel Joystick</title>
-    <script src="/static/js/theme.js?v=2"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=5.3">
-    <link rel="stylesheet" href="/static/css/controle.css?v=3.0">
+    <script src="/static/js/theme.js?v=3"></script>
+    <link rel="stylesheet" href="/static/css/common.css?v=6.2">
+    <link rel="stylesheet" href="/static/css/controle.css?v=3.1">
 
     <script src="/static/js/common.js?v=2.5" defer></script>
-    <script src="/static/js/controle.js?v=2.5" defer></script>
+    <script src="/static/js/controle.js?v=2.6" defer></script>
 </head>
 
 <body class="mode-BLEUE">
     <header class="header">
         <div class="header-left">
             <a href="/" class="btn-back">← Accueil</a>
-            <h1 class="page-title">🕹️ PILOTAGE JOYSTICK</h1>
+            <h1 class="page-title"><svg class="icon"><use href="/static/icons/sprite.svg#i-joystick"></use></svg> PILOTAGE JOYSTICK</h1>
             <span id="conn-badge" class="badge-conn disconnected">HORS LIGNE</span>
             <div id="gamepad-badge" class="badge-gamepad disconnected" onclick="toggleGamepadModal()" title="Cliquer pour afficher l'aide manette">
-                <span class="gp-icon">🎮</span>
+                <span class="gp-icon"><svg class="icon"><use href="/static/icons/sprite.svg#i-gamepad-2"></use></svg></span>
                 <span id="gamepad-status-text">AUCUNE MANETTE</span>
             </div>
         </div>
@@ -46,7 +46,7 @@
                 </div>
                 <div class="target-buttons">
                     <button id="target-btn-robot" class="btn btn-sm target-btn active" onclick="setControlTarget('robot')">
-                        <span class="tb-icon">🤖</span> Base Robot
+                        <span class="tb-icon"><svg class="icon"><use href="/static/icons/sprite.svg#i-bot"></use></svg></span> Base Robot
                     </button>
                     <button id="target-btn-arm-1" class="btn btn-sm target-btn" onclick="setControlTarget('arm_1')">
                         <span class="tb-num">1</span> Bras #1
@@ -83,13 +83,13 @@
 
             <div class="joystick-quick-actions">
                 <button id="btn-emergency-stop" class="btn btn-danger btn-emergency" onclick="triggerEmergencyStop()">
-                    🛑 ARRÊT D'URGENCE
+                    <svg class="icon"><use href="/static/icons/sprite.svg#i-circle-stop"></use></svg> ARRÊT D'URGENCE
                 </button>
                 <button id="btn-zero-speed" class="btn btn-neutral" onclick="sendZeroSpeed()">
-                    🔄 NEUTRE (0,0)
+                    <svg class="icon"><use href="/static/icons/sprite.svg#i-crosshair"></use></svg> NEUTRE (0,0)
                 </button>
                 <button id="btn-gamepad-help" class="btn btn-ghost btn-gamepad-toggle" onclick="toggleGamepadModal()">
-                    🎮 AIDE MANETTE
+                    <svg class="icon"><use href="/static/icons/sprite.svg#i-gamepad-2"></use></svg> AIDE MANETTE
                 </button>
             </div>
 
@@ -111,7 +111,7 @@
         <div class="sidebar-section">
             <!-- Consignes Dynamiques en Temps Réel -->
             <section class="card speeds-card">
-                <h2 class="card-title">⚡ CONSIGNE DE VITESSE</h2>
+                <h2 class="card-title">CONSIGNE DE VITESSE</h2>
                 <div class="gauges-grid">
                     <div class="gauge-item">
                         <span class="gauge-label">Vitesse Linéaire (Vx)</span>
@@ -144,7 +144,7 @@
 
             <!-- Télémétrie en Direct -->
             <section class="card telemetry-card">
-                <h2 class="card-title">📍 TÉLÉMÉTRIE & ÉTATS</h2>
+                <h2 class="card-title">TÉLÉMÉTRIE & ÉTATS</h2>
                 <div class="telemetry-grid">
                     <div class="telemetry-cell">
                         <span class="cell-label">Position X</span>
@@ -167,7 +167,7 @@
 
             <!-- Réglages Profils de Vitesse -->
             <section class="card settings-card">
-                <h2 class="card-title">⚙️ RÉGLAGES & LIMITES</h2>
+                <h2 class="card-title">RÉGLAGES & LIMITES</h2>
 
                 <div class="setting-group">
                     <div class="setting-title-row">
@@ -210,32 +210,32 @@
         <!-- Section Pleine Largeur : Contrôle des Actionneurs -->
         <section class="card actuators-section">
             <div class="actuators-header">
-                <h2 class="card-title">🦾 CONTRÔLE DES ACTIONNEURS & BRAS</h2>
+                <h2 class="card-title">CONTRÔLE DES ACTIONNEURS & BRAS</h2>
                 <div id="actuator-feedback" class="actuator-feedback">Prêt</div>
             </div>
 
             <!-- Presets Globaux Rapides -->
             <div class="actuator-presets-bar">
                 <button class="btn btn-primary btn-actuator-preset primary" onclick="sendActuatorCmd('pose_match')">
-                    🏁 Pose Match
+                    <svg class="icon"><use href="/static/icons/sprite.svg#i-flag"></use></svg> Pose Match
                 </button>
                 <button class="btn btn-actuator-preset" onclick="sendActuatorCmd('pose_camera')">
-                    📸 Pose Caméra
+                    <svg class="icon"><use href="/static/icons/sprite.svg#i-camera"></use></svg> Pose Caméra
                 </button>
                 <button class="btn btn-actuator-preset" onclick="sendActuatorCmd('pose_deploy')">
-                    📦 Déployer
+                    <svg class="icon"><use href="/static/icons/sprite.svg#i-maximize"></use></svg> Déployer
                 </button>
                 <button class="btn btn-actuator-preset" onclick="sendActuatorCmd('pose_grab')">
-                    📥 Prendre (Grab All)
+                    <svg class="icon"><use href="/static/icons/sprite.svg#i-download"></use></svg> Prendre (Grab All)
                 </button>
                 <button class="btn btn-actuator-preset" onclick="sendActuatorCmd('pose_poser')">
-                    📤 Poser (Release All)
+                    <svg class="icon"><use href="/static/icons/sprite.svg#i-upload"></use></svg> Poser (Release All)
                 </button>
                 <button class="btn btn-actuator-preset" onclick="sendActuatorCmd('pose_ranger')">
-                    🔒 Ranger
+                    Ranger
                 </button>
                 <button class="btn btn-warning btn-actuator-preset warning" onclick="sendActuatorCmd('init_robot')">
-                    🔄 Homing / Init (I)
+                    <svg class="icon"><use href="/static/icons/sprite.svg#i-house"></use></svg> Homing / Init (I)
                 </button>
             </div>
 
@@ -261,13 +261,13 @@
                         </div>
                     </div>
                     <div class="act-buttons-row">
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('grab', { id: 1 })">🤏 Serrer</button>
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('release', { id: 1 })">✋ Ouvrir</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('grab', { id: 1 })">Serrer</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('release', { id: 1 })">Ouvrir</button>
                     </div>
                     <div class="act-buttons-row">
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 1, sens: 1 })">🔄 Pivot 1</button>
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 1, sens: 0 })">↩️ Pivot 0</button>
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('tourner', { id: 1 })">🔁 9G</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 1, sens: 1 })"><svg class="icon"><use href="/static/icons/sprite.svg#i-refresh-cw"></use></svg> Pivot 1</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 1, sens: 0 })"><svg class="icon"><use href="/static/icons/sprite.svg#i-rotate-ccw"></use></svg> Pivot 0</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('tourner', { id: 1 })">9G</button>
                     </div>
                 </div>
 
@@ -291,13 +291,13 @@
                         </div>
                     </div>
                     <div class="act-buttons-row">
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('grab', { id: 2 })">🤏 Serrer</button>
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('release', { id: 2 })">✋ Ouvrir</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('grab', { id: 2 })">Serrer</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('release', { id: 2 })">Ouvrir</button>
                     </div>
                     <div class="act-buttons-row">
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 2, sens: 1 })">🔄 Pivot 1</button>
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 2, sens: 0 })">↩️ Pivot 0</button>
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('tourner', { id: 2 })">🔁 9G</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 2, sens: 1 })"><svg class="icon"><use href="/static/icons/sprite.svg#i-refresh-cw"></use></svg> Pivot 1</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 2, sens: 0 })"><svg class="icon"><use href="/static/icons/sprite.svg#i-rotate-ccw"></use></svg> Pivot 0</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('tourner', { id: 2 })">9G</button>
                     </div>
                 </div>
 
@@ -321,13 +321,13 @@
                         </div>
                     </div>
                     <div class="act-buttons-row">
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('grab', { id: 3 })">🤏 Serrer</button>
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('release', { id: 3 })">✋ Ouvrir</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('grab', { id: 3 })">Serrer</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('release', { id: 3 })">Ouvrir</button>
                     </div>
                     <div class="act-buttons-row">
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 3, sens: 1 })">🔄 Pivot 1</button>
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 3, sens: 0 })">↩️ Pivot 0</button>
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('tourner', { id: 3 })">🔁 9G</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 3, sens: 1 })"><svg class="icon"><use href="/static/icons/sprite.svg#i-refresh-cw"></use></svg> Pivot 1</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 3, sens: 0 })"><svg class="icon"><use href="/static/icons/sprite.svg#i-rotate-ccw"></use></svg> Pivot 0</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('tourner', { id: 3 })">9G</button>
                     </div>
                 </div>
 
@@ -351,13 +351,13 @@
                         </div>
                     </div>
                     <div class="act-buttons-row">
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('grab', { id: 4 })">🤏 Serrer</button>
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('release', { id: 4 })">✋ Ouvrir</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('grab', { id: 4 })">Serrer</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('release', { id: 4 })">Ouvrir</button>
                     </div>
                     <div class="act-buttons-row">
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 4, sens: 1 })">🔄 Pivot 1</button>
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 4, sens: 0 })">↩️ Pivot 0</button>
-                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('tourner', { id: 4 })">🔁 9G</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 4, sens: 1 })"><svg class="icon"><use href="/static/icons/sprite.svg#i-refresh-cw"></use></svg> Pivot 1</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('pivoter', { id: 4, sens: 0 })"><svg class="icon"><use href="/static/icons/sprite.svg#i-rotate-ccw"></use></svg> Pivot 0</button>
+                        <button class="btn btn-sm btn-act-sub" onclick="sendActuatorCmd('tourner', { id: 4 })">9G</button>
                     </div>
                 </div>
             </div>
@@ -368,8 +368,8 @@
     <div id="gamepad-modal" class="modal-overlay hidden" onclick="onModalOverlayClick(event)">
         <div class="card modal-card">
             <div class="modal-header">
-                <h3>🎮 CONTRÔLE À LA MANETTE (GAMEPAD)</h3>
-                <button class="btn btn-sm btn-ghost btn-modal-close" onclick="toggleGamepadModal()">✕</button>
+                <h3>CONTRÔLE À LA MANETTE (GAMEPAD)</h3>
+                <button class="btn btn-sm btn-ghost btn-modal-close" onclick="toggleGamepadModal()" title="Fermer"><svg class="icon"><use href="/static/icons/sprite.svg#i-x"></use></svg></button>
             </div>
             <div class="modal-body">
                 <div class="gamepad-device-info">
@@ -379,29 +379,29 @@
 
                 <div class="gamepad-mapping-grid">
                     <div class="mapping-card">
-                        <h4>🕹️ Déplacement (Conduite)</h4>
+                        <h4>Déplacement (Conduite)</h4>
                         <ul>
                             <li><b>Stick Gauche Y :</b> Avancer / Reculer</li>
                             <li><b>Stick Droit X (ou Gauche X) :</b> Tourner Gauche / Droite</li>
-                            <li><b>Bouton B / Rond / Select :</b> 🛑 Arrêt d'urgence</li>
+                            <li><b>Bouton B / Rond / Select :</b> Arrêt d'urgence</li>
                         </ul>
                     </div>
 
                     <div class="mapping-card">
-                        <h4>🦾 Actionneurs (Presets)</h4>
+                        <h4>Actionneurs (Presets)</h4>
                         <ul>
-                            <li><b>D-Pad Haut :</b> 📦 Déployer</li>
-                            <li><b>D-Pad Bas :</b> 🔒 Ranger</li>
-                            <li><b>D-Pad Gauche :</b> 📥 Prendre (Grab All)</li>
-                            <li><b>D-Pad Droite :</b> 📤 Poser (Release All)</li>
-                            <li><b>Bouton Y / Triangle :</b> 📸 Pose Caméra</li>
-                            <li><b>Bouton A / Croix :</b> 🏁 Pose Match</li>
-                            <li><b>Start / Options :</b> 🔄 Homing / Init</li>
+                            <li><b>D-Pad Haut :</b> Déployer</li>
+                            <li><b>D-Pad Bas :</b> Ranger</li>
+                            <li><b>D-Pad Gauche :</b> Prendre (Grab All)</li>
+                            <li><b>D-Pad Droite :</b> Poser (Release All)</li>
+                            <li><b>Bouton Y / Triangle :</b> Pose Caméra</li>
+                            <li><b>Bouton A / Croix :</b> Pose Match</li>
+                            <li><b>Start / Options :</b> Homing / Init</li>
                         </ul>
                     </div>
 
                     <div class="mapping-card">
-                        <h4>🤏 Pinces</h4>
+                        <h4>Pinces</h4>
                         <ul>
                             <li><b>Gâchette Droite (RT / R2) :</b> Tout Serrer</li>
                             <li><b>Gâchette Gauche (LT / L2) :</b> Tout Ouvrir</li>

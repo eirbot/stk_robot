@@ -150,10 +150,6 @@
     font-weight: var(--font-weight-title);
 }
 
-.video-icon {
-    font-size: 1.6em;
-}
-
 .video-subtitle {
     font-size: 0.8em;
     color: var(--text-muted);
@@ -184,7 +180,7 @@
 
 .badge-offline { background: var(--danger-strong); }
 .badge-online  { background: var(--success-strong); }
-.badge-warning { background: var(--orange); }
+.badge-warning { background: var(--orange); color: #000; } /* blanc illisible sur orange */
 
 /* Boutons d'action vidéo (classes posées par debug.js) */
 .btn-video-action {
@@ -215,8 +211,8 @@
 .btn-aruco-inactive       { --vbtn: var(--surface-2); --vbtn-text: var(--text-muted); }
 .btn-vision-power         { --vbtn: var(--success-strong); --vbtn-text: #fff; }
 .btn-vision-power.running { --vbtn: var(--danger-strong); }
-.btn-resolution-toggle    { --vbtn: var(--surface-3); --vbtn-text: var(--accent); }
-.btn-resolution-toggle.mode-60fps { --vbtn: var(--orange); --vbtn-text: #fff; }
+.btn-resolution-toggle    { --vbtn: var(--surface-3); --vbtn-text: var(--btn-fg); }
+.btn-resolution-toggle.mode-60fps { --vbtn: var(--orange); --vbtn-text: #000; text-shadow: none; }
 .btn-fullscreen           { --vbtn: var(--blue); --vbtn-text: #fff; }
 
 .video-display-container {
@@ -253,7 +249,8 @@
 }
 
 .placeholder-icon {
-    font-size: 2.5em;
+    font-size: 1.8em;
+    line-height: 1;
     opacity: 0.7;
 }
 
@@ -263,17 +260,19 @@
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 8px;
     padding: 10px;
-    background: var(--chip-bg);
+    background: var(--surface-2);
     border: var(--line-w) solid var(--line);
     border-radius: var(--radius-sm);
 }
 
+/* Cases = pastilles de données : texte en --chip-* sur --chip-bg */
 .telemetry-item {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--surface-2);
+    background: var(--chip-bg);
+    color: var(--chip-text);
     border: 2px solid var(--line);
     border-radius: var(--radius-sm);
     padding: 8px 10px;
@@ -283,7 +282,7 @@
 .telemetry-label {
     font-size: 0.72em;
     font-weight: 700;
-    color: var(--text-muted);
+    color: var(--chip-muted);
     letter-spacing: 0.5px;
     text-transform: uppercase;
     margin-bottom: 4px;
@@ -304,7 +303,7 @@
 
 .telemetry-unit {
     font-size: 0.75em;
-    color: var(--text-muted);
+    color: var(--chip-muted);
     font-weight: 600;
 }
 
@@ -401,7 +400,7 @@
 .chart-container {
     position: relative;
     height: 260px;
-    background: var(--chip-bg);
+    background: var(--surface-2); /* graduations en --text-muted (debug.js) : fond du thème, pas --chip-bg */
     border: 2px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 8px;
@@ -413,11 +412,11 @@
 
 .log-line {
     padding: 3px 0;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid rgba(128, 128, 128, 0.25); /* --border est noir en stk : invisible sur --chip-bg */
     line-height: 1.35;
 }
 
-.log-time { color: var(--text-faint); margin-right: 6px; }
+.log-time { color: var(--chip-muted); margin-right: 6px; }
 .log-info { color: var(--cyan); }
 .log-warn { color: var(--warning); }
 .log-err  { color: var(--danger); }
@@ -441,7 +440,8 @@
 }
 
 .test-stat-box {
-    background: var(--surface-2);
+    background: var(--chip-bg);
+    color: var(--chip-text);
     border: 2px solid var(--line);
     border-radius: var(--radius-sm);
     padding: 12px 8px;
@@ -451,7 +451,7 @@
 .test-stat-title {
     font-size: 0.75em;
     font-weight: 700;
-    color: var(--text-muted);
+    color: var(--chip-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -465,13 +465,13 @@
 
 .test-stat-value span {
     font-size: 0.55em;
-    color: var(--text-muted);
+    color: var(--chip-muted);
 }
 
 .test-stat-status {
     font-size: 0.8em;
     font-weight: 700;
-    color: var(--text-muted);
+    color: var(--chip-muted);
 }
 
 /* Classes posées par debug.js selon la qualité mesurée */

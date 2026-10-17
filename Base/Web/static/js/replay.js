@@ -95,18 +95,18 @@ function resetPlayer() {
     isPlaying = false;
     playbackIndex = 0;
     slider.value = 0;
-    btnPlay.innerText = "▶ PLAY";
+    btnPlay.innerHTML = icon('play') + " PLAY";
     updateFrame(0);
 }
 
 function togglePlay() {
     if (isPlaying) {
         isPlaying = false;
-        btnPlay.innerText = "▶ PLAY";
+        btnPlay.innerHTML = icon('play') + " PLAY";
         cancelAnimationFrame(animationFrameId);
     } else {
         isPlaying = true;
-        btnPlay.innerText = "⏸ PAUSE";
+        btnPlay.innerHTML = "PAUSE";
         lastLoopTime = Date.now();
         loop();
     }
@@ -129,7 +129,7 @@ function loop() {
         if (playbackIndex >= logData.length) {
             playbackIndex = logData.length - 1;
             isPlaying = false;
-            btnPlay.innerText = "▶ PLAY";
+            btnPlay.innerHTML = icon('play') + " PLAY";
         }
         slider.value = playbackIndex;
         updateFrame(playbackIndex);

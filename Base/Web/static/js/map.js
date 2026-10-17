@@ -482,9 +482,9 @@ function updateUI() {
         let typeStr = "360°";
         if (obstacleType === 2) typeStr = "AVANT";
         else if (obstacleType === 3) typeStr = "ARRIÈRE";
-        txt += `  ·  🛑 OBSTACLE DÉTECTÉ (${typeStr})`;
+        txt += `  ·  ${icon('triangle-alert')} OBSTACLE DÉTECTÉ (${typeStr})`;
     }
-    el.innerText = txt;
+    el.innerHTML = txt; // texte calculé (nombres) + icône éventuelle
 }
 
 // -----------------------------------------------------------------------------
@@ -495,13 +495,13 @@ function toggleViewMode() {
     const toggleBtn = document.getElementById('btn-view-toggle');
     
     if (isTopDown) {
-        if (toggleBtn) toggleBtn.innerText = "Vue 3D (Orbite)";
+        if (toggleBtn) toggleBtn.innerHTML = icon('rotate-ccw') + " Vue 3D (Orbite)";
         controls.enableRotate = false; // Bloque la rotation pour la vue plan 2D
         
         // Positionne la caméra juste au-dessus du centre (Y très légèrement décalé pour éviter le blocage de cardan)
         animateCamera(new THREE.Vector3(0, -0.01, 2500), new THREE.Vector3(0, 0, 0));
     } else {
-        if (toggleBtn) toggleBtn.innerText = "Vue 2D (Dessus)";
+        if (toggleBtn) toggleBtn.innerHTML = icon('map') + " Vue 2D (Dessus)";
         controls.enableRotate = true; // Réactive la rotation libre
         
         // Rétablit l'angle oblique par défaut

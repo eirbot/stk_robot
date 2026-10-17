@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", function () {
     Blockly.Blocks['robot_start'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField("🏁 Départ Match (Bleu)")
+                .appendField("Départ Match (Bleu)")
                 .appendField("X").appendField(new Blockly.FieldNumber(250), "X")
                 .appendField("Y").appendField(new Blockly.FieldNumber(0), "Y")
                 .appendField("θ").appendField(new Blockly.FieldNumber(0), "THETA");
@@ -87,16 +87,16 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     // --- ACTIONNEURS ---
-    Blockly.Blocks['prendre_kapla'] = { init: function () { this.appendDummyInput().appendField("✊ Prendre Kapla"); this.setPreviousStatement(true, null); this.setNextStatement(true, null); this.setColour(120); } };
-    Blockly.Blocks['retourner_kapla'] = { init: function () { this.appendDummyInput().appendField("🤌 Retourne Kapla"); this.setPreviousStatement(true, null); this.setNextStatement(true, null); this.setColour(120); } };
-    Blockly.Blocks['poser_kapla'] = { init: function () { this.appendDummyInput().appendField("🖐️ Poser Kapla"); this.setPreviousStatement(true, null); this.setNextStatement(true, null); this.setColour(120); } };
-    Blockly.Blocks['pousse_kapla'] = { init: function () { this.appendDummyInput().appendField("🏎️ Pousse Kapla"); this.setPreviousStatement(true, null); this.setNextStatement(true, null); this.setColour(120); } };
-    Blockly.Blocks['robot_stop'] = { init: function () { this.appendDummyInput().appendField("🛑 Arrêter le robot"); this.setPreviousStatement(true, null); this.setNextStatement(true, null); this.setColour(0); } };
+    Blockly.Blocks['prendre_kapla'] = { init: function () { this.appendDummyInput().appendField("Prendre Kapla"); this.setPreviousStatement(true, null); this.setNextStatement(true, null); this.setColour(120); } };
+    Blockly.Blocks['retourner_kapla'] = { init: function () { this.appendDummyInput().appendField("Retourne Kapla"); this.setPreviousStatement(true, null); this.setNextStatement(true, null); this.setColour(120); } };
+    Blockly.Blocks['poser_kapla'] = { init: function () { this.appendDummyInput().appendField("Poser Kapla"); this.setPreviousStatement(true, null); this.setNextStatement(true, null); this.setColour(120); } };
+    Blockly.Blocks['pousse_kapla'] = { init: function () { this.appendDummyInput().appendField("Pousse Kapla"); this.setPreviousStatement(true, null); this.setNextStatement(true, null); this.setColour(120); } };
+    Blockly.Blocks['robot_stop'] = { init: function () { this.appendDummyInput().appendField("Arrêter le robot"); this.setPreviousStatement(true, null); this.setNextStatement(true, null); this.setColour(0); } };
 
     Blockly.Blocks['robot_gobase_at'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField("🏠 Retour Base à")
+                .appendField("Retour Base à")
                 .appendField(new Blockly.FieldNumber(90), "SECONDS")
                 .appendField("secondes");
             this.setPreviousStatement(true, null);
@@ -109,7 +109,7 @@ document.addEventListener("DOMContentLoaded", function () {
     Blockly.Blocks['robot_approche_kapla'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField("👁️ Approche Kapla (Vision)");
+                .appendField("Approche Kapla (Vision)");
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(40);
@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", function () {
     Blockly.Blocks['robot_thermometre'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField("🌡️ Déployer Thermomètre");
+                .appendField("Déployer Thermomètre");
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(200); // Bleu-cyan
@@ -131,7 +131,7 @@ document.addEventListener("DOMContentLoaded", function () {
     Blockly.Blocks['robot_attendre'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField("⏱️ Attendre")
+                .appendField("Attendre")
                 .appendField(new Blockly.FieldNumber(1, 0, 100, 0.1), "SECONDES")
                 .appendField("secondes");
             this.setPreviousStatement(true, null);
@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", function () {
     Blockly.Blocks['robot_recalage_camera'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField("🎯 Recaler l'odométrie sur la caméra");
+                .appendField("Recaler l'odométrie sur la caméra");
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(230);
@@ -155,7 +155,7 @@ document.addEventListener("DOMContentLoaded", function () {
     Blockly.Blocks['robot_si_approche_reussie'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField("✅ Si l'approche a réussi");
+                .appendField("Si l'approche a réussi");
             this.appendStatementInput("DO")
                 .setCheck(null)
                 .appendField("Faire");
@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", function () {
     Blockly.Blocks['actionneur_unique'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField("⚙️ Actionneur")
+                .appendField("Actionneur")
                 .appendField(new Blockly.FieldDropdown([["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"]]), "ID")
                 .appendField("Action:")
                 .appendField(new Blockly.FieldDropdown([["FLIP (Prendre + Tourne)", "FLIP"], ["nFLIP (Prendre sans tourner)", "nFLIP"], ["DOWN (Poser)", "DOWN"], ["INIT (Match)", "INIT"], ["RESET (Rangé)", "RESET"]]), "CMD");
@@ -187,7 +187,7 @@ document.addEventListener("DOMContentLoaded", function () {
     Blockly.Blocks['prendre_tous_kaplas'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField("👁️ Prendre 4 Kaplas (Auto Caméra)");
+                .appendField("Prendre 4 Kaplas (Auto Caméra)");
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(120);
@@ -199,7 +199,7 @@ document.addEventListener("DOMContentLoaded", function () {
     Blockly.Blocks['play_animation'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField("🎨 Jouer Animation")
+                .appendField("Jouer Animation")
                 .appendField(new Blockly.FieldDropdown(function () { return window.BLOCKLY_ANIMATIONS; }), "ANIM_NAME");
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
@@ -211,7 +211,7 @@ document.addEventListener("DOMContentLoaded", function () {
     Blockly.Blocks['play_sound'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField("🎵 Jouer Son")
+                .appendField("Jouer Son")
                 .appendField(new Blockly.FieldDropdown(function () { return window.BLOCKLY_SOUNDS; }), "SOUND_NAME");
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
@@ -352,7 +352,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function markBlockError(blockId, msg) {
         if (!blockId) return;
         let block = workspace.getBlockById(blockId);
-        if (block) block.setWarningText("⚠️ " + msg);
+        if (block) block.setWarningText(msg);
         canvas.classList.add("collision-alert");
     }
 
@@ -550,7 +550,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // 6. Icone Action
         if (robot.currentIcon) {
-            ctx.font = "40px Arial"; ctx.textAlign = "center";
+            // Étiquette texte contourée (lisible sur la table)
+            ctx.font = "bold 16px Arial"; ctx.textAlign = "center";
+            ctx.lineWidth = 4; ctx.strokeStyle = "#000"; ctx.fillStyle = "#fff";
+            ctx.strokeText(robot.currentIcon, screenPos.x, screenPos.y - robotSizePx / 2 - 10);
             ctx.fillText(robot.currentIcon, screenPos.x, screenPos.y - robotSizePx / 2 - 10);
         }
 
@@ -588,7 +591,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var scaleX_mouse = canvas.width / rect.width;
         var scaleY_mouse = canvas.height / rect.height;
         let worldPos = screenToWorld((evt.clientX - rect.left) * scaleX_mouse, (evt.clientY - rect.top) * scaleY_mouse);
-        logSim(`📍 Clic: X=${worldPos.x}, Y=${worldPos.y}`);
+        logSim(`Clic : X=${worldPos.x}, Y=${worldPos.y}`);
     });
 
 
@@ -708,15 +711,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 errorCount++;
             }
         });
-        if (errorCount > 0) logSim(`⚠️ ${errorCount} erreurs détectées.`);
-        else logSim("👁️ Aperçu généré.");
+        if (errorCount > 0) logSim(`${errorCount} erreurs détectées.`);
+        else logSim("Aperçu généré.");
     }
 
     function runSimulation() {
         clearBlockWarnings(); // NETTOYAGE
         previewPath = [];
         consoleDiv.innerHTML = "";
-        logSim("🚀 Simulation...");
+        logSim("Simulation...");
         robot.isMoving = false; robot.isRotating = false; robot.bezier = null; robot.currentIcon = null; robot.currentBlockId = null;
 
         let result = parseBlocks(false);
@@ -738,7 +741,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 robot.x = action.x;
                 robot.y = action.y;
                 robot.theta = action.theta;
-                logSim(`📍 Départ: ${action.x}, ${action.y}`);
+                logSim(`Départ : ${action.x}, ${action.y}`);
                 processNextAction();
             }
             else if (action.type === 'goto') {
@@ -807,20 +810,21 @@ document.addEventListener("DOMContentLoaded", function () {
                 setTimeout(() => { robot.currentIcon = null; processNextAction(); }, 1000);
             }
         } else {
-            logSim("🏁 Terminé.");
+            logSim("Terminé.");
             workspace.highlightBlock(null); // ETEINDRE HIGHLIGHT
         }
     }
 
     function getIcon(msg) {
-        if (msg.includes("Prise")) return "✊";
-        if (msg.includes("Retourne")) return "🤌";
-        if (msg.includes("Pose")) return "🖐️";
-        if (msg.includes("Pousse")) return "🏎️";
-        if (msg.includes("STOP")) return "🛑";
-        if (msg.includes("Animation")) return "🎨";
-        if (msg.includes("Son")) return "🎵";
-        return "⚙️";
+        // Étiquette courte affichée au-dessus du robot dans la simulation
+        if (msg.includes("Prise")) return "PRISE";
+        if (msg.includes("Retourne")) return "RETOURNE";
+        if (msg.includes("Pose")) return "POSE";
+        if (msg.includes("Pousse")) return "POUSSE";
+        if (msg.includes("STOP")) return "STOP";
+        if (msg.includes("Animation")) return "ANIM";
+        if (msg.includes("Son")) return "SON";
+        return "ACTION";
     }
 
     function logSim(msg) {
@@ -872,9 +876,9 @@ document.addEventListener("DOMContentLoaded", function () {
             .then(d => {
                 if (d.status === 'success') {
                     loadBlocklyStrats('stratSelect');
-                    document.getElementById('status').innerText = d.robot
-                        ? "✅ Sauvegardé et envoyé au robot"
-                        : "⚠️ Sauvegardé sur la base, robot injoignable (utiliser Update code RASP)";
+                    document.getElementById('status').innerHTML = d.robot
+                        ? icon('check') + " Sauvegardé et envoyé au robot"
+                        : icon('triangle-alert') + " Sauvegardé sur la base, robot injoignable (utiliser Update code RASP)";
                 }
             });
     });

@@ -52,6 +52,13 @@ function initDebugPage() {
     });
 }
 
+// Icône du sprite + libellé dans un bouton ; n'écrit que si le libellé change
+// (state_update arrive à 10 Hz, comme setText de common.js)
+function setIconLabel(el, name, label) {
+    if (!el) return;
+    if (el.textContent.trim() !== label) el.innerHTML = icon(name) + ' ' + label;
+}
+
 // Mise à jour Config via l'événement state_update
 window.socket.on('state_update', (state) => {
     const btnCam = document.getElementById('btn-toggle-cam');
@@ -61,10 +68,10 @@ window.socket.on('state_update', (state) => {
         // 1. État caméra
         let camEnabled = (typeof c.camera === 'object') ? c.camera.enabled : c.camera;
         if (camEnabled) {
-            setText(btnCam, "📷 Caméra Active");
+            setIconLabel(btnCam, 'camera', "Caméra Active");
             setClass(btnCam, "btn-toggle-active state-on");
         } else {
-            setText(btnCam, "📷 Caméra Inactive");
+            setIconLabel(btnCam, 'camera', "Caméra Inactive");
             setClass(btnCam, "btn-toggle-active state-off");
         }
         window.currentCameraEnabled = !!camEnabled;
@@ -84,10 +91,10 @@ window.socket.on('state_update', (state) => {
 
         if (btnLidar) {
             if (lidarMode !== "OFF") {
-                setText(btnLidar, `🚨 LiDAR Actif (${lidarMode})`);
+                setIconLabel(btnLidar, 'radar', `LiDAR Actif (${lidarMode})`);
                 setClass(btnLidar, "btn-toggle-active state-on");
             } else {
-                setText(btnLidar, "🚨 LiDAR Inactif");
+                setIconLabel(btnLidar, 'radar', "LiDAR Inactif");
                 setClass(btnLidar, "btn-toggle-active state-off");
             }
             window.currentLidarMode = lidarMode;
@@ -137,10 +144,10 @@ async function toggleCamera() {
     const btnCam = document.getElementById('btn-toggle-cam');
     if (btnCam) {
         if (nextState) {
-            btnCam.innerText = "📷 Caméra Active";
+            btnCam.innerHTML = icon('camera') + " Caméra Active";
             btnCam.className = "btn-toggle-active state-on";
         } else {
-            btnCam.innerText = "📷 Caméra Inactive";
+            btnCam.innerHTML = icon('camera') + " Caméra Inactive";
             btnCam.className = "btn-toggle-active state-off";
         }
     }
@@ -162,10 +169,10 @@ async function toggleLidar() {
     const btnLidar = document.getElementById('btn-toggle-lidar');
     if (btnLidar) {
         if (nextMode !== "OFF") {
-            btnLidar.innerText = `🚨 LiDAR Actif (${nextMode})`;
+            btnLidar.innerHTML = icon('radar') + ` LiDAR Actif (${nextMode})`;
             btnLidar.className = "btn-toggle-active state-on";
         } else {
-            btnLidar.innerText = "🚨 LiDAR Inactif";
+            btnLidar.innerHTML = icon('radar') + " LiDAR Inactif";
             btnLidar.className = "btn-toggle-active state-off";
         }
     }
@@ -268,7 +275,7 @@ window.socket.on('sys_info', (data) => {
             } else {
                 img.style.display = 'none';
                 placeholder.style.display = 'block';
-                placeholder.innerText = '🎥 Flux caméra inactif ou arrêté.';
+                placeholder.innerHTML = '<div class="placeholder-icon">' + icon('camera', 'icon-lg') + '</div><div id="camera-placeholder-text">Flux caméra inactif ou arrêté.</div>';
                 if (embarqueeBadge) {
                     embarqueeBadge.innerText = 'HORS LIGNE';
                     embarqueeBadge.className = 'badge-status-pill badge-offline';
@@ -309,37 +316,37 @@ async function updateRasp() {
     }
 
     const btn = document.getElementById('btn-update-rasp');
-    const oldText = btn ? btn.innerText : '';
+    const oldText = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerText = "⏳ Mise à jour...";
+        btn.innerText = "Mise à jour...";
         btn.style.opacity = "0.7";
     }
-    appendLog("🚀 [RASP] Mise à jour du code de la Rasp...");
+    appendLog("[RASP] Mise à jour du code de la Rasp...");
 
     try {
         const resp = await fetch('/api/update_rasp', { method: 'POST' });
         const data = await resp.json();
-        if (data.warning) appendLog(`⚠️ [RASP] ${data.warning}`, 'err');
+        if (data.warning) appendLog(`[RASP] ${data.warning}`, 'err');
         if (data.status === 'ok') {
-            appendLog(`✅ [RASP] ${data.msg}`);
+            appendLog(`[RASP] ${data.msg}`);
             (data.files || []).forEach(f => appendLog(`   • ${f}`));
-            alert(`✅ ${data.msg}`);
+            alert(`${data.msg}`);
         } else {
             const stepMsg = data.step ? `(Étape: ${data.step}) ` : '';
-            appendLog(`❌ [RASP] Erreur ${stepMsg}: ${data.msg}`, 'err');
+            appendLog(`[RASP] Erreur ${stepMsg}: ${data.msg}`, 'err');
             if (data.output) {
                 appendLog(`[DÉTAILS] ${data.output.split('\n').filter(l => l.trim()).slice(-3).join(' | ')}`, 'err');
             }
-            alert(`❌ ${data.msg}`);
+            alert(`${data.msg}`);
         }
     } catch (err) {
-        appendLog(`❌ [RASP] Erreur réseau : ${err.message}`, 'err');
-        alert(`❌ Erreur réseau : ${err.message}`);
+        appendLog(`[RASP] Erreur réseau : ${err.message}`, 'err');
+        alert(`Erreur réseau : ${err.message}`);
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerText = oldText;
+            btn.innerHTML = oldText;
             btn.style.opacity = "1";
         }
     }
@@ -352,39 +359,39 @@ async function flashESP(target) {
     }
 
     const btn = document.getElementById(target === 'motors' ? 'btn-flash-motors' : 'btn-flash-arms');
-    const oldText = btn ? btn.innerText : '';
+    const oldText = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerText = "⏳ Compilation & Flash...";
+        btn.innerText = "Compilation & Flash...";
         btn.style.opacity = "0.7";
     }
 
-    appendLog(`🚀 [FLASH] Démarrage de la procédure de flash pour l'ESP ${label}...`);
-    appendLog(`🔨 [FLASH] Étape 1/3 : Compilation locale PlatformIO en cours...`);
+    appendLog(`[FLASH] Démarrage de la procédure de flash pour l'ESP ${label}...`);
+    appendLog(`[FLASH] Étape 1/3 : Compilation locale PlatformIO en cours...`);
 
     try {
         const resp = await fetch('/api/flash_esp/' + target, { method: 'POST' });
         const data = await resp.json();
 
         if (data.status === 'ok') {
-            appendLog(`✅ [FLASH] ${data.msg}`);
-            alert(`✅ ${data.msg}\n\nLe microcontrôleur a été redémarré avec le nouveau firmware.`);
+            appendLog(`[FLASH] ${data.msg}`);
+            alert(`${data.msg}\n\nLe microcontrôleur a été redémarré avec le nouveau firmware.`);
         } else {
             const stepMsg = data.step ? `(Étape: ${data.step}) ` : '';
-            appendLog(`❌ [FLASH] Erreur ${stepMsg}: ${data.msg}`, 'err');
-            alert(`❌ Erreur lors du flash :\n${data.msg}\n\nConsultez les logs pour plus de détails.`);
+            appendLog(`[FLASH] Erreur ${stepMsg}: ${data.msg}`, 'err');
+            alert(`Erreur lors du flash :\n${data.msg}\n\nConsultez les logs pour plus de détails.`);
             if (data.output) {
                 console.error("Détails d'erreur :", data.output);
                 appendLog(`[DÉTAILS] ${data.output.split('\n').filter(l => l.trim()).slice(-3).join(' | ')}`, 'err');
             }
         }
     } catch (err) {
-        appendLog(`❌ [FLASH] Erreur réseau : ${err.message}`, 'err');
-        alert(`❌ Erreur réseau : ${err.message}`);
+        appendLog(`[FLASH] Erreur réseau : ${err.message}`, 'err');
+        alert(`Erreur réseau : ${err.message}`);
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerText = oldText;
+            btn.innerHTML = oldText;
             btn.style.opacity = "1";
         }
     }
@@ -692,15 +699,15 @@ function updateResolutionButtonUI(resKey) {
     if (!btn) return;
     const cleanKey = (resKey || '4K').toUpperCase();
     if (cleanKey === '1080P') {
-        btn.innerHTML = '⚡ 1080p @ 60fps';
+        btn.innerHTML = icon('zap') + ' 1080p @ 60fps';
         btn.className = 'btn-video-action btn-resolution-toggle mode-60fps';
         btn.title = 'Actuellement 1080p @ 60fps (Cliquer pour basculer en 4K @ 30fps)';
     } else if (cleanKey === '2K') {
-        btn.innerHTML = '⚡ 2K @ 60fps';
+        btn.innerHTML = icon('zap') + ' 2K @ 60fps';
         btn.className = 'btn-video-action btn-resolution-toggle mode-60fps';
         btn.title = 'Actuellement 2K @ 60fps (Cliquer pour basculer en 4K @ 30fps)';
     } else {
-        btn.innerHTML = '📺 4K @ 30fps';
+        btn.innerHTML = icon('video') + ' 4K @ 30fps';
         btn.className = 'btn-video-action btn-resolution-toggle';
         btn.title = 'Actuellement 4K @ 30fps (Cliquer pour basculer en 1080p @ 60fps)';
     }
@@ -716,10 +723,10 @@ function toggleArucoOverlay() {
     const btn = document.getElementById('btn-toggle-aruco');
     if (btn) {
         if (isArucoActive) {
-            btn.innerHTML = '🎯 ArUco : ON';
+            btn.innerHTML = icon('scan') + ' ArUco : ON';
             btn.className = 'btn-video-action btn-aruco-active';
         } else {
-            btn.innerHTML = '🎯 ArUco : OFF';
+            btn.innerHTML = icon('scan') + ' ArUco : OFF';
             btn.className = 'btn-video-action btn-aruco-inactive';
         }
     }
@@ -786,7 +793,7 @@ async function checkZenithaleStatus() {
             }
 
             if (pwrBtn) {
-                pwrBtn.innerHTML = '⏹ Arrêter';
+                pwrBtn.innerHTML = icon('circle-stop') + ' Arrêter';
                 pwrBtn.className = 'btn-video-action btn-vision-power running';
             }
 
@@ -806,10 +813,10 @@ async function checkZenithaleStatus() {
             const data = await resp.json();
             if (pwrBtn) {
                 if (data.running) {
-                    pwrBtn.innerHTML = '⏹ Arrêter';
+                    pwrBtn.innerHTML = icon('circle-stop') + ' Arrêter';
                     pwrBtn.className = 'btn-video-action btn-vision-power running';
                 } else {
-                    pwrBtn.innerHTML = '▶ Démarrer';
+                    pwrBtn.innerHTML = icon('play') + ' Démarrer';
                     pwrBtn.className = 'btn-video-action btn-vision-power';
                 }
             }
@@ -918,7 +925,7 @@ function updateZenithaleTelemetryUI(data) {
  */
 function copyVisionToInputs() {
     if (!window.lastVisionData || !window.lastVisionData.robot_detected) {
-        alert("⚠️ Le robot n'est pas encore détecté par la caméra zénithale.");
+        alert("Le robot n'est pas encore détecté par la caméra zénithale.");
         return;
     }
     const inputX = document.getElementById('pos-x');
@@ -936,7 +943,7 @@ function copyVisionToInputs() {
  */
 async function startVisionWorker() {
     const pwrBtn = document.getElementById('btn-toggle-vision-worker');
-    if (pwrBtn) pwrBtn.innerText = '⏳ Démarrage...';
+    if (pwrBtn) pwrBtn.innerText = 'Démarrage...';
     try {
         await fetch('/api/vision/start', { method: 'POST' });
     } catch (e) {
@@ -950,7 +957,7 @@ async function startVisionWorker() {
  */
 async function stopVisionWorker() {
     const pwrBtn = document.getElementById('btn-toggle-vision-worker');
-    if (pwrBtn) pwrBtn.innerText = '⏳ Arrêt...';
+    if (pwrBtn) pwrBtn.innerText = 'Arrêt...';
     try {
         await fetch('/api/vision/stop', { method: 'POST' });
     } catch (e) {
@@ -986,7 +993,7 @@ function updateContainerFullscreenUI(containerId, isFs) {
     if (isFs) {
         container.classList.add('is-fullscreen');
         if (closeBtn) closeBtn.style.setProperty('display', 'block', 'important');
-        if (toggleBtn) toggleBtn.innerHTML = '✕ Quitter';
+        if (toggleBtn) toggleBtn.innerHTML = icon('x') + ' Quitter';
         if (img) {
             img.style.setProperty('max-height', '100vh', 'important');
             img.style.setProperty('height', '100vh', 'important');
@@ -996,7 +1003,7 @@ function updateContainerFullscreenUI(containerId, isFs) {
     } else {
         container.classList.remove('is-fullscreen');
         if (closeBtn) closeBtn.style.setProperty('display', 'none', 'important');
-        if (toggleBtn) toggleBtn.innerHTML = '⛶ Plein Écran';
+        if (toggleBtn) toggleBtn.innerHTML = icon('maximize') + ' Plein écran';
         if (img) {
             img.style.removeProperty('max-height');
             img.style.removeProperty('height');

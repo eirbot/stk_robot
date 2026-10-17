@@ -5,17 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LED Studio - Robot 2026</title>
-    <script src="/static/js/theme.js?v=2"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=5.3">
-    <link rel="stylesheet" href="/static/css/led_studio.css?v=2.0">
+    <script src="/static/js/theme.js?v=3"></script>
+    <link rel="stylesheet" href="/static/css/common.css?v=6.2">
+    <link rel="stylesheet" href="/static/css/led_studio.css?v=2.1">
 </head>
 
 <body>
     <div class="studio-container">
         <!-- HEADER STANDARD -->
         <div class="header">
-            <a href="/" class="btn-back">⬅ RETOUR</a>
-            <div class="page-title">LED STUDIO 🎨</div>
+            <a href="/" class="btn-back"><svg class="icon"><use href="/static/icons/sprite.svg#i-arrow-left"></use></svg> Accueil</a>
+            <div class="page-title">LED STUDIO</div>
             <div class="sys-info" id="sys-info">...</div>
         </div>
 
@@ -24,10 +24,10 @@
             <select id="animSelect" class="strat-select">
                 <option value="">-- Nouvelle Animation --</option>
             </select>
-            <button id="btnNew" class="btn btn-sm btn-primary">⭐ Nouveau</button>
+            <button id="btnNew" class="btn btn-sm btn-primary"><svg class="icon"><use href="/static/icons/sprite.svg#i-plus"></use></svg> Nouveau</button>
             <div class="toolbar-spacer"></div>
-            <button id="btnSave" class="btn btn-sm btn-success">💾 Sauvegarder</button>
-            <button id="btnDelete" class="btn btn-sm btn-danger">🗑️ Supprimer</button>
+            <button id="btnSave" class="btn btn-sm btn-success"><svg class="icon"><use href="/static/icons/sprite.svg#i-save"></use></svg> Sauvegarder</button>
+            <button id="btnDelete" class="btn btn-sm btn-danger"><svg class="icon"><use href="/static/icons/sprite.svg#i-trash-2"></use></svg> Supprimer</button>
         </div>
 
         <!-- MAIN CONTENT -->
@@ -38,15 +38,15 @@
                 <div class="step-list" id="stepList">
                     <!-- Steps will be generated here -->
                 </div>
-                <button id="btnAddStep" class="btn btn-sm full-width">+ Ajouter Étape</button>
+                <button id="btnAddStep" class="btn btn-sm full-width"><svg class="icon"><use href="/static/icons/sprite.svg#i-plus"></use></svg> Ajouter Étape</button>
 
                 <div class="playback-controls">
                     <label class="loop-control check">
                         <input type="checkbox" id="chkLoop"> Boucle (Loop)
                     </label>
                     <div class="row">
-                        <button id="btnPlay" class="btn btn-sm btn-primary">▶ Jouer</button>
-                        <button id="btnStop" class="btn btn-sm btn-warning">⏹ Stop</button>
+                        <button id="btnPlay" class="btn btn-sm btn-primary"><svg class="icon"><use href="/static/icons/sprite.svg#i-play"></use></svg> Jouer</button>
+                        <button id="btnStop" class="btn btn-sm btn-warning"><svg class="icon"><use href="/static/icons/sprite.svg#i-square"></use></svg> Stop</button>
                     </div>
                 </div>
             </div>
@@ -59,9 +59,9 @@
                         <input type="color" id="colorPicker" value="#ff0000">
                     </div>
                     <div class="tool-group">
-                        <button class="tool-btn active" data-tool="pen" title="Crayon">✏️</button>
-                        <button class="tool-btn" data-tool="fill" title="Remplir tout">🪣</button>
-                        <button class="tool-btn" data-tool="eraser" title="Gomme">🧽</button>
+                        <button class="tool-btn active" data-tool="pen" title="Crayon" aria-label="Crayon"><svg class="icon"><use href="/static/icons/sprite.svg#i-paintbrush"></use></svg></button>
+                        <button class="tool-btn" data-tool="fill" title="Remplir tout" aria-label="Remplir tout"><svg class="icon"><use href="/static/icons/sprite.svg#i-layers"></use></svg></button>
+                        <button class="tool-btn" data-tool="eraser" title="Gomme" aria-label="Gomme"><svg class="icon"><use href="/static/icons/sprite.svg#i-x"></use></svg></button>
                     </div>
                     <div class="step-settings">
                         <label>Durée (s): <input type="number" id="stepDuration" value="1.0" step="0.1"></label>
@@ -98,7 +98,7 @@
         </div>
     </div>
 
-    <script src="/static/js/led_studio.js"></script>
+    <script src="/static/js/led_studio.js?v=2.1"></script>
 </body>
 
 </html>

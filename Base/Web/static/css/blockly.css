@@ -59,9 +59,13 @@ body {
     width: 170px;
 }
 
+/* Texte du thème (le vert seul est illisible sur le gris clair de stk) ; icône écrite par blockly.js */
 #status {
     font-weight: 700;
-    color: var(--success);
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* ---------- Éditeur + simulation ---------- */
@@ -98,10 +102,13 @@ body {
     overflow-y: auto;
 }
 
+/* Texte du thème : l'orange stk est illisible sur le gris clair */
 .simu-title {
     margin: 0 0 10px;
+    font-family: var(--font-display);
     font-weight: var(--font-weight-title);
-    color: var(--accent);
+    letter-spacing: var(--display-spacing);
+    color: var(--text);
 }
 
 #simCanvas {

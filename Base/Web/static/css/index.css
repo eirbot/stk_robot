@@ -50,10 +50,10 @@
 }
 
 .team-box {
-    font-family: var(--font);
+    font-family: var(--font-display);
     font-size: 2.1rem;
-    font-weight: 700;
-    letter-spacing: 2px;
+    font-weight: var(--font-weight-title);
+    letter-spacing: var(--display-spacing);
     padding: 8px 36px 10px;
     border-radius: 999px;
     border: var(--line-w) solid var(--line);
@@ -72,10 +72,10 @@
 
 /* Chrono façon compteur de course */
 .timer-box {
-    font-family: var(--font);
+    font-family: var(--font-display);
     font-variant-numeric: tabular-nums;
     font-size: clamp(5rem, 15vw, 11rem);
-    font-weight: 700;
+    font-weight: var(--font-weight-title);
     color: var(--timer);
     line-height: 1;
     letter-spacing: 3px;
@@ -85,6 +85,9 @@
 }
 
 .test-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 6px 18px;
     border-radius: 999px;
     border: var(--line-w) solid var(--line);
@@ -110,6 +113,7 @@
     display: inline-flex;
     align-items: baseline;
     gap: 6px;
+    color: var(--chip-text);
     background: var(--chip-bg);
     border: 2px solid var(--border);
     border-radius: 12px;
@@ -129,7 +133,7 @@
 }
 
 .pos-unit {
-    color: var(--text-muted);
+    color: var(--chip-muted);
     font-size: 0.8em;
 }
 
@@ -168,8 +172,7 @@
 .status-line .strat-select {
     margin: 0;
     min-width: 0;
-    max-width: 65%;
-    color: var(--accent) !important;
+    color: var(--text) !important; /* index.js pose une couleur inline : on garde la couleur du thème */
 }
 
 .strat-display {
@@ -247,6 +250,7 @@
 }
 
 .tile-icon {
+    color: var(--tile-fg, #fff);
     grid-row: span 2;
     width: 46px;
     height: 46px;
@@ -260,8 +264,21 @@
 }
 
 .tile-label {
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-weight: var(--font-weight-title);
+    letter-spacing: var(--display-spacing);
     font-size: 1.1rem;
+}
+
+.tile-icon .icon {
+    width: 1.35rem;
+    height: 1.35rem;
+}
+
+/* STK : palette resserrée, toutes les tuiles en orange */
+html[data-theme="stk"] .tile {
+    --tile: var(--accent) !important;
+    --tile-fg: #000;
 }
 
 .tile-sub {

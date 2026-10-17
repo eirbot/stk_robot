@@ -34,6 +34,13 @@
 
     window.EIRBOT_THEMES = THEMES;
 
+    // Icône du sprite (/static/icons/sprite.svg), à insérer via innerHTML :
+    //   btn.innerHTML = icon('camera') + ' Caméra active';
+    window.icon = function (name, extraClass) {
+        return '<svg class="icon' + (extraClass ? ' ' + extraClass : '') + '" aria-hidden="true">' +
+            '<use href="/static/icons/sprite.svg#i-' + name + '"></use></svg>';
+    };
+
     window.getTheme = function () {
         return document.documentElement.getAttribute('data-theme');
     };
