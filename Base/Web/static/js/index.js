@@ -81,13 +81,13 @@ window.socket.on('state_update', (state) => {
     if (tirDiv) {
         const tir = state.tirette ?? false;
         if (tir === 'ARMED' || tir === true) {
-            setText(tirDiv, 'TIRETTE: ARMÉE (PRÊT)');
+            setText(tirDiv, 'ARMÉE (PRÊT)');
             setClass(tirDiv, 'tirette-box status-armed');
         } else if (tir === 'TRIGGERED') {
-            setText(tirDiv, 'TIRETTE: TIRÉE (GO)');
+            setText(tirDiv, 'TIRÉE (GO)');
             setClass(tirDiv, 'tirette-box status-triggered');
         } else {
-            setText(tirDiv, 'TIRETTE: NON ARMÉE');
+            setText(tirDiv, 'NON ARMÉE');
             setClass(tirDiv, 'tirette-box status-non-armed');
         }
     }

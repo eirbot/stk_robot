@@ -1,56 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>EIRBOT 2026</title>
-    <link rel="stylesheet" href="/static/css/common.css?v=2.5">
-    <link rel="stylesheet" href="/static/css/index.css?v=2.7">
+    <link rel="preload" href="/static/fonts/outfit.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/static/css/common.css?v=3.0">
+    <link rel="stylesheet" href="/static/css/index.css?v=3.1">
 
     <script src="/static/js/common.js?v=2.5" defer></script>
-    <script src="/static/js/index.js?v=2.7" defer></script>
+    <script src="/static/js/index.js?v=3.0" defer></script>
 </head>
 
 <body class="mode-BLEUE">
-    <div class="header">
-        <div style="font-weight:900; font-size:1.5em;">EIRBOT</div>
+    <header class="header">
+        <div class="brand"><span class="brand-dot"></span>EIRBOT</div>
         <div class="sys-info" id="sys-info">...</div>
-    </div>
+    </header>
 
-    <div class="dashboard">
-        <div id="team-display" class="team-box" onclick="sendAction('team')">...</div>
+    <main class="home">
+        <!-- Match : équipe, chrono, position (aussi affiché sur l'écran 7" du robot) -->
+        <section class="dashboard">
+            <button id="team-display" class="team-box" onclick="sendAction('team')">...</button>
 
-        <!-- Informations d'état & stratégie (affichées sur PC, masquées sur l'écran robot) -->
-        <div class="dashboard-status-row pc-only">
-            <div id="tirette-status" class="tirette-box status-non-armed">TIRETTE: NON ARMÉE</div>
+            <div id="timer" class="timer-box">100.0</div>
+            <div id="test-mode-badge" class="test-mode-badge hidden">🧪 MODE TEST : pas d'arrêt à 100 s</div>
 
-            <div class="status-item strat-container">
-                <span class="status-label">STRATÉGIE:</span>
-                <span id="strat-display" style="font-weight:bold; color:white; display:none;">#?</span>
-                <select id="strat-select" class="strat-select" onchange="updateStrat(this.value)"
-                    style="display:none;"></select>
+            <div id="robot-pos-display" class="robot-pos-box">
+                <span class="pos-item"><span class="pos-label">X</span><span id="pos-x" class="pos-val">0</span><span class="pos-unit">mm</span></span>
+                <span class="pos-item"><span class="pos-label">Y</span><span id="pos-y" class="pos-val">0</span><span class="pos-unit">mm</span></span>
+                <span class="pos-item"><span class="pos-label">θ</span><span id="pos-theta" class="pos-val">0.0</span><span class="pos-unit">°</span></span>
+            </div>
+        </section>
+
+        <!-- Pilotage (PC / téléphone uniquement, masqué sur l'écran robot) -->
+        <section class="side pc-only">
+            <div class="card status-card">
+                <div class="status-line">
+                    <span class="status-label">Tirette</span>
+                    <div id="tirette-status" class="tirette-box status-non-armed">NON ARMÉE</div>
+                </div>
+                <div class="status-line">
+                    <span class="status-label">Stratégie</span>
+                    <span id="strat-display" class="strat-display" style="display:none;">#?</span>
+                    <select id="strat-select" class="strat-select" onchange="updateStrat(this.value)" style="display:none;"></select>
+                </div>
+                <div class="status-line">
+                    <span class="status-label">État</span>
+                    <span id="fsm-display" class="badge badge-info">INIT</span>
+                </div>
             </div>
 
-            <div class="status-item fsm-container">
-                <span class="status-label">ÉTAT:</span>
-                <span id="fsm-display" class="badge">INIT</span>
+            <div class="card actions-card">
+                <button id="btn-start" class="btn btn-success btn-lg" onclick="sendAction('start')">▶ GO MATCH</button>
+                <button id="btn-stop" class="btn btn-danger btn-lg hidden" onclick="sendAction('stop')">■ STOP URGENCE</button>
+                <button id="btn-reset" class="btn btn-warning btn-lg hidden" onclick="sendAction('reset')">↺ RESET MATCH</button>
+                <button class="btn btn-team" onclick="sendAction('team')">⇄ Changer d'équipe</button>
             </div>
-        </div>
 
-        <!-- Position Odométrique X, Y, Theta du Robot (affichée sur l'écran Rasp et sur PC) -->
-        <div id="robot-pos-display" class="robot-pos-box">
-            <span class="pos-item"><span class="pos-label">X:</span> <span id="pos-x" class="pos-val">0</span><span class="pos-unit">mm</span></span>
-            <span class="pos-sep">|</span>
-            <span class="pos-item"><span class="pos-label">Y:</span> <span id="pos-y" class="pos-val">0</span><span class="pos-unit">mm</span></span>
-            <span class="pos-sep">|</span>
-            <span class="pos-item"><span class="pos-label">θ:</span> <span id="pos-theta" class="pos-val">0.0</span><span class="pos-unit">°</span></span>
-        </div>
-
-        <!-- Chronomètre géant du match (agrandi pour occuper l'espace libéré) -->
-        <div id="timer" class="timer-box">100.0</div>
-        <div id="test-mode-badge" class="test-mode-badge hidden">🧪 MODE TEST : pas d'arrêt à 100 s</div>
-    </div>
+            <nav class="nav-grid">
+                <a href="/controle" class="tile" style="--tile:#ff9800;"><span class="tile-icon">🕹️</span><span class="tile-label">Contrôle</span><span class="tile-sub">Joystick &amp; actionneurs</span></a>
+                <a href="/map" class="tile" style="--tile:#00bfa5;"><span class="tile-icon">🗺️</span><span class="tile-label">Carte</span><span class="tile-sub">Position en direct</span></a>
+                <a href="/debug" class="tile" style="--tile:#2196f3;"><span class="tile-icon">🛠️</span><span class="tile-label">Debug</span><span class="tile-sub">Config, vision, flash</span></a>
+                <a href="/blockly" class="tile" style="--tile:#7c4dff;"><span class="tile-icon">🧩</span><span class="tile-label">Strat Studio</span><span class="tile-sub">Créer une stratégie</span></a>
+                <a href="/led_studio" class="tile" style="--tile:#e91e63;"><span class="tile-icon">🎨</span><span class="tile-label">LED Studio</span><span class="tile-sub">Animations</span></a>
+                <a href="/media" class="tile" style="--tile:#9c27b0;"><span class="tile-icon">🎵</span><span class="tile-label">Sons</span><span class="tile-sub">Musiques du match</span></a>
+            </nav>
+        </section>
+    </main>
 
     <!-- Guide des 4 boutons physiques pour l'écran 7" de la Rasp (aligné au-dessus de chaque bouton) -->
     <div id="robot-buttons-guide" class="robot-buttons-bar">
@@ -74,20 +92,6 @@
             <div class="btn-main">INIT</div>
             <div class="btn-sub">Actionneurs</div>
         </div>
-    </div>
-
-    <div class="controls pc-only">
-        <button id="btn-start" class="btn-start" onclick="sendAction('start')">GO MATCH</button>
-        <button id="btn-stop" class="btn-stop hidden" onclick="sendAction('stop')">STOP URGENCE</button>
-        <button id="btn-reset" class="btn-reset hidden" onclick="sendAction('reset')">RESET MATCH</button>
-
-        <button class="btn-team" onclick="sendAction('team')">CHANGE TEAM</button>
-
-        <a href="/controle" class="btn-nav" style="background:#FF9800;">🕹️ CONTRÔLE</a>
-        <a href="/map" class="btn-nav" style="background:#009688;">🗺️ LIVE MAP</a>
-        <a href="/debug" class="btn-nav">🛠️ DEBUG</a>
-        <a href="/blockly" class="btn-nav" style="background:#673AB7;">🧩 STRAT STUDIO</a>
-        <a href="/led_studio" class="btn-nav" style="background:#E91E63;">🎨 LED STUDIO</a>
     </div>
 </body>
 

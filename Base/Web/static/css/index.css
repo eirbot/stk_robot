@@ -1,252 +1,319 @@
-/* DASHBOARD */
-body {
-    margin: 0;
-    padding: 0;
-    background-color: #121212;
-    color: #eee;
-    font-family: sans-serif;
-    overflow: hidden;
-    /* App-like feel */
+/* =======================================================
+   ACCUEIL — match (gauche) + pilotage (droite)
+   Trois cibles : PC, téléphone (< 600 px), écran 7" du robot (?mode=robot)
+   ======================================================= */
+
+.home {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+    gap: 20px;
+    padding: 20px;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    font-size: 16px;
 }
 
+/* ---------- Panneau match ---------- */
 .dashboard {
-    flex-grow: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
-    justify-content: space-evenly;
     align-items: center;
-    padding: 1.5vh 2vw;
-    box-sizing: border-box;
+    justify-content: center;
+    gap: 18px;
+    padding: 28px 20px;
+    position: relative;
+    overflow: hidden;
 }
 
-/* INPUTS & SELECTS */
-select {
-    background-color: #333;
-    color: #fff;
-    border: 1px solid #555;
-    padding: 8px 12px;
-    font-size: 2.2vh;
-    border-radius: 5px;
+/* Halo discret de la couleur d'équipe */
+.dashboard::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, var(--team-soft), transparent 65%);
+    pointer-events: none;
 }
 
-/* TEAM BOX */
+.dashboard > * {
+    position: relative;
+}
+
 .team-box {
-    font-size: 4.5vh;
-    font-weight: bold;
-    padding: 0.8vh 3vw;
-    border-radius: 10px;
-    margin-bottom: 0.5vh;
-    transition: 0.3s;
-    user-select: none;
+    font-family: var(--font);
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    padding: 10px 34px;
+    border-radius: 999px;
+    border: none;
+    background: var(--team);
+    color: var(--team-text);
     cursor: pointer;
+    box-shadow: 0 0 24px var(--team-soft);
+    transition: transform 0.1s, background 0.3s;
 }
 
-.mode-BLEUE .team-box {
-    background: #2196F3;
-    color: white;
+.team-box:active {
+    transform: scale(0.97);
 }
 
-.mode-JAUNE .team-box {
-    background: #FBC02D;
-    color: black;
-}
-
-/* DASHBOARD STATUS ROW (TIRETTE, STRAT, FSM) */
-.dashboard-status-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 2.5vw;
-    flex-wrap: wrap;
-    margin: 0.5vh 0;
-}
-
-.status-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.8ch;
-    font-size: 2.2vh;
-    color: #ccc;
-}
-
-.status-label {
-    font-weight: 600;
-    color: #888;
-    font-size: 0.85em;
-    text-transform: uppercase;
-}
-
-.tirette-box {
-    font-size: 2.2vh;
-    font-weight: bold;
-    padding: 0.6vh 1.8vw;
-    border-radius: 8px;
-    border: 2px solid #555;
-    background: #222;
-    color: #777;
-    transition: 0.3s;
-}
-
-/* ROBOT POSITION ODOMETRY BOX */
-.robot-pos-box {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 2vw;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    padding: 0.8vh 2.5vw;
-    border-radius: 10px;
-    font-size: 2.5vh;
-    color: #4fc3f7;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+.timer-box {
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    margin: 0.5vh 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    font-size: clamp(4.5rem, 14vw, 10rem);
+    font-weight: 800;
+    color: var(--timer);
+    line-height: 1;
+    letter-spacing: 2px;
+    text-shadow: 0 0 30px rgba(255, 203, 107, 0.3);
+}
+
+.test-mode-badge {
+    padding: 6px 16px;
+    border-radius: 999px;
+    background: var(--warning);
+    color: #1a1300;
+    font-weight: 900;
+    font-size: 0.95rem;
+    animation: blink 1.5s infinite;
+}
+
+.robot-pos-box {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
 }
 
 .pos-item {
     display: inline-flex;
-    align-items: center;
-    gap: 0.4ch;
+    align-items: baseline;
+    gap: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 14px;
+    font-size: 1.15rem;
 }
 
 .pos-label {
-    color: #8892b0;
-    font-weight: bold;
-    font-size: 0.9em;
+    color: var(--accent);
+    font-weight: 700;
 }
 
 .pos-val {
-    color: #ffffff;
-    font-weight: bold;
+    font-weight: 800;
     min-width: 4ch;
     text-align: right;
-    display: inline-block;
-    font-variant-numeric: tabular-nums;
 }
 
 .pos-unit {
-    color: #64748b;
-    font-size: 0.85em;
+    color: var(--text-muted);
+    font-size: 0.8em;
 }
 
-.pos-sep {
-    color: #334155;
-    user-select: none;
+/* ---------- Panneau pilotage ---------- */
+.side {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
 }
 
-/* TIMER CHRONO (AGRANDI) */
-.timer-box {
-    font-size: clamp(5rem, 16vh, 13rem);
-    font-weight: 900;
-    color: #FFCB6B;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 2px;
-    line-height: 1;
-    margin: 1vh 0;
-    text-shadow: 0 0 25px rgba(255, 203, 107, 0.35);
+.side .card {
+    margin: 0;
 }
 
-/* STATUS BADGES */
-.status-armed {
-    background: #2e7d32;
-    color: white;
-    border-color: #4CAF50;
-    box-shadow: 0 0 15px #4CAF50;
-    animation: blink 1s infinite;
+.status-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.status-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.status-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.status-line .strat-select {
+    margin: 0;
+    min-width: 0;
+    max-width: 65%;
+    color: var(--warning) !important;
+    font-weight: 700;
+}
+
+.strat-display {
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+/* Tirette (classes posées par index.js) */
+.tirette-box {
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    border: 1px solid var(--border-strong);
 }
 
 .status-non-armed {
-    background: #222;
-    color: #777;
-    border-color: #555;
+    background: var(--surface-2);
+    color: var(--text-muted);
 }
 
-@keyframes blink {
-    50% {
-        opacity: 0.7;
-    }
+.status-armed {
+    background: rgba(0, 230, 118, 0.15);
+    color: var(--success);
+    border-color: rgba(0, 230, 118, 0.5);
+    animation: blink 1s infinite;
 }
 
-/* CONTROLS BAS (PC) */
-.controls {
+.status-triggered {
+    background: rgba(0, 210, 255, 0.12);
+    color: var(--accent);
+    border-color: rgba(0, 210, 255, 0.5);
+}
+
+.actions-card {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5vh;
-    padding: 2vh;
-    background: #1c2128;
-    border-top: 2px solid #333;
-    min-height: 14vh;
-    box-sizing: border-box;
+    gap: 10px;
 }
 
-button {
-    font-size: 2.5vh;
-    padding: 1vh;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    color: white;
-    transition: 0.2s;
-    display: flex;
+.actions-card .btn {
+    width: 100%;
+}
+
+/* Tuiles de navigation */
+.nav-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.tile {
+    --tile: var(--accent);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 12px;
     align-items: center;
-    justify-content: center;
+    text-align: left;
+    padding: 14px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--tile);
+    color: var(--text);
+    text-decoration: none;
+    transition: background 0.15s, transform 0.08s;
 }
 
-button:active {
+.tile:hover {
+    background: var(--surface-2);
+}
+
+.tile:active {
     transform: scale(0.98);
 }
 
-.btn-start {
-    background: #2e8b57;
-    grid-column: span 2;
-    font-size: 4vh;
+.tile-icon {
+    grid-row: span 2;
+    font-size: 1.6rem;
 }
 
-.btn-stop {
-    background: #d32f2f;
-    grid-column: span 2;
-    font-size: 4vh;
-    animation: flash-red 0.5s infinite;
+.tile-label {
+    font-weight: 800;
+    font-size: 1rem;
 }
 
-.btn-reset {
-    background: #ff9800;
-    grid-column: span 2;
-    color: black;
-    font-size: 3vh;
+.tile-sub {
+    color: var(--text-muted);
+    font-size: 0.78rem;
 }
 
-.btn-team {
-    background: #555;
-}
-
-/* NAV BUTTONS */
-.btn-nav {
-    font-size: 2vh;
-    padding: 1vh;
-}
-
-@keyframes flash-red {
-    0%, 100% {
-        background: #d32f2f;
-    }
-    50% {
-        background: #ff5252;
-    }
-}
-
-/* GUIDE DES 4 BOUTONS (Par défaut masqué sur PC) */
 .robot-buttons-bar {
     display: none;
 }
 
-/* ========================================= */
-/* --- ROBOT SCREEN MODE (ÉCRAN 7" RASP) --- */
-/* ========================================= */
+/* =======================================================
+   TABLETTE / PETIT PC : une colonne
+   ======================================================= */
+@media (max-width: 900px) {
+    .home {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* =======================================================
+   TÉLÉPHONE
+   ======================================================= */
+@media (max-width: 600px) {
+    .home {
+        padding: 10px;
+        gap: 10px;
+        font-size: 15px;
+    }
+
+    .dashboard {
+        padding: 18px 10px;
+        gap: 12px;
+    }
+
+    .team-box {
+        font-size: 1.5rem;
+        padding: 8px 26px;
+    }
+
+    .timer-box {
+        font-size: 26vw;
+    }
+
+    .pos-item {
+        font-size: 0.95rem;
+        padding: 5px 10px;
+    }
+
+    .pos-val {
+        min-width: 0;
+    }
+
+    .tile {
+        padding: 12px 10px;
+        column-gap: 8px;
+    }
+
+    .tile-icon {
+        font-size: 1.3rem;
+    }
+
+    .tile-sub {
+        display: none;
+    }
+}
+
+/* =======================================================
+   ÉCRAN 7" DU ROBOT (?mode=robot)
+   ======================================================= */
 body.robot-screen {
     border: none !important;
     overflow: hidden !important;
@@ -257,257 +324,149 @@ body.robot-screen .pc-only {
 }
 
 body.robot-screen .header {
-    width: 100vw;
-    box-sizing: border-box;
-    display: flex;
-    justify-content: center !important;
-    align-items: center;
-    border-bottom: none !important;
-    background: transparent !important;
-    padding: 2.5vh 0 0 0 !important;
     position: absolute;
     top: 0;
     left: 0;
+    width: 100vw;
+    justify-content: center;
+    background: transparent;
+    border-bottom: none;
+    padding: 2.5vh 0 0 0;
     z-index: 10;
 }
 
-body.robot-screen .header > div:first-child {
-    display: none !important;
+body.robot-screen .brand {
+    display: none;
 }
 
 body.robot-screen .sys-info {
-    font-size: 4.2vh !important;
-    text-align: center !important;
-    justify-content: center !important;
+    font-size: 3.6vh;
     width: 100%;
-    opacity: 1 !important;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
-    font-variant-numeric: tabular-nums !important;
-    white-space: nowrap !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 2vw !important;
+    justify-content: center;
+    gap: 1.5vw;
+    color: var(--text);
 }
 
 body.robot-screen .sys-info-volt {
-    min-width: 6ch !important;
-    text-align: right !important;
-    display: inline-block !important;
-    font-variant-numeric: tabular-nums !important;
+    min-width: 7ch;
+}
+
+body.robot-screen .home {
+    flex: none; /* Sinon flex: 1 l'emporte et la hauteur 100 % du panneau ne se résout pas */
+    display: block;
+    padding: 0;
+    max-width: none;
+    height: calc(100vh - 14vh);
 }
 
 body.robot-screen .dashboard {
-    width: 100vw;
-    height: calc(100vh - 14vh);
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
+    height: 100%;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--bg);
     justify-content: space-evenly;
-    align-items: center;
-    padding: 8vh 3vw 1vh 3vw !important;
+    padding: 9vh 3vw 1vh;
+    gap: 0;
 }
 
 body.robot-screen .team-box {
-    font-size: 6.5vh !important;
-    padding: 1.2vh 6vw !important;
-    margin: 0 !important;
-}
-
-body.robot-screen .robot-pos-box {
-    font-size: 4.2vh !important;
-    padding: 1.2vh 4vw !important;
-    background: rgba(0, 0, 0, 0.45) !important;
-    border: 1.5px solid rgba(79, 195, 247, 0.35) !important;
-    border-radius: 12px !important;
-    margin: 0 !important;
-}
-
-body.robot-screen .pos-val {
-    min-width: 4.5ch !important;
+    font-size: 6vh;
+    padding: 1.2vh 6vw;
 }
 
 body.robot-screen .timer-box {
-    font-size: 19vh !important;
-    margin: 0 !important;
-    text-shadow: 0 0 30px rgba(255, 203, 107, 0.5) !important;
+    font-size: 19vh;
 }
 
-/* BARRE DES 4 BOUTONS PHYSIQUES (BAS DE L'ÉCRAN 7") */
+body.robot-screen .test-mode-badge {
+    font-size: 3.2vh;
+}
+
+body.robot-screen .pos-item {
+    font-size: 4vh;
+    padding: 1vh 2.5vw;
+}
+
+body.robot-screen .pos-val {
+    min-width: 4.5ch;
+}
+
+/* Barre des 4 boutons physiques (bas de l'écran) */
 body.robot-screen .robot-buttons-bar {
-    display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 14vh !important;
-    box-sizing: border-box !important;
-    background: #0c0f14 !important;
-    border-top: 2px solid #232a35 !important;
-    z-index: 100 !important;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    height: 14vh;
+    box-sizing: border-box;
+    background: var(--surface);
+    border-top: 1px solid var(--border-strong);
+    z-index: 100;
 }
 
 body.robot-screen .robot-btn-hint {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    border-right: 1px solid #1e242d !important;
-    padding: 0.5vh 1vw !important;
-    text-align: center !important;
-    position: relative !important;
-    user-select: none !important;
-    cursor: pointer !important;
-    transition: background 0.15s !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid var(--border);
+    padding: 0.5vh 1vw;
+    position: relative;
+    user-select: none;
+    cursor: pointer;
 }
 
 body.robot-screen .robot-btn-hint:last-child {
-    border-right: none !important;
+    border-right: none;
 }
 
 body.robot-screen .robot-btn-hint:active {
-    background: rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 body.robot-screen .btn-badge {
-    position: absolute !important;
-    top: 0.8vh !important;
-    left: 1vw !important;
-    background: #262c36 !important;
-    color: #8892b0 !important;
-    font-size: 1.8vh !important;
-    font-weight: 800 !important;
-    width: 2.8vh !important;
-    height: 2.8vh !important;
-    border-radius: 50% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-family: monospace !important;
-    border: 1px solid #363e4d !important;
+    position: absolute;
+    top: 0.8vh;
+    left: 1vw;
+    width: 2.8vh;
+    height: 2.8vh;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-3);
+    color: var(--text-muted);
+    font-size: 1.7vh;
+    font-weight: 800;
+    font-family: var(--font-mono);
 }
 
 body.robot-screen .btn-main {
-    font-size: 2.8vh !important;
-    font-weight: 900 !important;
-    letter-spacing: 0.5px !important;
-    color: #ffffff !important;
-    text-transform: uppercase !important;
-    margin-top: 0.4vh !important;
+    font-size: 2.8vh;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    margin-top: 0.4vh;
 }
 
 body.robot-screen .btn-sub {
-    font-size: 1.8vh !important;
-    color: #8892b0 !important;
-    margin-top: 0.2vh !important;
+    font-size: 1.8vh;
+    color: var(--text-muted);
+    margin-top: 0.2vh;
 }
 
-/* Couleurs spécifiques par bouton */
-body.robot-screen .btn-hint-team .btn-main {
-    color: #42a5f5 !important;
-}
+body.robot-screen .btn-hint-team .btn-main  { color: var(--team); }
+body.robot-screen .btn-hint-strat .btn-main { color: var(--warning); }
+body.robot-screen .btn-hint-power .btn-main { color: var(--danger); }
+body.robot-screen .btn-hint-init .btn-main  { color: var(--success); }
 
-body.robot-screen .btn-hint-strat .btn-main {
-    color: #ffb74d !important;
-}
-
-body.robot-screen .btn-hint-power .btn-main {
-    color: #ef5350 !important;
-}
-
-body.robot-screen .btn-hint-init .btn-main {
-    color: #66bb6a !important;
-}
-
-/* Flèche indicatrice vers le bas (vers le bouton physique en-dessous de l'écran) */
+/* Flèche vers le bouton physique sous l'écran */
 body.robot-screen .robot-btn-hint::after {
     content: '▼';
     position: absolute;
     bottom: 0.3vh;
     font-size: 1.2vh;
-    color: #475569;
-}
-/* =======================================================
-   TÉLÉPHONE (portrait) — n'affecte pas l'écran robot
-   ======================================================= */
-@media (max-width: 600px) {
-    .dashboard {
-        padding: 10px 10px 0;
-    }
-
-    .team-box {
-        font-size: 7.5vw;
-        padding: 6px 5vw;
-    }
-
-    .dashboard-status-row {
-        gap: 8px 14px;
-    }
-
-    .status-item, .tirette-box, select {
-        font-size: 15px;
-    }
-
-    .robot-pos-box {
-        font-size: 4vw;
-        gap: 2vw;
-        padding: 6px 3vw;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-
-    .pos-val {
-        min-width: 0;
-    }
-
-    .timer-box {
-        font-size: 28vw;
-        margin: 4px 0;
-    }
-
-    .controls {
-        gap: 10px;
-        padding: 10px;
-        min-height: 0;
-    }
-
-    button {
-        font-size: 17px;
-        padding: 12px 8px;
-    }
-
-    .btn-start, .btn-stop {
-        font-size: 24px;
-        padding: 16px 8px;
-    }
-
-    .btn-reset {
-        font-size: 20px;
-    }
-
-    .btn-nav {
-        font-size: 15px;
-        padding: 14px 6px;
-    }
-}
-
-/* Bandeau mode test */
-.test-mode-badge {
-    display: inline-block;
-    margin: 0 auto 1vh;
-    padding: 0.6vh 2vw;
-    border-radius: 8px;
-    background: #FF9800;
-    color: #111;
-    font-weight: 900;
-    font-size: 2.4vh;
-    animation: blink 1.5s infinite;
-}
-
-.test-mode-badge.hidden {
-    display: none;
-}
-
-body.robot-screen .test-mode-badge {
-    font-size: 3.5vh;
+    color: var(--text-faint);
 }

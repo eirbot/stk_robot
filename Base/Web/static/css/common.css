@@ -1,8 +1,82 @@
-/* GLOBALS */
+/* =======================================================
+   EIRBOT 2026 — BASE DE DESIGN COMMUNE
+   Tokens, typo, composants (carte, bouton, badge, chip, tuile).
+   Les classes historiques (.btn-nav, .btn-back, .card...) sont
+   conservées et restylées pour les pages pas encore migrées.
+   Pas de backdrop-filter : trop coûteux sur téléphone et sur la Rasp.
+   ======================================================= */
+
+@font-face {
+    font-family: 'Outfit';
+    src: url('/static/fonts/outfit.woff2') format('woff2');
+    font-weight: 100 900;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: url('/static/fonts/jetbrains-mono.woff2') format('woff2');
+    font-weight: 100 800;
+    font-display: swap;
+}
+
+:root {
+    /* Surfaces */
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #1c232c;
+    --surface-3: #242c37;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+
+    /* Texte */
+    --text: #f0f6fc;
+    --text-muted: #8b949e;
+    --text-faint: #5c6670;
+
+    /* Couleurs */
+    --accent: #00d2ff;
+    --blue: #2196f3;
+    --yellow: #ffc107;
+    --success: #00e676;
+    --success-strong: #1f9d55;
+    --warning: #ffb703;
+    --danger: #ff334b;
+    --danger-strong: #d7263d;
+    --timer: #ffcb6b;
+
+    /* Couleur de l'équipe courante (redéfinie par body.mode-JAUNE) */
+    --team: var(--blue);
+    --team-soft: rgba(33, 150, 243, 0.15);
+    --team-text: #fff;
+
+    /* Typo */
+    --font: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+
+    /* Formes */
+    --radius: 14px;
+    --radius-sm: 9px;
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+
+body.mode-JAUNE {
+    --team: var(--yellow);
+    --team-soft: rgba(255, 193, 7, 0.15);
+    --team-text: #1a1300;
+}
+
+/* =======================================================
+   GLOBAL
+   ======================================================= */
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
 body {
-    background-color: #101418;
-    color: #E6EDF3;
-    font-family: sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
     text-align: center;
     margin: 0;
     padding: 0;
@@ -10,187 +84,291 @@ body {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    border: 0.5vh solid #333;
-    /* Relative border */
-    transition: 0.5s;
-    font-size: 2vh;
-    /* Base font scaling */
+    border-top: 3px solid var(--team);
+    transition: border-color 0.3s;
+    font-size: 2vh; /* Échelle historique, utilisée par les pages non migrées */
 }
 
-/* HEADER */
+button, a, select, input {
+    touch-action: manipulation; /* Pas de délai de double-tap */
+    font-family: inherit;
+}
+
+.mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* =======================================================
+   EN-TÊTE
+   ======================================================= */
 .header {
-    background: #1c2128;
-    padding: 15px;
+    background: var(--surface);
+    padding: 10px 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid #333;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.brand {
+    font-weight: 900;
+    font-size: 1.35rem;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.brand-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--team);
+    box-shadow: 0 0 10px var(--team);
+}
+
+.page-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    margin: 0;
 }
 
 .sys-info {
-    text-align: right;
-    font-size: 0.85em;
-    opacity: 0.9;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    color: var(--text-muted);
 }
 
 .sys-info-item {
     display: inline-block;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 10px;
 }
 
 .sys-info-volt {
-    min-width: 5.5ch;
-    text-align: right;
-    display: inline-block;
-    font-variant-numeric: tabular-nums;
+    min-width: 7ch;
+    text-align: center;
+    color: var(--text);
 }
 
 .sys-info-sep {
-    opacity: 0.4;
+    display: none; /* Remplacé par les pastilles */
+}
+
+/* =======================================================
+   CARTES
+   ======================================================= */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow);
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+}
+
+/* =======================================================
+   BOUTONS
+   ======================================================= */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.08s, filter 0.15s, background 0.15s;
     user-select: none;
 }
 
-/* BOUTONS NAVIGATION & SYSTEME */
+.btn:hover {
+    filter: brightness(1.12);
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.btn-primary { background: var(--accent); border-color: transparent; color: #001a22; }
+.btn-success { background: var(--success-strong); border-color: transparent; color: #fff; }
+.btn-danger  { background: var(--danger-strong); border-color: transparent; color: #fff; }
+.btn-warning { background: var(--warning); border-color: transparent; color: #1a1300; }
+.btn-team    { background: var(--team); border-color: transparent; color: var(--team-text); }
+.btn-ghost   { background: transparent; }
+
+.btn-lg {
+    padding: 18px 22px;
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    border-radius: var(--radius);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+/* Historique */
+.btn-back {
+    background: var(--surface-2);
+    color: var(--text);
+    text-decoration: none;
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 .btn-nav {
-    background: #007bff;
+    background: var(--blue);
     text-decoration: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
+    font-weight: 700;
     color: white;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 20px;
     font-size: 1.2em;
-    transition: 0.2s;
+    transition: filter 0.15s;
 }
 
-.btn-nav:hover {
-    opacity: 0.9;
-}
-
-.btn-back {
-    background: #444;
-    color: white;
-    text-decoration: none;
-    padding: 5px 15px;
-    border-radius: 4px;
-    font-size: 0.9em;
+.btn-nav:hover,
+.btn-back:hover {
+    filter: brightness(1.12);
 }
 
 .btn-tiny {
-    background: #555;
+    background: var(--surface-3);
     font-size: 0.8em;
     padding: 2px 8px;
     margin-left: 5px;
     border: none;
     color: white;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 6px;
 }
 
 .btn-sys {
-    background: #607d8b;
+    background: var(--surface-3);
     font-size: 0.9em;
     padding: 10px;
-    border: none;
-    border-radius: 4px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
     color: white;
     cursor: pointer;
 }
 
-/* UTILS */
-.hidden {
-    display: none;
+/* =======================================================
+   BADGES & CHIPS
+   ======================================================= */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface-2);
+    color: var(--text-muted);
 }
 
-.card {
-    background: #1c232b;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-}
+.badge-ok     { color: var(--success); border-color: rgba(0, 230, 118, 0.4); background: rgba(0, 230, 118, 0.1); }
+.badge-warn   { color: var(--warning); border-color: rgba(255, 183, 3, 0.45); background: rgba(255, 183, 3, 0.1); }
+.badge-danger { color: var(--danger);  border-color: rgba(255, 51, 75, 0.45); background: rgba(255, 51, 75, 0.1); }
+.badge-info   { color: var(--accent);  border-color: rgba(0, 210, 255, 0.4); background: rgba(0, 210, 255, 0.08); }
 
-/* ANIMATION TEAM (BREATHING) */
-.mode-BLEUE {
-    border-color: #2196F3;
-}
-
-.mode-JAUNE {
-    border-color: #FFEB3B;
-}
-
-body.breathing-BLEUE {
-    animation: breathe-blue 2s infinite ease-in-out;
-}
-
-@keyframes breathe-blue {
-    0% {
-        background-color: #000;
-        box-shadow: inset 0 0 20px #2196F3;
-    }
-
-    50% {
-        background-color: #0D47A1;
-        box-shadow: inset 0 0 100px #2196F3;
-    }
-
-    100% {
-        background-color: #000;
-        box-shadow: inset 0 0 20px #2196F3;
-    }
-}
-
-body.breathing-JAUNE {
-    animation: breathe-yellow 2s infinite ease-in-out;
-}
-
-@keyframes breathe-yellow {
-    0% {
-        background-color: #000;
-        box-shadow: inset 0 0 20px #FFEB3B;
-    }
-
-    50% {
-        background-color: #F57F17;
-        box-shadow: inset 0 0 100px #FFEB3B;
-    }
-
-    100% {
-        background-color: #000;
-        box-shadow: inset 0 0 20px #FFEB3B;
-    }
+/* =======================================================
+   FORMULAIRES
+   ======================================================= */
+select,
+.strat-select {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    padding: 7px 10px;
+    font-size: 1rem;
+    border-radius: var(--radius-sm);
 }
 
 .strat-select {
-    background: #333;
-    color: white;
-    border: 1px solid #555;
-    padding: 5px;
-    font-size: 1em;
-    border-radius: 5px;
     margin-left: 10px;
 }
+
+/* =======================================================
+   ÉQUIPE : FIN DE MATCH (RESPIRATION)
+   ======================================================= */
+.mode-BLEUE { border-color: var(--blue); }
+.mode-JAUNE { border-color: var(--yellow); }
+
+body.breathing-BLEUE,
+body.breathing-JAUNE {
+    animation: breathe 2s infinite ease-in-out;
+}
+
+@keyframes breathe {
+    0%, 100% { box-shadow: inset 0 0 20px var(--team); }
+    50%      { box-shadow: inset 0 0 90px var(--team); }
+}
+
+@keyframes blink {
+    50% { opacity: 0.6; }
+}
+
 /* =======================================================
    TÉLÉPHONE (portrait)
    ======================================================= */
-html {
-    -webkit-text-size-adjust: 100%;
-}
-
-button, a, select, input {
-    touch-action: manipulation; /* Pas de délai de double-tap */
-}
-
 @media (max-width: 600px) {
     body {
         font-size: 15px;
-        border-width: 3px;
         overflow-x: hidden;
     }
 
@@ -204,7 +382,7 @@ button, a, select, input {
         width: 100%;
         justify-content: center;
         flex-wrap: wrap;
-        font-size: 0.75em;
+        font-size: 0.72rem;
         white-space: normal;
     }
 
@@ -214,5 +392,10 @@ button, a, select, input {
 
     .btn-back {
         padding: 8px 12px;
+    }
+
+    .btn-lg {
+        font-size: 1.3rem;
+        padding: 16px;
     }
 }
