@@ -10,7 +10,9 @@ def timer_loop():
             # Sync Timer independent of strategy blocking
             if shared.state["match_running"] and shared.state["start_time"]:
                 elapsed = time.time() - shared.state["start_time"]
-                remaining = max(0.0, 100.0 - elapsed)
+                remaining = 100.0 - elapsed
+                if not shared.state.get("test_mode", False):
+                    remaining = max(0.0, remaining)  # En mode test le chrono passe en négatif
                 shared.state["timer"] = remaining
                 shared.state["timer_str"] = f"{remaining:.1f}"
                 

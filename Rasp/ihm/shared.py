@@ -78,6 +78,8 @@ state = {
     "music_enabled": cfg.get("music_enabled", True),
     "leds_enabled": cfg.get("leds_enabled", True),
     "fsm_state": "INIT",
+    # Mode test : pas d'arrêt à 100 s (chrono négatif), le match finit avec la strat
+    "test_mode": bool(cfg.get("test_mode", False)),
     "strat_mode": cfg.get("strat_mode", "DYNAMIC"),
     "static_strat": cfg.get("static_strat"),
     # En STATIC on démarre directement sur la strat de la config (sinon le robot lançait « 1 »)
@@ -97,6 +99,19 @@ def send_led_cmd(cmd):
         sock.sendto(cmd.encode(), "/tmp/ledsock")
         sock.close()
     except: pass
+
+def _save_local_config_key(key, val):
+    try:
+        path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config.json")
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        if data.get(key) == val:
+            return
+        data[key] = val
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+    except Exception as e:
+        print(f"[CONFIG] Sauvegarde de {key} impossible : {e}")
 
 def team_color_cmd():
     """Commande LED de la couleur de l'équipe courante."""
@@ -123,6 +138,11 @@ def update_config_from_server(new_cfg):
             if not has_active_alert:
                 send_led_cmd(team_color_cmd())
             
+    # Mode test : persisté dans config.json du robot pour survivre à un redémarrage
+    if "test_mode" in new_cfg:
+        state["test_mode"] = bool(new_cfg["test_mode"])
+        _save_local_config_key("test_mode", state["test_mode"])
+
     # 2. Mode LiDAR
     if "lidar_mode" in new_cfg:
         state["lidar_mode"] = new_cfg["lidar_mode"]

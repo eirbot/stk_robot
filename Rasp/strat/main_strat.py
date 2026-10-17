@@ -105,7 +105,13 @@ def strat_loop():
                     
                     # Run
                     mod.run(robot)
-                    
+
+                    if shared.state.get("test_mode", False):
+                        # Pas de 100 s en mode test : la fin de la strat termine le match
+                        print("[STRAT] Mode test : stratégie terminée, fin du match.")
+                        shared.state["match_running"] = False
+                        shared.state["match_finished"] = True
+
                     # --- ATTENTE FIN DE MATCH (90s) ---
                     # Si la stratégie finit avant les 90s, on attend patiemment le rappel à la base
                     print("[STRAT] Stratégie terminée. Attente du rappel à la base (90s)...")

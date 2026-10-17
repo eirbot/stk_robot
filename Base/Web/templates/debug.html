@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DEBUG & CONFIG</title>
-    <link rel="stylesheet" href="/static/css/common.css?v=2.6">
-    <link rel="stylesheet" href="/static/css/debug.css?v=2.6">
+    <link rel="stylesheet" href="/static/css/common.css?v=2.7">
+    <link rel="stylesheet" href="/static/css/debug.css?v=2.7">
 
     <style>
         /* Styles garantis pour les flux vidéo et boutons d'action */
@@ -305,8 +305,8 @@
     </style>
 
     <script src="/static/js/chart.js" defer></script>
-    <script src="/static/js/common.js?v=2.6" defer></script>
-    <script src="/static/js/debug.js?v=2.6" defer></script>
+    <script src="/static/js/common.js?v=2.7" defer></script>
+    <script src="/static/js/debug.js?v=2.7" defer></script>
 </head>
 
 <body class="mode-BLEUE">
@@ -359,6 +359,14 @@
                         <option value="" disabled selected>Chargement...</option>
                     </select>
                 </div>
+            </div>
+
+            <div style="margin-top: 10px; padding-bottom: 10px; border-bottom: 1px solid #444;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" id="test-mode" onchange="updateLidarConfig('test_mode', this.checked)"
+                        style="width:20px; height:20px; accent-color:#FF9800;">
+                    🧪 Mode test (pas d'arrêt à 100 s)
+                </label>
             </div>
 
             <div style="margin-top: 10px; padding-bottom: 10px; border-bottom: 1px solid #444;">

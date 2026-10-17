@@ -85,6 +85,10 @@ window.socket.on('state_update', (state) => {
             window.currentLidarMode = lidarMode;
         }
 
+        // Mode test
+        const testModeBox = document.getElementById('test-mode');
+        if (testModeBox) testModeBox.checked = !!c.test_mode;
+
         // Gestion Mode Stratégie
         const stratMode = c.strat_mode || "DYNAMIC";
         const modeSel = document.getElementById('strat-mode');

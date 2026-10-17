@@ -63,6 +63,13 @@ window.socket.on('state_update', (state) => {
         }
     }
 
+    // --- 4b. MODE TEST (rappel visible : à ne pas laisser en compétition) ---
+    const testBadge = document.getElementById('test-mode-badge');
+    if (testBadge) {
+        const cfg = state.config || window.localConfig || {};
+        testBadge.classList.toggle('hidden', !cfg.test_mode);
+    }
+
     // --- 5. ÉTAT FSM ---
     const fsmEl = document.getElementById('fsm-display');
     if (fsmEl) {

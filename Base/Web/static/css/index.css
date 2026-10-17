@@ -490,3 +490,24 @@ body.robot-screen .robot-btn-hint::after {
         padding: 14px 6px;
     }
 }
+
+/* Bandeau mode test */
+.test-mode-badge {
+    display: inline-block;
+    margin: 0 auto 1vh;
+    padding: 0.6vh 2vw;
+    border-radius: 8px;
+    background: #FF9800;
+    color: #111;
+    font-weight: 900;
+    font-size: 2.4vh;
+    animation: blink 1.5s infinite;
+}
+
+.test-mode-badge.hidden {
+    display: none;
+}
+
+body.robot-screen .test-mode-badge {
+    font-size: 3.5vh;
+}

@@ -16,7 +16,7 @@ def background_loop():
         if state["match_running"] and state["start_time"]:
             elapsed = time.time() - state["start_time"]
             remaining = 100.0 - elapsed
-            if remaining <= 0:
+            if remaining <= 0 and not state.get("test_mode", False):
                 state["timer_str"] = "0.0"; state["match_running"] = False; state["match_finished"] = True
                 # Règlement H.3 : à 100 s, arrêt des moteurs ET des actionneurs
                 from strat.actions import esp, actionneurs
