@@ -35,13 +35,11 @@ function threeToRobot(pt) {
 }
 
 let scene, camera, renderer, controls;
-let robotGroup, lidarGroup, visionGroup, lidarScanGroup;
-let robotMaterial, lidarMaterial, visionMaterial;
-let beacons = [];
+let robotGroup, visionGroup, lidarScanGroup;
+let robotMaterial, visionMaterial;
 let targetSphere = null;
 
 let robotPos = { x: 1000, y: 0, theta: 0 }; // theta en degrés
-let lidarPos = null;                         // theta en degrés
 let visionPos = null;                        // theta en degrés
 let currentTeam = "BLEUE";
 let isTopDown = false;
@@ -54,7 +52,6 @@ let obstacleType = 0;
 document.addEventListener('DOMContentLoaded', () => {
     console.log("[MAP 3D] Initialisation de la scène Three.js...");
     init3D();
-    loadBeacons();
     setupWebSocket();
 });
 
@@ -261,31 +258,6 @@ function createRobots() {
     });
     */
 
-    // --- ROBOT GHOST (LIDAR / ESTIMATION) ---
-    // Représente la position estimée par le LiDAR, dessinée de manière semi-transparente
-    lidarGroup = new THREE.Group();
-    lidarMaterial = new THREE.MeshBasicMaterial({
-        color: 0x00e676, // Vert fluo
-        transparent: true,
-        opacity: 0.35
-    });
-
-    const ghostMesh = new THREE.Mesh(bodyGeo, lidarMaterial);
-    ghostMesh.position.z = 125;
-    lidarGroup.add(ghostMesh);
-
-    const ghostNose = new THREE.Mesh(noseGeo, new THREE.MeshBasicMaterial({
-        color: 0x00e676,
-        transparent: true,
-        opacity: 0.5
-    }));
-    ghostNose.rotation.z = -Math.PI / 2;
-    ghostNose.position.set(150, 0, 125);
-    lidarGroup.add(ghostNose);
-
-    lidarGroup.visible = false; // Caché par défaut
-    scene.add(lidarGroup);
-
     // --- ROBOT GHOST (VISION ZENITHALE) ---
     // Représente la position détectée par la caméra zénithale en cyan semi-transparent
     visionGroup = new THREE.Group();
@@ -310,46 +282,6 @@ function createRobots() {
 
     visionGroup.visible = false;
     scene.add(visionGroup);
-}
-
-// -----------------------------------------------------------------------------
-// CHARGEMENT DES BALISES
-// -----------------------------------------------------------------------------
-async function loadBeacons() {
-    try {
-        const resp = await fetch('/api/beacons');
-        if (!resp.ok) return;
-        beacons = await resp.json();
-
-        const beaconGeo = new THREE.CylinderGeometry(25, 25, 120, 16);
-        const beaconMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, roughness: 0.5, metalness: 0.1 });
-        const capGeo = new THREE.CylinderGeometry(30, 30, 20, 16);
-        const capMat = new THREE.MeshStandardMaterial({ color: 0xcc2222 });
-
-        beacons.forEach(([bx, by]) => {
-            const beaconGroup = new THREE.Group();
-
-            const pillar = new THREE.Mesh(beaconGeo, beaconMat);
-            pillar.position.z = 60;
-            pillar.castShadow = true;
-            beaconGroup.add(pillar);
-
-            const cap = new THREE.Mesh(capGeo, capMat);
-            cap.position.z = 130;
-            cap.castShadow = true;
-            beaconGroup.add(cap);
-
-            // Conversion Repère :
-            // Dans l'API, les coordonnées des balises sont :
-            // - bx = Largeur robot (0 à 2000) -> Y_three = 1000 - bx
-            // - by = Longueur robot (-1500 à 1500) -> X_three = by
-            const bp = robotToThree(bx, by);
-            beaconGroup.position.set(bp.x, bp.y, 0);
-            scene.add(beaconGroup);
-        });
-    } catch (e) {
-        console.warn("[MAP 3D] Impossible de charger les balises fixes :", e);
-    }
 }
 
 // -----------------------------------------------------------------------------
@@ -409,19 +341,6 @@ function setupWebSocket() {
                     updateRobotMeshPosition(visionGroup, visionPos);
                 }
             }
-            updateUI();
-        });
-
-        window.socket.on('lidar_pos', (data) => {
-            if (!data) return;
-            lidarPos = {
-                x: data.x,
-                y: data.y,
-                theta: data.theta, // LiDAR en degrés
-                err: data.err
-            };
-            lidarGroup.visible = true;
-            updateRobotMeshPosition(lidarGroup, lidarPos);
             updateUI();
         });
 
@@ -507,21 +426,7 @@ function setupWebSocket() {
                 updateUI();
             }
 
-            // 3. Traitement de la position LiDAR (Ghost semi-transparent)
-            if (msg.type === "lidar_pos" && msg.data) {
-                lidarPos = {
-                    x: msg.data.x,
-                    y: msg.data.y,
-                    theta: msg.data.theta, // en degrés
-                    err: msg.data.err
-                };
-                
-                lidarGroup.visible = true;
-                updateRobotMeshPosition(lidarGroup, lidarPos);
-                updateUI();
-            }
-
-            // 4. Traitement de la trame LiDAR brute (Obstacle + Balises)
+            // 3. Traitement de la trame LiDAR brute (obstacle le plus proche)
             if (msg.type === "lidar_frame" && msg.data) {
                 updateLidarFrame(msg.data);
             }
@@ -573,11 +478,6 @@ function updateUI() {
         txt += `  ·  VISION | X: ${visionPos.x.toFixed(0)} | Y: ${visionPos.y.toFixed(0)} | θ: ${(visionPos.theta || 0).toFixed(1)}°`;
     }
 
-    if (lidarPos) {
-        const lThetaDeg = lidarPos.theta || 0;
-        txt += `  ·  LiDAR | X: ${lidarPos.x.toFixed(0)} | Y: ${lidarPos.y.toFixed(0)} | θ: ${lThetaDeg.toFixed(1)}° (Δ${lidarPos.err.toFixed(0)}mm)`;
-    }
-    
     if (obstacleDetected) {
         let typeStr = "360°";
         if (obstacleType === 2) typeStr = "AVANT";
@@ -806,7 +706,7 @@ function animate() {
 }
 
 // -----------------------------------------------------------------------------
-// ENVOI ET AFFICHAGE DES TRAMES LIDAR BRUTES SUR LE PC (OBSTACLES & BALISES)
+// AFFICHAGE DE L'OBSTACLE LIDAR LE PLUS PROCHE
 // -----------------------------------------------------------------------------
 function updateLidarFrame(data) {
     if (!lidarScanGroup) return;
@@ -859,33 +759,5 @@ function updateLidarFrame(data) {
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
         ringMesh.position.set(pt.x, pt.y, 2);
         lidarScanGroup.add(ringMesh);
-    }
-
-    // 2. Tracer les balises détectées en vert fluo
-    if (data.beacons && Array.isArray(data.beacons)) {
-        data.beacons.forEach(b => {
-            if (b.distance > 0 && b.distance < 90000) {
-                const pt = getGlobalCoords(b.angle, b.distance);
-                
-                // Petit cylindre vert fluo représentant le signal de la balise
-                const bGeo = new THREE.CylinderGeometry(25, 25, 120, 16);
-                const bMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.5 });
-                const bMesh = new THREE.Mesh(bGeo, bMat);
-                bMesh.rotation.x = Math.PI / 2; // Cylindre debout dans le repère Z-up
-                bMesh.position.set(pt.x, pt.y, 60);
-                lidarScanGroup.add(bMesh);
-
-                // Ligne fine reliant le robot à la balise détectée
-                const rp = robotToThree(currentRobotPos.x, currentRobotPos.y);
-                const points = [
-                    new THREE.Vector3(rp.x, rp.y, 15),
-                    new THREE.Vector3(pt.x, pt.y, 15)
-                ];
-                const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
-                const lineMat = new THREE.LineBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.35 });
-                const line = new THREE.Line(lineGeo, lineMat);
-                lidarScanGroup.add(line);
-            }
-        });
     }
 }

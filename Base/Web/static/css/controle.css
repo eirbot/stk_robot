@@ -1225,3 +1225,43 @@ input[type="range"] {
     border-radius: 4px;
     box-shadow: 0 0 6px rgba(0, 210, 255, 0.5);
 }
+
+/* =======================================================
+   TÉLÉPHONE (portrait)
+   ======================================================= */
+@media (max-width: 600px) {
+    .header-left {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .page-title {
+        font-size: 1rem;
+    }
+
+    .control-container {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        padding: 10px;
+    }
+
+    .control-container > *, .card {
+        min-width: 0;
+    }
+
+    .joystick-quick-actions {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .gauges-grid {
+        gap: 10px;
+    }
+}
+
+/* Écran tactile sans clavier : l'aide clavier ne sert à rien */
+@media (hover: none) and (pointer: coarse) {
+    .keyboard-preview {
+        display: none;
+    }
+}

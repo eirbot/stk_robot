@@ -502,15 +502,6 @@ func setupRoutes(app *fiber.App) {
 		return c.JSON(fiber.Map{"status": "success"})
 	})
 
-	app.Get("/api/beacons", func(c *fiber.Ctx) error {
-		return c.JSON([][]float64{
-			{50, 1550},
-			{1950, 1550},
-			{1000, -1550},
-			{-125, 225},
-		})
-	})
-
 	// Routes de diagnostic pour le test de connexion (latence et débit)
 	app.Get("/api/ping", func(c *fiber.Ctx) error {
 		return c.SendStatus(200)

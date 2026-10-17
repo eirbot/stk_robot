@@ -16,7 +16,6 @@
         "id": 0,
         "width": 320
     },
-    "ekf": true,
     "gpio": {
         "pins": {
             "BACK": 23,
@@ -40,25 +39,7 @@
     "lidar": {
         "angle_offset_deg": -90,
         "baudrate": 460800,
-        "beacons": {
-            "A": [
-                50,
-                -1594
-            ],
-            "B": [
-                1950,
-                -1594
-            ],
-            "C": [
-                1000,
-                1594
-            ]
-        },
-        "port": "/dev/lidar",
-        "table_dimensions": [
-            3000,
-            2000
-        ]
+        "port": "/dev/lidar"
     },
     "lidar_mode": "MATCH",
     "lidar_simu": false,

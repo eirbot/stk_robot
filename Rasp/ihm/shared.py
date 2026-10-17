@@ -71,12 +71,8 @@ state = {
     "strat_id": "strat_homologation", 
     "fsm_state": "INIT",
     "strat_mode": cfg.get("strat_mode", "DYNAMIC"),
-    "strat_id": cfg.get("strat_id", 1),
-    "ekf_enabled": cfg.get("ekf_enabled", True)
+    "strat_id": cfg.get("strat_id", 1)
 }
-
-# Variable exposée en tant qu'attribut pour le bypass de sécu
-ekf_enabled = state["ekf_enabled"]
 
 # Position Robot Partagée (Mise à jour par le Main, Lue par l'IHM)
 robot_pos = {'x': 1500, 'y': 1000, 'theta': 0}
@@ -93,7 +89,7 @@ def send_led_cmd(cmd):
     except: pass
 
 def update_config_from_server(new_cfg):
-    global cfg, ekf_enabled
+    global cfg
     cfg.update(new_cfg)
     state["config"] = cfg
     
@@ -116,15 +112,7 @@ def update_config_from_server(new_cfg):
                 else:
                     send_led_cmd("COLOR:0,0,255")
             
-    # 2. EKF
-    if "ekf" in new_cfg:
-        state["ekf_enabled"] = new_cfg["ekf"]
-        ekf_enabled = new_cfg["ekf"]
-    elif "ekf_enabled" in new_cfg:
-        state["ekf_enabled"] = new_cfg["ekf_enabled"]
-        ekf_enabled = new_cfg["ekf_enabled"]
-        
-    # 3. Mode LiDAR
+    # 2. Mode LiDAR
     if "lidar_mode" in new_cfg:
         state["lidar_mode"] = new_cfg["lidar_mode"]
         

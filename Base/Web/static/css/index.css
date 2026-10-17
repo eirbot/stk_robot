@@ -427,3 +427,66 @@ body.robot-screen .robot-btn-hint::after {
     font-size: 1.2vh;
     color: #475569;
 }
+/* =======================================================
+   TÉLÉPHONE (portrait) — n'affecte pas l'écran robot
+   ======================================================= */
+@media (max-width: 600px) {
+    .dashboard {
+        padding: 10px 10px 0;
+    }
+
+    .team-box {
+        font-size: 7.5vw;
+        padding: 6px 5vw;
+    }
+
+    .dashboard-status-row {
+        gap: 8px 14px;
+    }
+
+    .status-item, .tirette-box, select {
+        font-size: 15px;
+    }
+
+    .robot-pos-box {
+        font-size: 4vw;
+        gap: 2vw;
+        padding: 6px 3vw;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .pos-val {
+        min-width: 0;
+    }
+
+    .timer-box {
+        font-size: 28vw;
+        margin: 4px 0;
+    }
+
+    .controls {
+        gap: 10px;
+        padding: 10px;
+        min-height: 0;
+    }
+
+    button {
+        font-size: 17px;
+        padding: 12px 8px;
+    }
+
+    .btn-start, .btn-stop {
+        font-size: 24px;
+        padding: 16px 8px;
+    }
+
+    .btn-reset {
+        font-size: 20px;
+    }
+
+    .btn-nav {
+        font-size: 15px;
+        padding: 14px 6px;
+    }
+}

@@ -32,7 +32,7 @@ graph TD
     Web[Interface Web / Flask]
     Strat[Moteur de Stratégie]
     Blockly[Studio No-Code]
-    Lidar[Localisation EKF / Lidar]
+    Lidar[Évitement Lidar]
     
     Web <--> Strat
     Blockly -->|Génère .py| Strat
@@ -69,7 +69,7 @@ Plus besoin de recompiler le code entre deux matchs !
 
 ### 📍 Navigation Avancée
 
-- Fusion de Capteurs : Filtre de Kalman Étendu (EKF) combinant odométrie et Lidar.
+- Localisation : odométrie des roues, recalée par la caméra zénithale de la base.
 - Trajectoires Courbes : Génération de chemins fluides via courbes de Bézier.
 - Évitement dynamique des adversaires.
 
@@ -83,7 +83,7 @@ L'arborescence est divisée pour séparer clairement les responsabilités :
 robot_3a_2026/
 ├── 🐍 Rasp/                   # --- HAUT NIVEAU (Python) ---
 │   ├── ihm/                   # Serveur Web, Dashboard et Blockly
-│   ├── LiDAR/                 # Drivers Lidar et Algorithmes de localisation
+│   ├── LiDAR/                 # Driver Lidar et détection d'obstacles
 │   ├── strat/                 # Logique de match, automates et actions
 │   ├── interface_deplacement/ # Pathfinding et communication Série
 │   ├── utils/                 # Gestion Audio, LEDs, Caméra

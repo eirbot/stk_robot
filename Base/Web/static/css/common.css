@@ -176,3 +176,43 @@ body.breathing-JAUNE {
     border-radius: 5px;
     margin-left: 10px;
 }
+/* =======================================================
+   TÉLÉPHONE (portrait)
+   ======================================================= */
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+button, a, select, input {
+    touch-action: manipulation; /* Pas de délai de double-tap */
+}
+
+@media (max-width: 600px) {
+    body {
+        font-size: 15px;
+        border-width: 3px;
+        overflow-x: hidden;
+    }
+
+    .header {
+        flex-wrap: wrap;
+        gap: 6px 10px;
+        padding: 8px 10px;
+    }
+
+    .sys-info {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        font-size: 0.75em;
+        white-space: normal;
+    }
+
+    .card {
+        padding: 12px;
+    }
+
+    .btn-back {
+        padding: 8px 12px;
+    }
+}

@@ -3,14 +3,37 @@ function escapeHtml(v) {
     return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// Écritures DOM seulement si la valeur change : la télémétrie arrive à 10 Hz et
+// chaque écriture inutile coûte un recalcul de mise en page (sensible sur téléphone)
+function setText(el, v) {
+    if (!el) return;
+    const s = String(v);
+    if (el.textContent !== s) el.innerText = s;
+}
+
+function setClass(el, v) {
+    if (el && el.className !== v) el.className = v;
+}
+
 // --- SocketWrapper to emulate Socket.IO client using standard HTML5 WebSockets ---
 class SocketWrapper {
     constructor() {
         this.listeners = {};
         this.connect();
+
+        // Onglet en arrière-plan (téléphone verrouillé...) : on coupe le flux 10 Hz
+        // pour économiser batterie et CPU, et on se reconnecte au retour
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (this.ws) this.ws.close();
+            } else if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
+                this.connect();
+            }
+        });
     }
 
     connect() {
+        clearTimeout(this.reconnectTimer);
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         this.ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
@@ -61,8 +84,9 @@ class SocketWrapper {
         };
 
         this.ws.onclose = () => {
+            if (document.hidden) return; // Reconnexion au retour sur l'onglet
             console.log("WebSocket disconnected, reconnecting in 2s...");
-            setTimeout(() => this.connect(), 2000);
+            this.reconnectTimer = setTimeout(() => this.connect(), 2000);
         };
 
         this.ws.onerror = (err) => {
@@ -134,11 +158,11 @@ window.socket.on('state_update', (state) => {
 
     // Gestion des classes globales (couleur équipe, animation match)
     if (state.team) {
-        document.body.classList.remove('mode-BLEUE', 'mode-JAUNE');
-        document.body.classList.add('mode-' + state.team);
-
-        if (state.match_finished) document.body.classList.add('breathing-' + state.team);
-        else document.body.classList.remove('breathing-BLEUE', 'breathing-JAUNE');
+        const cl = document.body.classList;
+        cl.toggle('mode-BLEUE', state.team === 'BLEUE');
+        cl.toggle('mode-JAUNE', state.team === 'JAUNE');
+        cl.toggle('breathing-BLEUE', !!state.match_finished && state.team === 'BLEUE');
+        cl.toggle('breathing-JAUNE', !!state.match_finished && state.team === 'JAUNE');
     }
 
     if (state.telemetry && state.telemetry.rasp_ip && state.telemetry.rasp_ip !== '??' && state.telemetry.rasp_ip !== 'Err') {
@@ -198,7 +222,11 @@ function updateSysInfoDisplay(rawVolt) {
         if (fv !== '--.-V') window.lastVolt = fv;
     }
     const v = window.lastVolt || '--.-V';
-    sysInfoEl.innerHTML = `<span class="sys-info-item">Base: ${escapeHtml(baseIp)}</span><span class="sys-info-sep">|</span><span class="sys-info-item">Robot: ${escapeHtml(raspIp)}</span><span class="sys-info-sep">|</span><span class="sys-info-item sys-info-volt">${v}</span>`;
+    const html = `<span class="sys-info-item">Base: ${escapeHtml(baseIp)}</span><span class="sys-info-sep">|</span><span class="sys-info-item">Robot: ${escapeHtml(raspIp)}</span><span class="sys-info-sep">|</span><span class="sys-info-item sys-info-volt">${v}</span>`;
+    if (html !== window._lastSysInfoHtml) {
+        window._lastSysInfoHtml = html;
+        sysInfoEl.innerHTML = html;
+    }
 }
 
 // --- MISE À JOUR COMMUNE DES INFOS SYSTEME (IP & Batterie) SUR PC ---

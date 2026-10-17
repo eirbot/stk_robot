@@ -10,7 +10,7 @@ Développement d'un robot pour la **Coupe de France de Robotique 2026**.
 - **Raspberry Pi (Python 3.11+) :**
   - **IHM :** Flask + SocketIO + PyWebView (Interface 7").
   - **Stratégie :** Thread IA dédié, support Blockly (XML).
-  - **Localisation :** LiDAR RPLiDAR C1M1 + Beacons (balises fixes) + EKF.
+  - **Localisation :** odométrie roues + recalage par la caméra zénithale (base).
   - **Évitement :** Détection dynamique de l'adversaire via LiDAR.
 - **ESP32 (C++/PlatformIO) :**
   - **ESP32 "Motor" :** 2x NEMA 17 + MKS Servo 42D pilotés en **Step/Dir**.
@@ -25,7 +25,7 @@ Développement d'un robot pour la **Coupe de France de Robotique 2026**.
 ## 📜 Règles de Développement (Mandates)
 1. **Sécurité Matérielle :** Toujours vérifier les limites logicielles des ascenseurs et les timeouts de communication.
 2. **Communication Pi-ESP32 :** Utilise principalement le format JSON via Liaison Série.
-3. **Localisation :** Le LiDAR est critique ; toute modification du code `hardware_thread.py` ou `LiDAR/` doit préserver la détection des balises.
+3. **LiDAR :** sert uniquement à l'évitement ; toute modification de `LiDAR/` doit préserver la détection d'obstacles.
 4. **Actionneurs :** Le vérin est géré comme un Servo (PWM) sur l'ESP Actionneur.
 5. **Validation :** Avant de suggérer une modification bas niveau, vérifier l'impact sur les environnements `platformio.ini`.
 

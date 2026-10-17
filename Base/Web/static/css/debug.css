@@ -560,3 +560,27 @@
     text-align: center;
     font-weight: 700;
 }
+/* =======================================================
+   TÉLÉPHONE (portrait) : une seule colonne
+   ======================================================= */
+@media (max-width: 700px) {
+    .debug-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+        padding: 10px;
+        width: 100%;
+    }
+
+    .debug-grid > .card {
+        grid-column: auto !important; /* annule les span 2 inline */
+        min-width: 0;
+    }
+
+    .debug-grid h3 {
+        margin-top: 0;
+    }
+
+    .debug-grid select, .debug-grid input, .debug-grid button {
+        max-width: 100%;
+    }
+}

@@ -7,13 +7,13 @@ function updatePositionDisplay(pos) {
     const posYEl = document.getElementById('pos-y');
     const posThetaEl = document.getElementById('pos-theta');
     if (posXEl && pos.x !== undefined && pos.x !== null) {
-        posXEl.innerText = Math.round(Number(pos.x));
+        setText(posXEl, Math.round(Number(pos.x)));
     }
     if (posYEl && pos.y !== undefined && pos.y !== null) {
-        posYEl.innerText = Math.round(Number(pos.y));
+        setText(posYEl, Math.round(Number(pos.y)));
     }
     if (posThetaEl && pos.theta !== undefined && pos.theta !== null) {
-        posThetaEl.innerText = Number(pos.theta).toFixed(1);
+        setText(posThetaEl, Number(pos.theta).toFixed(1));
     }
 }
 
@@ -27,11 +27,11 @@ window.socket.on('state_update', (state) => {
     if (!document.getElementById('team-display')) return;
 
     // --- 1. ÉQUIPE ---
-    document.getElementById('team-display').innerText = 'ÉQUIPE ' + state.team;
+    setText(document.getElementById('team-display'), 'ÉQUIPE ' + state.team);
 
     // --- 2. TIMER ---
     const timer = state.timer_str ?? (typeof state.timer !== 'undefined' ? Number(state.timer).toFixed(1) : '0.0');
-    document.getElementById('timer').innerText = timer;
+    setText(document.getElementById('timer'), timer);
 
     // --- 3. POSITION DU ROBOT ---
     if (state.telemetry) {
@@ -58,7 +58,7 @@ window.socket.on('state_update', (state) => {
             stratEl.style.display = 'inline-block';
             stratSel.style.display = 'none';
 
-            stratEl.innerText = 'DYNAMIQUE (Auto)';
+            setText(stratEl, 'DYNAMIQUE (Auto)');
             stratEl.style.color = "#ccc";
         }
     }
@@ -66,7 +66,7 @@ window.socket.on('state_update', (state) => {
     // --- 5. ÉTAT FSM ---
     const fsmEl = document.getElementById('fsm-display');
     if (fsmEl) {
-        fsmEl.innerText = state.fsm_state ?? 'INIT';
+        setText(fsmEl, state.fsm_state ?? 'INIT');
     }
 
     // --- 6. TIRETTE ---
@@ -74,14 +74,14 @@ window.socket.on('state_update', (state) => {
     if (tirDiv) {
         const tir = state.tirette ?? false;
         if (tir === 'ARMED' || tir === true) {
-            tirDiv.innerText = 'TIRETTE: ARMÉE (PRÊT)';
-            tirDiv.className = 'tirette-box status-armed';
+            setText(tirDiv, 'TIRETTE: ARMÉE (PRÊT)');
+            setClass(tirDiv, 'tirette-box status-armed');
         } else if (tir === 'TRIGGERED') {
-            tirDiv.innerText = 'TIRETTE: TIRÉE (GO)';
-            tirDiv.className = 'tirette-box status-triggered';
+            setText(tirDiv, 'TIRETTE: TIRÉE (GO)');
+            setClass(tirDiv, 'tirette-box status-triggered');
         } else {
-            tirDiv.innerText = 'TIRETTE: NON ARMÉE';
-            tirDiv.className = 'tirette-box status-non-armed';
+            setText(tirDiv, 'TIRETTE: NON ARMÉE');
+            setClass(tirDiv, 'tirette-box status-non-armed');
         }
     }
 

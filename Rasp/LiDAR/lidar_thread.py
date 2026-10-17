@@ -73,30 +73,21 @@ class LidarCollisionThread(threading.Thread):
                     time.sleep(0.1)
                     continue
 
-                # Lecture des 64 octets (format 4 balises : 3 floats + 1 int + 12 floats)
+                # Lecture des 64 octets (obstacle 3 floats + 1 int + 12 floats de balises, ignorés)
                 data, addr = self.sock.recvfrom(64)
                 
                 if len(data) == 64:
                     unpacked = struct.unpack('<fff i ffffffffffff', data)
                     
                     angle, dist, intensity = unpacked[0:3]
-                    num_beacons = unpacked[3]
 
-                    # Envoi de la trame LiDAR brute au PC via ZMQ pour la localisation distante
+                    # Envoi de l'obstacle le plus proche au PC (affichage sur la carte)
                     if shared.zmq_client_instance:
-                        beacons_data = []
-                        for i in range(min(num_beacons, 4)):
-                            idx = 4 + (i * 3)
-                            beacons_data.append({
-                                "angle": unpacked[idx],
-                                "distance": unpacked[idx+1]
-                            })
                         shared.zmq_client_instance.send_event("lidar_frame", {
                             "obstacle": {
                                 "angle": angle,
                                 "distance": dist
-                            },
-                            "beacons": beacons_data
+                            }
                         })
                     
                     if time.time() - last_log_time > 2.0:

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./Base/Web/static/js/vendor/**)",
+      "Read(./Base/Web/static/js/socket.io.js)",
+      "Read(./.pio/**)",
+      "Read(./compile_commands.json)",
+      "Read(./embedded/**)",
+      "Read(./Base/base_stk)",
+      "Read(./**/.venv/**)",
+      "Read(./**/__pycache__/**)",
+      "Read(./Rasp/ihm/audio/**)",
+      "Read(./Rasp/strat/strategies/*.xml)"
+    ]
+  }
+}

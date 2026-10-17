@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	zmq "github.com/pebbe/zmq4"
 )
@@ -17,6 +18,7 @@ func pipelineReceptionRobot() {
 	receiver.Bind("tcp://*:5555")
 	fmt.Println("[ZMQ PULL] En attente de la télémétrie du robot (Port 5555)...")
 
+	var lastVisionBroadcast time.Time
 	for {
 		msg, err := receiver.Recv(0)
 		if err != nil {
@@ -80,11 +82,16 @@ func pipelineReceptionRobot() {
 					globalState.VisionPose = vPose
 					globalState.Unlock()
 
-					packet, _ := json.Marshal(map[string]interface{}{
-						"type": "vision_update",
-						"data": vPose,
-					})
-					globalHub.Broadcast(packet)
+					// Pages web limitées à 10 Hz (la caméra va plus vite) : sinon chaque
+					// téléphone connecté parse et redessine à chaque image
+					if time.Since(lastVisionBroadcast) >= 100*time.Millisecond || !vPose.Detected {
+						lastVisionBroadcast = time.Now()
+						packet, _ := json.Marshal(map[string]interface{}{
+							"type": "vision_update",
+							"data": vPose,
+						})
+						globalHub.Broadcast(packet)
+					}
 
 					// Relais au robot pour le recalage de l'odométrie (robot.recalage_camera)
 					if vPose.Detected {

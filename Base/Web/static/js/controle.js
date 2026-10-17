@@ -477,13 +477,13 @@ function initWebSocketEvents() {
     setInterval(() => {
         if (window.socket.ws && window.socket.ws.readyState === WebSocket.OPEN) {
             if (connBadge) {
-                connBadge.innerText = "CONNECTÉ (20Hz)";
-                connBadge.className = "badge-conn connected";
+                setText(connBadge, "CONNECTÉ (20Hz)");
+                setClass(connBadge, "badge-conn connected");
             }
         } else {
             if (connBadge) {
-                connBadge.innerText = "DÉCONNECTÉ";
-                connBadge.className = "badge-conn disconnected";
+                setText(connBadge, "DÉCONNECTÉ");
+                setClass(connBadge, "badge-conn disconnected");
             }
         }
     }, 1000);
@@ -495,9 +495,9 @@ function initWebSocketEvents() {
         const elY = document.getElementById('pos-y');
         const elTheta = document.getElementById('pos-theta');
 
-        if (elX && pos.x !== undefined) elX.innerText = `${pos.x.toFixed(1)} mm`;
-        if (elY && pos.y !== undefined) elY.innerText = `${pos.y.toFixed(1)} mm`;
-        if (elTheta && pos.theta !== undefined) elTheta.innerText = `${pos.theta.toFixed(1)}°`;
+        if (elX && pos.x !== undefined) setText(elX, `${pos.x.toFixed(1)} mm`);
+        if (elY && pos.y !== undefined) setText(elY, `${pos.y.toFixed(1)} mm`);
+        if (elTheta && pos.theta !== undefined) setText(elTheta, `${pos.theta.toFixed(1)}°`);
     });
 
     // Mise à jour de l'état global et du LiDAR
@@ -511,26 +511,26 @@ function initWebSocketEvents() {
             const obsDet = state.obstacle_detected || (obsType > 0);
 
             if (obsType === 1) {
-                badgeLidar.innerText = "🛑 ARRÊT CRITIQUE";
-                badgeLidar.className = "badge-status status-stop";
+                setText(badgeLidar, "🛑 ARRÊT CRITIQUE");
+                setClass(badgeLidar, "badge-status status-stop");
             } else if (obsType === 2) {
-                badgeLidar.innerText = "⚠️ OBSTACLE AVANT";
-                badgeLidar.className = "badge-status status-alert";
+                setText(badgeLidar, "⚠️ OBSTACLE AVANT");
+                setClass(badgeLidar, "badge-status status-alert");
             } else if (obsType === 3) {
-                badgeLidar.innerText = "⚠️ OBSTACLE ARRIÈRE";
-                badgeLidar.className = "badge-status status-alert";
+                setText(badgeLidar, "⚠️ OBSTACLE ARRIÈRE");
+                setClass(badgeLidar, "badge-status status-alert");
             } else if (obsDet) {
-                badgeLidar.innerText = "⚠️ ATTENTION";
-                badgeLidar.className = "badge-status status-alert";
+                setText(badgeLidar, "⚠️ ATTENTION");
+                setClass(badgeLidar, "badge-status status-alert");
             } else {
-                badgeLidar.innerText = "LIBRE";
-                badgeLidar.className = "badge-status status-free";
+                setText(badgeLidar, "LIBRE");
+                setClass(badgeLidar, "badge-status status-free");
             }
         }
 
         // Équipe
         if (state.team) {
-            document.body.className = `mode-${state.team}`;
+            setClass(document.body, `mode-${state.team}`);
         }
     });
 }

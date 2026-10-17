@@ -53,11 +53,11 @@ window.socket.on('state_update', (state) => {
         // 1. État caméra
         let camEnabled = (typeof c.camera === 'object') ? c.camera.enabled : c.camera;
         if (camEnabled) {
-            btnCam.innerText = "📷 Caméra Active";
-            btnCam.className = "btn-toggle-active state-on";
+            setText(btnCam, "📷 Caméra Active");
+            setClass(btnCam, "btn-toggle-active state-on");
         } else {
-            btnCam.innerText = "📷 Caméra Inactive";
-            btnCam.className = "btn-toggle-active state-off";
+            setText(btnCam, "📷 Caméra Inactive");
+            setClass(btnCam, "btn-toggle-active state-off");
         }
         window.currentCameraEnabled = !!camEnabled;
 
@@ -76,11 +76,11 @@ window.socket.on('state_update', (state) => {
 
         if (btnLidar) {
             if (lidarMode !== "OFF") {
-                btnLidar.innerText = `🚨 LiDAR Actif (${lidarMode})`;
-                btnLidar.className = "btn-toggle-active state-on";
+                setText(btnLidar, `🚨 LiDAR Actif (${lidarMode})`);
+                setClass(btnLidar, "btn-toggle-active state-on");
             } else {
-                btnLidar.innerText = "🚨 LiDAR Inactif";
-                btnLidar.className = "btn-toggle-active state-off";
+                setText(btnLidar, "🚨 LiDAR Inactif");
+                setClass(btnLidar, "btn-toggle-active state-off");
             }
             window.currentLidarMode = lidarMode;
         }
@@ -104,14 +104,14 @@ window.socket.on('state_update', (state) => {
         const livePosX = document.getElementById('live-pos-x');
         const livePosY = document.getElementById('live-pos-y');
         const livePosTheta = document.getElementById('live-pos-theta');
-        if (livePosX && state.telemetry.x != null) livePosX.innerText = Math.round(state.telemetry.x);
-        if (livePosY && state.telemetry.y != null) livePosY.innerText = Math.round(state.telemetry.y);
+        if (livePosX && state.telemetry.x != null) setText(livePosX, Math.round(state.telemetry.x));
+        if (livePosY && state.telemetry.y != null) setText(livePosY, Math.round(state.telemetry.y));
         if (livePosTheta && state.telemetry.theta != null) {
             let deg = state.telemetry.theta;
             if (Math.abs(deg) <= Math.PI * 2.1) {
                 deg = deg * 180 / Math.PI;
             }
-            livePosTheta.innerText = Number(deg).toFixed(1);
+            setText(livePosTheta, Number(deg).toFixed(1));
         }
     }
 });
@@ -223,8 +223,8 @@ window.socket.on('sys_info', (data) => {
         const now = new Date().toLocaleTimeString();
         currentChart.data.labels.push(now);
         currentChart.data.datasets[0].data.push(parseFloat(data.current));
-        // 10 minutes d'historique à 10Hz = 600 x 10 = 6000 points
-        if (currentChart.data.labels.length > 6000) {
+        // 1200 points max : au-delà, le redessin du graphe rame sur téléphone
+        if (currentChart.data.labels.length > 1200) {
             currentChart.data.labels.shift();
             currentChart.data.datasets[0].data.shift();
         }
