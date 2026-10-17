@@ -14,6 +14,8 @@ void ClassMotors::vMotors(void *pvParameters) {
   while (1) {
     if (xQueueReceive(instance->xQueue, &taskParams, portMAX_DELAY) == pdPASS) {
       TickType_t lastOdoUpdate = xTaskGetTickCount();
+      // Sert à détecter un Stop() survenu pendant ce segment
+      const uint32_t stopCountStart = instance->stopCount;
 
       // Vitesse en Hz (pas/sec)
       uint32_t speedHz = (taskParams.vitesse * stepPerRev) / ((M_PI * dRoues));
@@ -43,6 +45,13 @@ void ClassMotors::vMotors(void *pvParameters) {
         moteurDroit->move(steps);
 
         while (!movementFinished) {
+
+          // Stop() appelé (H, V, watchdog liaison Rasp...) : on abandonne le
+          // segment, sinon une pause LiDAR en cours relancerait les pas restants
+          if (instance->stopCount != stopCountStart) {
+            StopStepper(moteurGauche, moteurDroit, instance);
+            break;
+          }
 
           bool stopReq = false;
           if (LiDAR_state == 1)
@@ -161,6 +170,7 @@ void ClassMotors::WaitUntilDone() {
 }
 
 void ClassMotors::Stop() {
+  stopCount++; // Signale au segment en cours qu'il ne doit pas reprendre
   StopVelocity();
   StopStepper(moteurGauche, moteurDroit, this);
   if (GetCurrentStep() != 0) {

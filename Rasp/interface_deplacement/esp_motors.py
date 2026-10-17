@@ -3,6 +3,15 @@ import threading
 import time
 import ihm.shared as shared  # On importe ton shared pour y stocker X, Y, Theta
 
+# Protocole série avec l'ESP moteurs (une commande par ligne, voir src/ComWithRasp.hpp) :
+#   Rasp -> ESP : G x y theta, V vx vtheta, S x y theta, L etat, H, K (battement de cœur)
+#   ESP -> Rasp : T x y theta (odométrie), D (GoTo fini), A (GoTo annulé),
+#                 W (watchdog liaison : l'ESP n'a rien reçu depuis 300 ms et a coupé les moteurs)
+# Tout octet envoyé est un signe de vie : "K" n'est émis que si aucune autre commande
+# n'est partie depuis HEARTBEAT_PERIOD. Après un "W", rien ne reprend seul côté ESP :
+# il faut renvoyer une commande (G, V...).
+HEARTBEAT_PERIOD = 0.1  # s, à garder bien sous le délai du watchdog ESP (300 ms)
+
 class ESPMotors:
     def __init__(self, port='/dev/esp_motors', baudrate=115200):
         self.port = port
@@ -19,6 +28,13 @@ class ESPMotors:
         self.last_motion_time = time.time()
         self._last_pose = None
 
+        # Battement de cœur / watchdog liaison ESP
+        self.hb_thread = None
+        self._last_tx_time = 0.0       # Dernier envoi réussi (toute commande compte)
+        self.watchdog_count = 0        # Nombre de trames "W" reçues depuis le démarrage
+        self.watchdog_tripped = False  # True entre un "W" et la consigne G/V suivante
+        self.last_watchdog_time = None
+
     def start(self):
         """Initialise la connexion et lance le thread d'écoute."""
         try:
@@ -34,8 +50,9 @@ class ESPMotors:
             self.rx_thread = threading.Thread(target=self._receive_loop, daemon=True, name="ESP_Rx_Thread")
             self.rx_thread.start()
 
-            # Heartbeat : sans lui l'ESP stoppe tout GoTo en cours au bout de 1 s
-            threading.Thread(target=self._heartbeat_loop, daemon=True, name="ESP_Heartbeat").start()
+            # Battement de cœur : sans lui l'ESP coupe les moteurs au bout de 300 ms
+            self.hb_thread = threading.Thread(target=self._heartbeat_loop, daemon=True, name="ESP_Heartbeat")
+            self.hb_thread.start()
             
         except serial.SerialException as e:
             print(f"[MOTORS] ❌ Erreur critique : Impossible d'ouvrir {self.port} -> {e}")
@@ -56,6 +73,10 @@ class ESPMotors:
             try:
                 msg = f"{cmd}\n"
                 self.ser.write(msg.encode('utf-8'))
+                self._last_tx_time = time.monotonic()
+                if cmd[:1] in ("G", "V"):
+                    # Nouvelle consigne de mouvement : l'ESP repart, le watchdog n'est plus d'actualité
+                    self.watchdog_tripped = False
                 # print(f"[MOTORS] -> {cmd}") # Décommenter pour le debug
             except Exception as e:
                 print(f"[MOTORS] ❌ Erreur d'envoi : {e}")
@@ -108,9 +129,19 @@ class ESPMotors:
     # --- Tâche de fond (Thread) ---
 
     def _heartbeat_loop(self):
+        """Envoie "K" toutes les HEARTBEAT_PERIOD si aucune autre commande n'est partie."""
+        next_beat = time.monotonic()
         while self.running:
-            self.send("K")
-            time.sleep(0.2)
+            now = time.monotonic()
+            if now - self._last_tx_time >= HEARTBEAT_PERIOD * 0.9:
+                self.send("K")
+            # Cadence fixe (pas de dérive) ; si on a pris du retard on repart de maintenant
+            next_beat += HEARTBEAT_PERIOD
+            delay = next_beat - time.monotonic()
+            if delay <= 0:
+                next_beat = time.monotonic()
+                delay = 0
+            time.sleep(delay)
     
     def _receive_loop(self):
         """Boucle tournant en arrière-plan pour traiter les retours de l'ESP."""
@@ -153,3 +184,11 @@ class ESPMotors:
             # Le mouvement a été annulé (timeout obstacle)
             self.cmd_aborted = True
             self.cmd_done_event.set()
+        elif msg == "W":
+            # L'ESP n'a rien reçu pendant 300 ms : moteurs coupés, GoTo annulé (un "A" suit
+            # si un GoTo tournait). Rien ne reprend seul : il faut renvoyer une commande.
+            self.watchdog_count += 1
+            self.watchdog_tripped = True
+            self.last_watchdog_time = time.time()
+            print(f"[MOTORS] ⚠️ WATCHDOG ESP : liaison Rasp perdue > 300 ms, moteurs arrêtés "
+                  f"(n°{self.watchdog_count}). Nouvelle commande nécessaire pour repartir.")

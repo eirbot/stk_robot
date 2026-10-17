@@ -49,6 +49,9 @@ private:
   float y_pos = Y_POS_INIT;
   float orientation = ANGLE_INIT; // radians
 
+  // Incrémenté à chaque Stop() : un segment interrompu ne reprend jamais seul
+  volatile uint32_t stopCount = 0;
+
   long lastStepGauche = 0;
   long lastStepDroit = 0;
 

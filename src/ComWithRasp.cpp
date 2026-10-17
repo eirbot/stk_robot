@@ -36,6 +36,10 @@ void ComWithRasp::Receive() {
   while (1) {
     while (Serial.available()) {
       char c = (char)Serial.read();
+      // Tout octet reçu est un signe de vie de la Rasp (arme le watchdog)
+      lastRxMillis = millis();
+      raspSeen = true;
+      watchdogTripped = false;
       // Si on détecte la touche Entrée (\r ou \n)
       if (c == '\n' || c == '\r') {
         // On vérifie qu'on a bien reçu au moins une lettre
@@ -77,15 +81,7 @@ void ComWithRasp::TelemetryLoop() {
     mot.UpdateOdometry();
     mot.CheckWatchdog();
 
-    // Rasp muette pendant un GoTo : on ne reçoit plus l'état LiDAR, on s'arrête
-    if (heartbeatSeen && (isMoving || goToTaskHandle != NULL) &&
-        millis() - lastRxMillis > RASP_TIMEOUT_MS) {
-      FLAG_STOP = true;
-      mot.StopVelocity();
-      mot.Stop();
-      Serial.println("-> WATCHDOG: plus de nouvelles de la Rasp, arret GoTo");
-      heartbeatSeen = false; // Réarmé au prochain "K"
-    }
+    CheckRaspLink();
 
     telemetryCounter++;
     if (telemetryCounter >= 5) { // 5 * 20ms = 100ms (10 Hz)
@@ -97,13 +93,29 @@ void ComWithRasp::TelemetryLoop() {
   }
 }
 
+void ComWithRasp::CheckRaspLink() {
+  // Pas encore de communication : on ne s'arme pas (sinon pas de démarrage)
+  if (!raspSeen || watchdogTripped)
+    return;
+  if (millis() - lastRxMillis <= RASP_TIMEOUT_MS)
+    return;
+
+  // Rasp muette (plantée, figée ou câble coupé) : plus d'arrêt 100 s ni
+  // d'évitement côté Rasp, on coupe tout. FLAG_STOP levé avant Stop() pour que
+  // GoToTask n'enchaîne pas le segment suivant (il répondra "A").
+  watchdogTripped = true;
+  FLAG_STOP = true;
+  mot.StopVelocity();
+  mot.Stop();
+  Serial.print("W\n"); // Un seul appel : pas d'entremêlement avec "T"/"D"/"A"
+}
+
 void ComWithRasp::Send() {
   Serial.println("Envoi de la commande");
   Serial.println(commande);
 }
 
 void ComWithRasp::processLine() {
-  lastRxMillis = millis();
   commande.trim();
   String command = "";
   std::vector<int> params;
@@ -207,8 +219,8 @@ void ComWithRasp::processCommand(const String &cmd,
 #endif
     serialGoto.SetPos((float)params[0], (float)params[1], (float)params[2]);
   } else if (cmd == "K") {
-    // Heartbeat de la Rasp (lastRxMillis déjà mis à jour par processLine)
-    heartbeatSeen = true;
+    // Battement de cœur : lastRxMillis déjà mis à jour à la réception des octets
+
   } else if (cmd == "H") {
 #if COM_DEBUG
     Serial.println("Halt");
