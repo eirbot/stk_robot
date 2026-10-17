@@ -291,6 +291,48 @@ async function updateLidarConfig(key, val) {
     });
 }
 
+async function updateRasp() {
+    if (!confirm("Mettre à jour le code de la Rasp (git pull sur la base, copie vers le robot, redémarrage du launcher) ?")) {
+        return;
+    }
+
+    const btn = document.getElementById('btn-update-rasp');
+    const oldText = btn ? btn.innerText : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "⏳ Mise à jour...";
+        btn.style.opacity = "0.7";
+    }
+    appendLog("🚀 [RASP] Mise à jour du code de la Rasp...");
+
+    try {
+        const resp = await fetch('/api/update_rasp', { method: 'POST' });
+        const data = await resp.json();
+        if (data.warning) appendLog(`⚠️ [RASP] ${data.warning}`, 'err');
+        if (data.status === 'ok') {
+            appendLog(`✅ [RASP] ${data.msg}`);
+            (data.files || []).forEach(f => appendLog(`   • ${f}`));
+            alert(`✅ ${data.msg}`);
+        } else {
+            const stepMsg = data.step ? `(Étape: ${data.step}) ` : '';
+            appendLog(`❌ [RASP] Erreur ${stepMsg}: ${data.msg}`, 'err');
+            if (data.output) {
+                appendLog(`[DÉTAILS] ${data.output.split('\n').filter(l => l.trim()).slice(-3).join(' | ')}`, 'err');
+            }
+            alert(`❌ ${data.msg}`);
+        }
+    } catch (err) {
+        appendLog(`❌ [RASP] Erreur réseau : ${err.message}`, 'err');
+        alert(`❌ Erreur réseau : ${err.message}`);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = oldText;
+            btn.style.opacity = "1";
+        }
+    }
+}
+
 async function flashESP(target) {
     const label = (target === 'motors' || target === 'motor') ? 'MOTEURS' : 'BRAS (Actionneurs)';
     if (!confirm(`Compiler et flasher l'ESP ${label} depuis la base déportée (via la Raspberry Pi) ?`)) {

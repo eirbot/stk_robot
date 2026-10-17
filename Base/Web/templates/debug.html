@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DEBUG & CONFIG</title>
-    <link rel="stylesheet" href="/static/css/common.css?v=2.5">
-    <link rel="stylesheet" href="/static/css/debug.css?v=2.5">
+    <link rel="stylesheet" href="/static/css/common.css?v=2.6">
+    <link rel="stylesheet" href="/static/css/debug.css?v=2.6">
 
     <style>
         /* Styles garantis pour les flux vidéo et boutons d'action */
@@ -305,8 +305,8 @@
     </style>
 
     <script src="/static/js/chart.js" defer></script>
-    <script src="/static/js/common.js?v=2.5" defer></script>
-    <script src="/static/js/debug.js?v=2.5" defer></script>
+    <script src="/static/js/common.js?v=2.6" defer></script>
+    <script src="/static/js/debug.js?v=2.6" defer></script>
 </head>
 
 <body class="mode-BLEUE">
@@ -540,9 +540,10 @@
                     oninput="document.getElementById('bright-val').innerText=this.value"
                     onchange="updateBrightness(this.value)">
             </div>
-            <div style="display:flex; gap:10px; margin-bottom:15px; justify-content: center;">
+            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px; justify-content: center;">
                 <button id="btn-flash-motors" onclick="flashESP('motors')" class="btn-flash">Flash MOTEURS</button>
                 <button id="btn-flash-arms" onclick="flashESP('arms')" class="btn-flash">Flash BRAS</button>
+                <button id="btn-update-rasp" onclick="updateRasp()" class="btn-flash" style="background:#2e7d32;">Update code RASP</button>
             </div>
             <div style="display:flex; gap:10px; justify-content: center;">
                 <a href="/media" class="btn-nav" style="background-color:#673AB7; flex:1;">🎵 SONS</a>

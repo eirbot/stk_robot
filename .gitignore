@@ -22,3 +22,6 @@ Base/Web/.zmq/
 *.fiber.br
 Base/Vision/build/
 Base/Vision/vision_worker
+
+# Binaire du serveur web : recompilé sur la base par Base/build.sh
+Base/base_stk

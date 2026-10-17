@@ -281,6 +281,8 @@ func setupRoutes(app *fiber.App) {
 		return c.SendFile(filepath.Join(webDir, relPath))
 	}
 
+	// Pas d'icône d'onglet : 204 plutôt qu'un 404 dans la console du navigateur
+	app.Get("/favicon.ico", func(c *fiber.Ctx) error { return c.SendStatus(fiber.StatusNoContent) })
 	app.Get("/", func(c *fiber.Ctx) error { return sendPage(c, "templates/index.html") })
 	app.Get("/map", func(c *fiber.Ctx) error { return sendPage(c, "templates/map.html") })
 	app.Get("/debug", func(c *fiber.Ctx) error { return sendPage(c, "templates/debug.html") })
@@ -624,6 +626,85 @@ func setupRoutes(app *fiber.App) {
 		return c.JSON(res)
 	})
 
+	// Route API pour mettre à jour le code Python de la Rasp depuis la base :
+	// git pull (best effort) puis rsync de Rasp/ vers le robot et redémarrage du launcher
+	app.Post("/api/update_rasp", func(c *fiber.Ctx) error {
+		// Même verrou que le flash : les deux redémarrent des choses sur la Rasp
+		if !flashMutex.TryLock() {
+			return c.Status(409).JSON(fiber.Map{"status": "error", "msg": "Un flash ou une mise à jour est déjà en cours"})
+		}
+		defer flashMutex.Unlock()
+
+		globalState.Lock()
+		running := globalState.MatchRunning
+		globalState.Unlock()
+		if running {
+			return c.Status(409).JSON(fiber.Map{"status": "error", "msg": "Match en cours : mise à jour refusée"})
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+
+		projectRoot := "/home/based/Documents/stk_robot"
+		if p, err := filepath.Abs("../.."); err == nil {
+			if _, err := os.Stat(filepath.Join(p, "Rasp", "main_robot.py")); err == nil {
+				projectRoot = p
+			}
+		}
+
+		// 1. git pull : un échec (pas d'accès internet, modifs locales) n'empêche pas le déploiement
+		warning := ""
+		pullCmd := exec.CommandContext(ctx, "git", "pull", "--ff-only")
+		pullCmd.Dir = projectRoot
+		if out, err := pullCmd.CombinedOutput(); err != nil {
+			warning = "git pull a échoué, déploiement du code présent sur la base : " + strings.TrimSpace(string(out))
+			fmt.Printf("[UPDATE RASP] %s\n", warning)
+		}
+
+		// 2. rsync (config.json exclu : il porte les réglages runtime du robot)
+		raspIP := resolveRaspIP()
+		sshOpts := "ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5"
+		rsyncCmd := exec.CommandContext(ctx, "rsync", "-rc", "--out-format=%n",
+			"--exclude=.venv", "--exclude=__pycache__", "--exclude=*.pyc", "--exclude=*.log", "--exclude=config.json",
+			"-e", sshOpts, projectRoot+"/Rasp/", fmt.Sprintf("eirbot@%s:Documents/robot_stk/", raspIP))
+		rsyncOut, err := rsyncCmd.CombinedOutput()
+		if err != nil {
+			return c.JSON(fiber.Map{
+				"status": "error",
+				"step":   "rsync",
+				"msg":    fmt.Sprintf("Copie vers la Rasp (%s) impossible : %v", raspIP, err),
+				"output": string(rsyncOut),
+			})
+		}
+		var changed []string
+		for _, l := range strings.Split(strings.TrimSpace(string(rsyncOut)), "\n") {
+			if l != "" && !strings.HasSuffix(l, "/") {
+				changed = append(changed, l)
+			}
+		}
+
+		// 3. Redémarrage du launcher seulement si quelque chose a changé
+		if len(changed) > 0 {
+			restartCmd := exec.CommandContext(ctx, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
+				fmt.Sprintf("eirbot@%s", raspIP), "sudo systemctl restart robot_launcher")
+			if out, err := restartCmd.CombinedOutput(); err != nil {
+				return c.JSON(fiber.Map{
+					"status": "error",
+					"step":   "restart",
+					"msg":    fmt.Sprintf("Code copié mais redémarrage du launcher impossible : %v", err),
+					"output": string(out),
+				})
+			}
+		}
+		fmt.Printf("[UPDATE RASP] %d fichier(s) mis à jour sur %s\n", len(changed), raspIP)
+
+		msg := "Code Rasp déjà à jour"
+		if len(changed) > 0 {
+			msg = fmt.Sprintf("%d fichier(s) mis à jour, launcher redémarré", len(changed))
+		}
+		return c.JSON(fiber.Map{"status": "ok", "msg": msg, "files": changed, "warning": warning})
+	})
+
 	// Route API pour flasher les ESPs (Motor / Actionneurs) depuis la base déportée via la Raspberry Pi
 	app.Post("/api/flash_esp/:target", func(c *fiber.Ctx) error {
 		// Un seul flash à la fois : deux pio/esptool en parallèle sur le même port série échouent
@@ -686,15 +767,7 @@ func setupRoutes(app *fiber.App) {
 		fmt.Printf("[FLASH] Compilation réussie pour %s !\n", envName)
 
 		// 4. Récupération de l'IP de la Raspberry Pi
-		globalState.Lock()
-		raspIP := globalState.Telemetry.RaspIP
-		globalState.Unlock()
-		if !isValidIP(raspIP) {
-			raspIP = getRaspIPFromDHCP()
-		}
-		if !isValidIP(raspIP) {
-			raspIP = "192.168.10.89"
-		}
+		raspIP := resolveRaspIP()
 
 		// 5. Transfert des binaires (.bin) vers la Rasp
 		remoteDir := fmt.Sprintf("/tmp/esp_flash/%s", envName)
@@ -843,4 +916,18 @@ func setupRoutes(app *fiber.App) {
 			}
 		}
 	}))
+}
+
+// IP de la Rasp : télémétrie, sinon baux DHCP, sinon IP par défaut
+func resolveRaspIP() string {
+	globalState.Lock()
+	raspIP := globalState.Telemetry.RaspIP
+	globalState.Unlock()
+	if !isValidIP(raspIP) {
+		raspIP = getRaspIPFromDHCP()
+	}
+	if !isValidIP(raspIP) {
+		raspIP = "192.168.10.89"
+	}
+	return raspIP
 }

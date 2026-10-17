@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"time"
 
@@ -121,5 +123,25 @@ func main() {
 	// Configuration des routes (définies dans routes.go)
 	setupRoutes(app)
 
+	go redirectPort80()
+
 	log.Fatal(app.Listen(":8080"))
+}
+
+// http://stk.eirbot (port 80) -> http://stk.eirbot:8080, pour ne pas avoir à taper le port.
+// Le port 80 demande net.ipv4.ip_unprivileged_port_start <= 80 (cf. Base/setup_dns.sh) : sinon on s'en passe.
+func redirectPort80() {
+	ln, err := net.Listen("tcp", ":80")
+	if err != nil {
+		fmt.Printf("[NET] Port 80 indisponible (%v) : interface seulement sur :8080\n", err)
+		return
+	}
+	fmt.Println("[NET] Redirection http://<base>:80 -> :8080 active")
+	_ = http.Serve(ln, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host, _, err := net.SplitHostPort(r.Host)
+		if err != nil {
+			host = r.Host
+		}
+		http.Redirect(w, r, "http://"+host+":8080"+r.URL.RequestURI(), http.StatusFound)
+	}))
 }
