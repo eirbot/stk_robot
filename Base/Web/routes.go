@@ -258,6 +258,10 @@ func findWebDir() string {
 func setupRoutes(app *fiber.App) {
 	webDir := findWebDir()
 
+	// Code PIN des actions sensibles (auth.go) : avant toutes les routes /api
+	app.Use("/api", authMiddleware)
+	setupAuthRoutes(app)
+
 	// Services de fichiers statiques pour l'IHM avec mise en cache et compression
 	app.Static("/static", filepath.Join(webDir, "static"), fiber.Static{
 		Compress:      true,
@@ -798,6 +802,8 @@ func setupRoutes(app *fiber.App) {
 	// Gestionnaire d'IHM en temps réel (WebSockets)
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
+			// PIN vérifié à l'ouverture : les commandes de cette connexion en dépendent
+			c.Locals("trusted", isTrusted(c))
 			return c.Next()
 		}
 		return fiber.ErrUpgradeRequired
@@ -829,6 +835,10 @@ func setupRoutes(app *fiber.App) {
 			c.WriteMessage(websocket.TextMessage, initPacket)
 		}
 
+		trusted, _ := c.Locals("trusted").(bool)
+		authWarned := false
+		var writeMu sync.Mutex // deux goroutines écrivent sur la connexion
+
 		// Goroutine pour lire les messages du client WebSocket
 		go func() {
 			for {
@@ -846,6 +856,18 @@ func setupRoutes(app *fiber.App) {
 					targetPayload := packet.Payload
 					if targetPayload == nil {
 						targetPayload = packet.Data
+					}
+
+					// Commandes sans PIN refusées (sauf STOP) ; le navigateur demande le PIN puis se reconnecte
+					isCommand := packet.Type == "cmd_vel" || packet.Type == "cmd_actuator" || packet.Type == "action"
+					if isCommand && !trusted && targetPayload != "stop" {
+						if !authWarned {
+							authWarned = true
+							writeMu.Lock()
+							_ = c.WriteMessage(websocket.TextMessage, []byte(`{"type":"auth_required","data":{"msg":"Code PIN requis"}}`))
+							writeMu.Unlock()
+						}
+						continue
 					}
 
 					if packet.Type == "cmd_vel" {
@@ -866,7 +888,10 @@ func setupRoutes(app *fiber.App) {
 
 		// Boucle d'envoi de la télémétrie/état vers le navigateur à haute fréquence
 		for msg := range ch {
-			if err := c.WriteMessage(websocket.TextMessage, msg); err != nil {
+			writeMu.Lock()
+			err := c.WriteMessage(websocket.TextMessage, msg)
+			writeMu.Unlock()
+			if err != nil {
 				break
 			}
 		}

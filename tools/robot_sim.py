@@ -149,6 +149,13 @@ def start_robot(server="127.0.0.1", config_path=None, tirette_inserted=False):
         sys.path.insert(0, RASP)
     os.chdir(RASP)  # main_strat cherche les stratégies en relatif
 
+    # IP annoncée par le robot simulé : surtout pas celle du PC, sinon la base ferait confiance
+    # au navigateur du PC comme s'il était l'écran du robot (code PIN contourné)
+    import utils
+    import utils.system_info as system_info
+    sim_ip = os.environ.get("SIM_ROBOT_IP", "127.0.0.2")
+    system_info.get_ip = utils.get_ip = lambda *a, **k: sim_ip
+
     import ihm.shared as shared
     import strat.main_strat as main_strat
     import main_robot

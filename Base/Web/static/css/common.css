@@ -1208,3 +1208,40 @@ html[data-theme="win95"] .ui-select-option.is-selected { background: #000080; co
 .toast-err { background: var(--danger-strong); color: #fff; }
 .toast-ok  { background: var(--success-strong); color: #fff; }
 .toast-out { opacity: 0; }
+
+/* Fenêtre du code PIN (askPin() de common.js) */
+.pin-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    padding: 16px;
+}
+
+.pin-card {
+    width: min(340px, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+    margin: 0;
+}
+
+.pin-card .muted { margin: 0; }
+
+.pin-input {
+    font-size: 1.6rem !important;
+    letter-spacing: 6px;
+    text-align: center;
+}
+
+.pin-error {
+    min-height: 1.2em;
+    color: var(--danger);
+    font-weight: 700;
+}
+
+.pin-actions { justify-content: flex-end; }

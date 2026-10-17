@@ -145,6 +145,31 @@ Hôtes et chemins : variables `BASE_HOST`, `ROBOT_HOST`, `ROBOT_USER`, `ROBOT_KE
 Version : `GET /api/version` sur la base, fichier `~/Documents/robot_stk/VERSION` sur le robot.
 Service de la base, une seule fois : `sudo Base/install_service.sh` (logs : `journalctl -u base_stk -f`).
 
+### 4. Code PIN de l'interface
+
+Les commandes de l'interface (match, réglages, déplacements, actionneurs, stratégies, flash,
+mise à jour) demandent un code PIN, mémorisé 12 h par appareil. STOP, la consultation, l'écran du
+robot et la base elle-même restent libres. Le PIN se définit sur la base, au choix :
+
+```bash
+echo 4242 > Base/pin.txt        # fichier non versionné
+STK_PIN=4242 ./Base/build.sh --run
+```
+
+Sans PIN défini, la protection est désactivée (pratique sur le PC de dev).
+
+### 5. Tests et simulation (sans robot)
+
+```bash
+tools/run_tests.sh [--rapide]            # Python, JavaScript, Go (--rapide : sans test_strategies)
+tools/check_strategy.py 3b_pouss_plus --team JAUNE   # trajectoire d'une stratégie
+./Base/build.sh --run &                  # base locale, puis :
+python3 tools/robot_sim.py               # vrai code robot + faux matériel, piloté depuis http://localhost:8080
+```
+
+Le robot est la source de vérité de l'état du match et de sa config (`Rasp/core/match_state.py`,
+`Rasp/core/config_store.py`) ; la base affiche et transmet. Repères : `Rasp/core/frames.py`.
+
 ---
 
 ## 🔧 Hardware

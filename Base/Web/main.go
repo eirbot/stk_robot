@@ -112,6 +112,7 @@ func main() {
 	}))
 
 	// Configuration des routes (définies dans routes.go)
+	initAuth()
 	setupRoutes(app)
 
 	if httpPort == "8080" {

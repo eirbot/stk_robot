@@ -135,20 +135,75 @@ function toast(msg, type) {
     setTimeout(() => el.remove(), 4000);
 }
 
-// Le robot est la source de vérité : la base peut refuser une commande (robot hors ligne,
-// réglage invalide...). Toute réponse en erreur des routes de commande est affichée.
-(function () {
-    const nativeFetch = window.fetch.bind(window);
-    window.fetch = function (url, opts) {
-        const p = nativeFetch(url, opts);
-        if (typeof url === 'string' && /^\/api\/(action|config_edit)/.test(url)) {
-            p.then(r => {
-                if (!r.ok) r.clone().json().then(b => toast(b.msg || ('Erreur ' + r.status), 'err')).catch(() => toast('Erreur ' + r.status, 'err'));
-            }).catch(() => toast('Base injoignable', 'err'));
+// --- CODE PIN (actions sensibles, cf. Base/Web/auth.go) ---
+let pinPrompt = null;  // une seule fenêtre à la fois, partagée par toutes les demandes
+
+function askPin() {
+    if (pinPrompt) return pinPrompt;
+    pinPrompt = new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'pin-overlay';
+        overlay.innerHTML = `
+            <form class="card pin-card">
+                <h2 class="card-title">Code PIN</h2>
+                <p class="muted">Cette action est protégée.</p>
+                <input type="password" inputmode="numeric" autocomplete="current-password" class="pin-input" aria-label="Code PIN">
+                <div class="pin-error"></div>
+                <div class="row pin-actions">
+                    <button type="button" class="btn btn-ghost pin-cancel">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Valider</button>
+                </div>
+            </form>`;
+        document.body.appendChild(overlay);
+        const form = overlay.querySelector('form');
+        const input = overlay.querySelector('.pin-input');
+        const error = overlay.querySelector('.pin-error');
+        const done = (ok) => { overlay.remove(); pinPrompt = null; resolve(ok); };
+        overlay.querySelector('.pin-cancel').addEventListener('click', () => done(false));
+        overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') done(false); });
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const r = await nativeFetch('/api/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: input.value })
+            });
+            if (r.ok) { toast('Code PIN accepté', 'ok'); done(true); return; }
+            const b = await r.json().catch(() => ({}));
+            error.textContent = b.msg || 'Code PIN incorrect';
+            input.value = '';
+            input.focus();
+        });
+        input.focus();
+    });
+    return pinPrompt;
+}
+
+// Commande refusée faute de PIN (401) : on demande le PIN puis on relance la même requête.
+// Le robot est la source de vérité : la base peut aussi refuser une commande (robot hors
+// ligne, réglage invalide...) ; ces erreurs sont affichées.
+const nativeFetch = window.fetch.bind(window);
+window.fetch = function (url, opts) {
+    const isCommand = typeof url === 'string' && url.startsWith('/api/') && opts && (opts.method || '').toUpperCase() === 'POST';
+    const p = nativeFetch(url, opts).then(async (r) => {
+        if (isCommand && r.status === 401 && url !== '/api/login') {
+            const ok = await askPin();
+            return ok ? nativeFetch(url, opts) : r;
         }
-        return p;
-    };
-})();
+        return r;
+    });
+    if (typeof url === 'string' && /^\/api\/(action|config_edit)/.test(url)) {
+        p.then(r => {
+            if (!r.ok) r.clone().json().then(b => toast(b.msg || ('Erreur ' + r.status), 'err')).catch(() => toast('Erreur ' + r.status, 'err'));
+        }).catch(() => toast('Base injoignable', 'err'));
+    }
+    return p;
+};
+
+// Commandes WebSocket (Contrôle) refusées sans PIN : PIN puis reconnexion (la session est
+// vérifiée à l'ouverture de la connexion)
+window.socket.on('auth_required', () => {
+    askPin().then(ok => { if (ok && window.socket.ws) window.socket.ws.close(); });
+});
 
 // --- LOGIQUE PARTAGÉE STRATÉGIES ---
 function loadBlocklyStrats(selectId) {
