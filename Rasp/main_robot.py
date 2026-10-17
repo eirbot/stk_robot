@@ -104,10 +104,7 @@ if __name__ == "__main__":
         # Ne pas écraser si on a une alerte tirette en cours
         if shared.state.get('tirette_msg') != "REMOVE_TO_RESET":
             print(f"[MAIN] Application de la couleur d'équipe : {shared.state['team']}")
-            if shared.state['team'] == 'JAUNE':
-                 shared.send_led_cmd("COLOR:255,160,0") # Jaune
-            else:
-                 shared.send_led_cmd("COLOR:0,0,255") # Bleue
+            shared.send_led_cmd(shared.team_color_cmd())
         else:
              print("[MAIN] Alerte Tirette active, on ne force pas la couleur d'équipe.")
              # On renvoie la commande car le service LED n'était peut-être pas prêt lors du thread boutons

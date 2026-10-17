@@ -4,7 +4,7 @@ import psutil
 import os
 import numpy as np
 # On assure d'importer robot_pos
-from ihm.shared import state, audio, send_led_cmd, robot_pos, send_sys_info
+from ihm.shared import state, audio, send_led_cmd, robot_pos, send_sys_info, team_color_cmd
 from utils import get_ip, get_battery_voltage, get_cpu_temp, get_battery_current, get_voltage_float
 
 def background_loop():
@@ -60,10 +60,7 @@ def background_loop():
                      print(f"[TASKS] Batterie rétablie ({volts}V).")
                      state["bat_low"] = False
                      # Retour à la couleur d'équipe (les changements d'équipe sont ignorés pendant l'alerte)
-                     if state.get("team") == "JAUNE":
-                         send_led_cmd("COLOR:255,160,0")
-                     else:
-                         send_led_cmd("COLOR:0,0,255")
+                     send_led_cmd(team_color_cmd())
 
             ip = get_ip()
             send_sys_info({

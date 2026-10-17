@@ -97,6 +97,10 @@ def send_led_cmd(cmd):
         sock.close()
     except: pass
 
+def team_color_cmd():
+    """Commande LED de la couleur de l'équipe courante."""
+    return "COLOR:255,160,0" if state.get("team") == "JAUNE" else "COLOR:0,0,255"
+
 def update_config_from_server(new_cfg):
     global cfg
     cfg.update(new_cfg)
@@ -108,18 +112,15 @@ def update_config_from_server(new_cfg):
         old_team = state.get("team")
         if new_team != old_team:
             state["team"] = new_team
+            # STOPPED ne bloque plus : après un arrêt on doit pouvoir changer d'équipe et le voir
             has_active_alert = (
                 state.get("bat_low", False) or
                 state.get("tirette_msg") == "REMOVE_TO_RESET" or
                 state.get("tirette") == "ARMED" or
-                state.get("match_running", False) or
-                state.get("fsm_state") == "STOPPED"
+                state.get("match_running", False)
             )
             if not has_active_alert:
-                if new_team == 'JAUNE':
-                    send_led_cmd("COLOR:255,160,0")
-                else:
-                    send_led_cmd("COLOR:0,0,255")
+                send_led_cmd(team_color_cmd())
             
     # 2. Mode LiDAR
     if "lidar_mode" in new_cfg:

@@ -94,7 +94,7 @@ class ButtonsThread:
              print("[BUTTONS] Tirette ABSENTE au démarrage -> Prêt à armer.")
              shared.state['tirette'] = "WAIT_INSERT"
              shared.state['tirette_msg'] = "WAITING"
-             shared.send_led_cmd("COLOR:0,0,255")
+             shared.send_led_cmd(shared.team_color_cmd())
         else:
              print("[BUTTONS] Tirette PRÉSENTE au démarrage -> Veuillez retirer !")
              shared.state['tirette'] = "WAIT"
@@ -179,10 +179,10 @@ class ButtonsThread:
                                  shared.send_led_cmd("ANIM:BLINK:255,100,0,350")
                         else:
                              # Tirette is Removed. Ready to ARM.
-                             print("[BUTTONS] ⏳ Tirette ABSENTE -> Prêt à armer (Bleu)")
+                             print("[BUTTONS] ⏳ Tirette ABSENTE -> Prêt à armer (couleur d'équipe)")
                              shared.state['tirette'] = "WAIT_INSERT"
                              shared.state['tirette_msg'] = "WAITING"
-                             shared.send_led_cmd("COLOR:0,0,255") # On arrête le clignotement par un bleu fixe
+                             shared.send_led_cmd(shared.team_color_cmd()) # Fin du clignotement : couleur d'équipe fixe
 
 
                     elif current_state == "WAIT_INSERT":
