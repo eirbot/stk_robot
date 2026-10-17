@@ -46,6 +46,10 @@ TIME_TO_RETURN = 90
 class EndOfMatchException(Exception):
     pass
 
+def _angle_diff(a, b):
+    """a - b ramené dans [-180, 180[ (degrés)."""
+    return (a - b + 180.0) % 360.0 - 180.0
+
 class RobotActions:
     def __init__(self):
         self.is_returning = False
@@ -104,6 +108,10 @@ class RobotActions:
         Déplacement en ligne droite + Envoi ESP32
         """
         self._check_abort(manual=manual)
+
+        vision_cfg = shared.cfg.get("vision_odom", {})
+        if not manual and vision_cfg.get("auto", False):
+            self.recalage_camera(attente_max=vision_cfg.get("attente_auto_s", 0.5))
         
         if not real:
             real_x, real_y, real_theta = self._apply_sym(x, y, theta)
@@ -251,6 +259,80 @@ class RobotActions:
         while time.time() < fin:
             self._check_abort()
             time.sleep(0.05)
+
+    def recalage_camera(self, attente_max=1.0):
+        """
+        Recale l'odométrie de l'ESP sur la pose vue par la caméra zénithale de la base.
+        À appeler robot immobile (entre deux goto) : GoToPosition planifie chaque
+        déplacement depuis sa pose interne, un recalage en mouvement serait faussé.
+        Retourne True si la pose a été corrigée.
+        """
+        self._check_abort()
+        if not esp:
+            print("[SIMU] Recalage caméra virtuel (Pas de com)")
+            return False
+
+        cfg = shared.cfg.get("vision_odom", {})
+        latence = cfg.get("latence_s", 0.3)
+        nb_mesures = cfg.get("nb_mesures", 5)
+
+        # 1. Uniquement des mesures reçues `latence` après le dernier mouvement :
+        #    les images ont alors été prises robot immobile
+        fin = time.time() + attente_max
+        while True:
+            t_min = esp.last_motion_time + latence
+            mesures = [m for m in shared.vision_poses if m[0] >= t_min]
+            if len(mesures) >= nb_mesures:
+                break
+            if time.time() >= fin:
+                print(f"[VISION] Recalage annulé : {len(mesures)}/{nb_mesures} mesures caméra robot immobile")
+                return False
+            self._check_abort()
+            time.sleep(0.05)
+        mesures = mesures[-nb_mesures:]
+
+        # 2. Médiane, puis on ne garde que les mesures proches : il en faut une majorité
+        milieu = len(mesures) // 2
+        x_med = sorted(m[1] for m in mesures)[milieu]
+        y_med = sorted(m[2] for m in mesures)[milieu]
+        dispersion_max = cfg.get("dispersion_max_mm", 30)
+        coherentes = [m for m in mesures if math.hypot(m[1] - x_med, m[2] - y_med) <= dispersion_max]
+        if len(coherentes) <= len(mesures) // 2:
+            print(f"[VISION] Recalage annulé : mesures trop dispersées "
+                  f"({len(coherentes)}/{len(mesures)} à moins de {dispersion_max} mm de la médiane)")
+            return False
+        milieu = len(coherentes) // 2
+        x_cam = sorted(m[1] for m in coherentes)[milieu]
+        y_cam = sorted(m[2] for m in coherentes)[milieu]
+        theta_ref = coherentes[0][3]
+        theta_cam = theta_ref + sorted(_angle_diff(m[3], theta_ref) for m in coherentes)[milieu]
+
+        # 3. Repère caméra -> repère odométrie (identité par défaut)
+        repere = cfg.get("repere", {})
+        rot_deg = repere.get("rotation_deg", 0.0)
+        rot = math.radians(rot_deg)
+        x_cam, y_cam = (repere.get("dx", 0.0) + x_cam * math.cos(rot) - y_cam * math.sin(rot),
+                        repere.get("dy", 0.0) + x_cam * math.sin(rot) + y_cam * math.cos(rot))
+        theta_cam += rot_deg
+
+        # 4. Garde-fou : un écart énorme = mauvaise détection ou repère mal réglé
+        x_odo, y_odo, theta_odo = shared.robot_pos['x'], shared.robot_pos['y'], shared.robot_pos['theta']
+        ecart = math.hypot(x_cam - x_odo, y_cam - y_odo)
+        ecart_theta = _angle_diff(theta_cam, theta_odo)
+        if ecart > cfg.get("ecart_max_mm", 300) or abs(ecart_theta) > cfg.get("ecart_max_deg", 30):
+            print(f"[VISION] Recalage refusé : écart trop grand ({ecart:.0f} mm, {ecart_theta:+.1f}°)")
+            return False
+
+        # 5. Application (gain < 1 : correction partielle, plus douce si la caméra est bruitée)
+        gain = cfg.get("gain", 1.0)
+        x_new = x_odo + gain * (x_cam - x_odo)
+        y_new = y_odo + gain * (y_cam - y_odo)
+        theta_new = _angle_diff(theta_odo + gain * ecart_theta, 0.0)
+        print(f"[VISION] Recalage : ({x_odo:.0f}, {y_odo:.0f}, {theta_odo:.1f}°) -> "
+              f"({x_new:.0f}, {y_new:.0f}, {theta_new:.1f}°) [écart {ecart:.0f} mm, {ecart_theta:+.1f}°]")
+        esp.set_pos(x_new, y_new, theta_new)
+        shared.robot_pos.update({'x': x_new, 'y': y_new, 'theta': theta_new})
+        return True
 
     def prendreKapla(self):
         self._check_abort()

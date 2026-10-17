@@ -2,6 +2,7 @@ import os
 import json
 import socket
 import time
+from collections import deque
 
 from utils import LedStrip, AudioManager
 
@@ -79,6 +80,9 @@ ekf_enabled = state["ekf_enabled"]
 
 # Position Robot Partagée (Mise à jour par le Main, Lue par l'IHM)
 robot_pos = {'x': 1500, 'y': 1000, 'theta': 0}
+
+# Dernières poses de la caméra zénithale (base) : (heure de réception Rasp, x, y, theta en degrés)
+vision_poses = deque(maxlen=60)
 
 def send_led_cmd(cmd):
     if not state["leds_enabled"]: return

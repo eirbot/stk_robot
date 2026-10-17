@@ -53,8 +53,8 @@ class ZmqClient(threading.Thread):
             if not cmd_type:
                 return
 
-            # cmd_vel arrive à 20 Hz : ne pas l'afficher (chaque print repart en new_log vers l'IHM)
-            if cmd_type != "cmd_vel":
+            # cmd_vel (20 Hz) et vision_pose (cadence caméra) : ne pas les afficher (chaque print repart en new_log vers l'IHM)
+            if cmd_type not in ("cmd_vel", "vision_pose"):
                 print(f"[ZMQ CLIENT] Commande reçue : {cmd_type} -> {payload}")
             
             if cmd_type == "config_update":
@@ -184,6 +184,12 @@ class ZmqClient(threading.Thread):
                     threading.Thread(target=self._run_manual_goto, args=(x, y, theta), daemon=True).start()
                 except Exception as e:
                     print(f"[ZMQ CLIENT] Erreur lancement goto : {e}")
+
+            elif cmd_type == "vision_pose":
+                try:
+                    shared.vision_poses.append((time.time(), float(payload["x"]), float(payload["y"]), float(payload["theta"])))
+                except (KeyError, TypeError, ValueError):
+                    pass
 
             elif cmd_type == "set_robot_pos":
                 try:

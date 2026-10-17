@@ -85,6 +85,11 @@ func pipelineReceptionRobot() {
 						"data": vPose,
 					})
 					globalHub.Broadcast(packet)
+
+					// Relais au robot pour le recalage de l'odométrie (robot.recalage_camera)
+					if vPose.Detected {
+						envoyerAuRobot("vision_pose", vPose)
+					}
 				}
 			} else if msgObj.Type == "state_update" {
 				var update StateUpdate

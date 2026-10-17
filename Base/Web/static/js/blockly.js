@@ -141,6 +141,17 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     };
 
+    Blockly.Blocks['robot_recalage_camera'] = {
+        init: function () {
+            this.appendDummyInput()
+                .appendField("🎯 Recaler l'odométrie sur la caméra");
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setColour(230);
+            this.setTooltip("Robot immobile : corrige la position de l'ESP avec la pose vue par la caméra de la base.");
+        }
+    };
+
     Blockly.Blocks['robot_si_approche_reussie'] = {
         init: function () {
             this.appendDummyInput()
@@ -222,6 +233,7 @@ document.addEventListener("DOMContentLoaded", function () {
     };
     Blockly.Python.forBlock['robot_approche_kapla'] = function (block) { return 'robot.approcheKapla()\n'; };
     Blockly.Python.forBlock['robot_thermometre'] = function (block) { return 'robot.thermometre()\n'; };
+    Blockly.Python.forBlock['robot_recalage_camera'] = function (block) { return 'robot.recalage_camera()\n'; };
     Blockly.Python.forBlock['robot_attendre'] = function (block) {
         return `robot.attendre(${block.getFieldValue('SECONDES')})\n`;
     };

@@ -15,6 +15,9 @@ class ESPMotors:
         self.rx_thread = None
         self.cmd_done_event = threading.Event()
         self.cmd_aborted = False
+        # Dernier instant où l'odométrie a bougé (sert à savoir si le robot est immobile)
+        self.last_motion_time = time.time()
+        self._last_pose = None
 
     def start(self):
         """Initialise la connexion et lance le thread d'écoute."""
@@ -96,7 +99,8 @@ class ESPMotors:
         self.send("H")
 
     def set_pos(self, x, y, theta):
-        self.send(f"S {x} {y} {theta}")
+        # L'ESP parse des entiers (toInt) : on arrondit plutôt que tronquer
+        self.send(f"S {round(x)} {round(y)} {round(theta)}")
         
     def set_lidar_state(self, val):
         self.send(f"L {val}")
@@ -129,11 +133,16 @@ class ESPMotors:
             try:
                 parts = msg.split()
                 if len(parts) == 4:
+                    x, y, theta = float(parts[1]), float(parts[2]), float(parts[3])
+                    last = self._last_pose
+                    if last is None or abs(x - last[0]) > 0.5 or abs(y - last[1]) > 0.5 or abs(theta - last[2]) > 0.2:
+                        self.last_motion_time = time.time()
+                    self._last_pose = (x, y, theta)
                     # On met à jour directement ton dictionnaire global "shared"
                     # Ainsi ton IHM et ta Strat ont toujours la position en temps réel
-                    shared.robot_pos['x'] = float(parts[1])
-                    shared.robot_pos['y'] = float(parts[2])
-                    shared.robot_pos['theta'] = float(parts[3])
+                    shared.robot_pos['x'] = x
+                    shared.robot_pos['y'] = y
+                    shared.robot_pos['theta'] = theta
             except ValueError:
                 print(f"[MOTORS] ⚠️ Erreur de parsing Odométrie : {msg}")
         elif msg == "D":

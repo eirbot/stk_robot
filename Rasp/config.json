@@ -67,6 +67,21 @@
     "static_strat": "3b_pouss_plus",
     "strat_mode": "STATIC",
     "team": "BLEUE",
+    "vision_odom": {
+        "attente_auto_s": 0.5,
+        "auto": false,
+        "dispersion_max_mm": 30,
+        "ecart_max_deg": 30,
+        "ecart_max_mm": 300,
+        "gain": 1.0,
+        "latence_s": 0.3,
+        "nb_mesures": 5,
+        "repere": {
+            "dx": 0.0,
+            "dy": 0.0,
+            "rotation_deg": 0.0
+        }
+    },
     "ui": {
         "height": 480,
         "width": 800
