@@ -27,18 +27,26 @@ function initDebugPage() {
     const canvas = document.getElementById('currentChart');
     if (!canvas) return; // Sécurité si le canvas n'existe pas
 
+    // Couleurs du thème courant (common.css)
+    const cs = getComputedStyle(document.documentElement);
+    const themeColor = (name, fallback) => cs.getPropertyValue(name).trim() || fallback;
+    const lineColor = themeColor('--timer', '#FFCB6B');
+    const gridColor = themeColor('--border', '#333');
+    const tickColor = themeColor('--text-muted', '#8b949e');
+
     const ctx = canvas.getContext('2d');
     currentChart = new Chart(ctx, {
         type: 'line',
-        data: { labels: [], datasets: [{ label: 'Courant (A)', data: [], borderColor: '#FFCB6B', borderWidth: 2, tension: 0.3 }] },
+        data: { labels: [], datasets: [{ label: 'Courant (A)', data: [], borderColor: lineColor, borderWidth: 2, tension: 0.3, pointRadius: 0 }] },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             animation: false,
             interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { labels: { color: tickColor } } },
             scales: {
-                x: { display: true, ticks: { maxTicksLimit: 10 } },
-                y: { beginAtZero: true, grid: { color: '#333' } }
+                x: { display: true, ticks: { maxTicksLimit: 10, color: tickColor }, grid: { color: gridColor } },
+                y: { beginAtZero: true, ticks: { color: tickColor }, grid: { color: gridColor } }
             }
         }
     });

@@ -1,108 +1,177 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>EIRBOT Replay</title>
     <script src="/static/js/theme.js?v=2"></script>
     <link rel="stylesheet" href="/static/css/common.css?v=5.3">
     <style>
+        /* Replay : page plein écran (barre d'outils + carte + graphes) */
         body {
-            background: #222;
-            color: #fff;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
             height: 100vh;
-            margin: 0;
+            overflow: hidden;
         }
 
-        .toolbar {
-            padding: 10px;
-            background: #333;
+        .replay-toolbar {
             display: flex;
-            gap: 10px;
+            flex-wrap: wrap;
             align-items: center;
+            gap: 10px;
+            margin: 22px 14px 0;
+            padding: 12px 14px;
+            font-size: 16px;
+        }
+
+        .replay-toolbar .btn {
+            margin-bottom: 0;
+        }
+
+        .toolbar-sep {
+            width: 2px;
+            align-self: stretch;
+            background: var(--border);
+            margin: 0 4px;
+        }
+
+        #log-select {
+            min-width: 0;
+            max-width: 260px;
+        }
+
+        #time-slider {
+            flex: 1 1 160px;
+            min-width: 120px;
+        }
+
+        .time-display {
+            font-size: 1.1rem;
+            min-width: 80px;
+            text-align: center;
+            color: var(--timer);
+            font-weight: 700;
         }
 
         .main-content {
             display: flex;
             flex: 1;
-            overflow: hidden;
+            min-height: 0;
+            gap: 14px;
+            padding: 14px;
+        }
+
+        .main-content .card {
+            margin-bottom: 0;
         }
 
         .map-container {
             flex: 1;
+            min-width: 0;
             position: relative;
-            background: #111;
+            background: var(--chip-bg);
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        #map-canvas {
+            width: 100%;
+            height: auto;
+            max-height: 100%;
+            object-fit: contain;
         }
 
         .charts-container {
             width: 400px;
-            background: #1a1a1a;
-            padding: 10px;
+            flex: none;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
+            font-size: 16px;
+            text-align: left;
         }
 
         canvas {
             max-width: 100%;
         }
 
-        select,
-        button {
-            padding: 8px;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-        }
-
-        button {
-            background: #009688;
-            color: white;
-            font-weight: bold;
-        }
-
-        button:hover {
-            background: #00796B;
-        }
-
-        input[type=range] {
-            flex: 1;
-        }
-
-        .time-display {
-            font-family: monospace;
-            font-size: 1.2em;
-            min-width: 80px;
-            text-align: center;
-        }
-
         .stats-box {
-            background: #333;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .stats-box .chip {
+            justify-content: space-between;
+        }
+
+        .stat-batt { color: var(--success); font-weight: 700; }
+        .stat-curr { color: var(--orange); font-weight: 700; }
+
+        html[data-theme="win95"] .stat-batt { color: #006400; }
+        html[data-theme="win95"] .stat-curr { color: #a04000; }
+        html[data-theme="win95"] .time-display {
+            background: #000;
+            padding: 2px 8px;
+            border: 2px solid;
+            border-color: var(--w95-sunken-color);
+        }
+        html[data-theme="win95"] .map-container { background: #808080 !important; }
+
+        /* Téléphone : tout empilé, la page défile */
+        @media (max-width: 800px) {
+            body {
+                height: auto;
+                overflow: visible;
+            }
+
+            .replay-toolbar {
+                margin: 20px 10px 0;
+            }
+
+            .toolbar-sep {
+                display: none;
+            }
+
+            #log-select {
+                flex: 1 1 100%;
+                max-width: none;
+            }
+
+            .main-content {
+                flex-direction: column;
+                padding: 12px 10px 10px;
+            }
+
+            .charts-container {
+                width: auto;
+                overflow: visible;
+            }
         }
     </style>
     <script src="/static/js/vendor/chart.js"></script>
 </head>
 
 <body>
-    <div class="toolbar">
-        <a href="/" style="color:white; text-decoration:none; font-weight:bold; margin-right:20px;">🏠 ACCUEIL</a>
+    <header class="header">
+        <a href="/" class="btn-back">⬅ ACCUEIL</a>
+        <h1 class="page-title">REPLAY</h1>
+        <span></span>
+    </header>
+
+    <div class="toolbar replay-toolbar card">
         <select id="log-select">
             <option>Chargement...</option>
         </select>
-        <button onclick="loadLog()">CHARGER</button>
-        <div style="width: 20px;"></div>
-        <button onclick="togglePlay()" id="btn-play">▶ PLAY</button>
+        <button class="btn btn-sm btn-primary" onclick="loadLog()">CHARGER</button>
+        <div class="toolbar-sep"></div>
+        <button class="btn btn-sm btn-success" onclick="togglePlay()" id="btn-play">▶ PLAY</button>
         <input type="range" id="time-slider" min="0" max="100" value="0" step="1">
-        <span class="time-display" id="time-display">00.00s</span>
+        <span class="time-display mono" id="time-display">00.00s</span>
         <select id="speed-select">
             <option value="1">x1</option>
             <option value="2">x2</option>
@@ -112,15 +181,14 @@
     </div>
 
     <div class="main-content">
-        <div class="map-container">
-            <canvas id="map-canvas" width="3000" height="2000"
-                style="width: 100%; height: auto; object-fit: contain; max-height: 100%;"></canvas>
+        <div class="map-container card">
+            <canvas id="map-canvas" width="3000" height="2000"></canvas>
         </div>
-        <div class="charts-container">
+        <div class="charts-container card">
             <div class="stats-box">
-                <div>Batterie: <span id="val-batt" style="font-weight:bold; color:#4CAF50;">--</span></div>
-                <div>Courant: <span id="val-curr" style="font-weight:bold; color:#FF9800;">--</span></div>
-                <div>État: <span id="val-state">--</span></div>
+                <div class="chip"><span class="chip-label">Batterie</span><span id="val-batt" class="stat-batt">--</span></div>
+                <div class="chip"><span class="chip-label">Courant</span><span id="val-curr" class="stat-curr">--</span></div>
+                <div class="chip"><span class="chip-label">État</span><span id="val-state">--</span></div>
             </div>
 
             <canvas id="chart-voltage" height="150"></canvas>
@@ -128,7 +196,7 @@
         </div>
     </div>
 
-    <script src="/static/js/replay.js"></script>
+    <script src="/static/js/replay.js?v=2.0"></script>
 </body>
 
 </html>

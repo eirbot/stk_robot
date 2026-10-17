@@ -3,10 +3,11 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Studio Stratégie - Robot 2026</title>
     <script src="/static/js/theme.js?v=2"></script>
     <link rel="stylesheet" href="/static/css/common.css?v=5.3">
-    <link rel="stylesheet" href="/static/css/blockly.css?v=1.3">
+    <link rel="stylesheet" href="/static/css/blockly.css?v=2.0">
 
     <script src="/static/js/vendor/blockly_compressed.js" defer></script>
     <script src="/static/js/vendor/blocks_compressed.js" defer></script>
@@ -18,32 +19,36 @@
 
     <div class="header">
         <a href="/" class="btn-back">⬅ RETOUR</a>
-        <div style="font-weight:bold;">STRAT STUDIO 🧩</div>
+        <div class="page-title">STRAT STUDIO 🧩</div>
         <div class="sys-info" id="sys-info">...</div>
     </div>
 
-    <div id="controls"
-        style="background:#1c232b; padding:10px; display:flex; gap:10px; align-items:center; border-bottom:1px solid #333;">
-        <select id="stratSelect" class="strat-select" style="display:inline-block;">
-            <option value="" disabled selected>Choisir...</option>
-        </select>
-        <button id="loadBtn" class="btn-sys">📂 Charger</button>
+    <div id="controls" class="studio-toolbar">
+        <div class="toolbar-group">
+            <select id="stratSelect" class="strat-select">
+                <option value="" disabled selected>Choisir...</option>
+            </select>
+            <button id="loadBtn" class="btn btn-sm btn-primary">📂 Charger</button>
+        </div>
 
-        <div style="flex-grow: 1;"></div>
-        <div style="width: 2px; height: 30px; background: #555; margin: 0 15px;"></div>
+        <div class="toolbar-spacer"></div>
 
-        <label style="color: white; margin-right: 10px; cursor: pointer; font-weight: bold;">
-            <input type="checkbox" id="symToggle"> 🟡 Symétrie (Jaune)
-        </label>
+        <div class="toolbar-group">
+            <label class="check">
+                <input type="checkbox" id="symToggle"> 🟡 Symétrie (Jaune)
+            </label>
+            <button id="previewBtn" class="btn btn-sm">👁️ Voir Trajet</button>
+            <button id="simuBtn" class="btn btn-sm btn-warning">▶️ Simuler</button>
+        </div>
 
-        <button id="previewBtn" class="btn-sys" style="background: #6f42c1;">👁️ Voir Trajet</button>
-        <button id="simuBtn" class="btn-sys" style="background: #E91E63;">▶️ Simuler</button>
+        <div class="toolbar-sep"></div>
 
-        <input type="text" id="filename" placeholder="Nom de la strat" value="nouvelle_strat"
-            style="padding:5px; background:#333; color:white; border:1px solid #555; border-radius:5px;">
-        <button id="saveBtn" class="btn-sys" style="background: #4CAF50;">💾 Sauvegarder</button>
+        <div class="toolbar-group">
+            <input type="text" id="filename" placeholder="Nom de la strat" value="nouvelle_strat">
+            <button id="saveBtn" class="btn btn-sm btn-success">💾 Sauvegarder</button>
+        </div>
 
-        <div id="status" style="margin-left: 20px; font-weight: bold; color: #4cd137;"></div>
+        <div id="status"></div>
     </div>
 
     <div id="main-container">
@@ -51,10 +56,9 @@
             <div id="blocklyDiv"></div>
         </div>
         <div id="simuArea">
-            <h4 style="margin-top: 0;">Simulation (3000x2000 mm)</h4>
+            <h4 class="simu-title">Simulation (3000x2000 mm)</h4>
             <canvas id="simCanvas" width="600" height="400"></canvas>
-            <div id="simConsole"
-                style="width: 100%; height: 150px; background: #222; color: #0f0; font-family: monospace; padding: 10px; margin-top: 10px; overflow-y: auto; font-size: 0.8em;">
+            <div id="simConsole" class="log-box">
                 > Console de simulation prête...
             </div>
         </div>
@@ -94,7 +98,7 @@
     <img id="imgRobot" src="/static/img/robot.png" style="display: none;">
 
     <script src="/static/js/common.js"></script>
-    <script src="/static/js/blockly.js?v=2"></script>
+    <script src="/static/js/blockly.js?v=2.1"></script>
 </body>
 
 </html>

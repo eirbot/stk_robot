@@ -200,6 +200,11 @@ function drawMap(currentData) {
 }
 
 function setupCharts() {
+    // Textes et grilles des graphes aux couleurs du thème (lisibles sur fond sombre comme sur win95)
+    const css = getComputedStyle(document.documentElement);
+    Chart.defaults.color = css.getPropertyValue('--text-muted').trim() || Chart.defaults.color;
+    Chart.defaults.borderColor = css.getPropertyValue('--border').trim() || Chart.defaults.borderColor;
+
     vChart = new Chart(document.getElementById('chart-voltage'), {
         type: 'line',
         data: { labels: [], datasets: [{ label: 'Voltage (V)', data: [], borderColor: '#4CAF50', pointRadius: 0 }] },

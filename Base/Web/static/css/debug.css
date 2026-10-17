@@ -1,169 +1,138 @@
-/* Utilisation de toute la largeur disponible */
-.debug-grid {
+/* =======================================================
+   DEBUG & CONFIG — n'utilise que les variables de thème (common.css)
+   Lignes : état/strat/position · caméras · conso/logs · système/diag
+   ======================================================= */
+
+.debug-page {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.debug-page .card {
+    margin: 0;
+    min-width: 0;
+}
+
+.debug-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    padding: 15px;
-    width: 98%; /* Prend presque tout l'écran */
-    margin: 0 auto;
-    text-align: left;
-    box-sizing: border-box;
+    gap: 18px;
+    align-items: start;
 }
 
-/* GRAPHIQUE WRAPPER (Essentiel pour Chart.js) */
-.chart-container {
-    position: relative;
-    height: 300px;
-    width: 100%;
+.debug-row-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.debug-row-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+@media (max-width: 1100px) {
+    .debug-row-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .debug-row-3 > :last-child { grid-column: 1 / -1; }
 }
 
-/* LOGS */
-.log-box { background: #000; color: #0f0; font-family: monospace; height: 300px; overflow-y: scroll; padding: 10px; font-size: 0.85em; border-radius: 5px; border: 1px solid #444; }
-.log-line { border-bottom: 1px solid #222; padding: 2px 0; }
-.log-time { color: #888; margin-right: 5px; }
-.log-info { color: #2196f3; } .log-warn { color: #ff9800; } .log-err { color: #f44336; }
+@media (max-width: 760px) {
+    .debug-row-3,
+    .debug-row-2 { grid-template-columns: minmax(0, 1fr); }
+    .debug-row-3 > :last-child { grid-column: auto; }
+}
 
-/* STATUS DOTS */
-.status-dot { width: 12px; height: 12px; border-radius: 50%; background: #444; display: inline-block; margin-left: auto;}
-.status-ok { background: #0f0; box-shadow: 0 0 5px #0f0; }
-.status-err { background: #f00; box-shadow: 0 0 5px #f00; }
-.dev-status { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #333; }
+/* ---------- Périphériques ---------- */
+.dev-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
 
-/* BOUTONS SPECIFIQUES */
-.btn-flash { background: #FF5722; font-size: 0.9em; padding: 10px; border: none; border-radius: 4px; color: white; cursor: pointer; transition: 0.2s;}
-.btn-flash:hover { opacity: 0.8; }
+.dev-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--surface-2);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+}
 
-/* CAMERA */
-.camera-container { text-align: center; background: #000; min-height: 200px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px;}
-.camera-container img { width: 100%; height: auto; display: block; }
+/* Voyants (classes posées par debug.js : status-dot status-ok|status-err) */
+.status-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text-faint);
+    border: 2px solid var(--line);
+    flex: none;
+}
 
-/* BOUTONS TOGGLE */
+.status-ok  { background: var(--success); box-shadow: 0 0 8px var(--success); }
+.status-err { background: var(--danger); }
+
+/* ---------- Stratégie & modules ---------- */
+.toggle-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+/* Boutons de bascule (classes posées par debug.js : btn-toggle-active state-on|state-off) */
 .btn-toggle-active {
+    --btn: var(--surface-3);
+    --btn-text: var(--btn-fg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     width: 100%;
-    padding: 12px;
-    font-size: 1em;
-    font-weight: bold;
-    border: none;
-    border-radius: 6px;
-    color: white;
+    padding: 11px 10px;
+    border-radius: var(--radius-sm);
+    border: var(--line-w) solid var(--line);
+    background: var(--gloss), var(--btn);
+    color: var(--btn-text);
+    box-shadow: 0 calc(var(--depth) - 1px) 0 var(--ink);
+    margin-bottom: calc(var(--depth) - 1px);
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-shadow: var(--btn-text-shadow);
     cursor: pointer;
-    transition: all 0.25s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    transition: transform 0.06s, filter 0.15s;
 }
 
-.btn-toggle-active.state-on {
-    background: linear-gradient(135deg, #2ecc71, #27ae60);
-    box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
-}
+.btn-toggle-active.state-on  { --btn: var(--success-strong); --btn-text: #fff; }
+.btn-toggle-active.state-off { --btn: var(--surface-2); --btn-text: var(--text-muted); }
 
-.btn-toggle-active.state-off {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-    box-shadow: 0 0 10px rgba(231, 76, 60, 0.4);
-}
+.btn-toggle-active:hover  { filter: brightness(1.1); }
+.btn-toggle-active:active { transform: translateY(var(--press)); box-shadow: 0 0 0 var(--ink); }
 
-.btn-toggle-active:hover {
-    transform: translateY(-2px);
-    filter: brightness(1.1);
-}
-
-.btn-toggle-active:active {
-    transform: translateY(1px);
-}
-
-/* CONNECTION TEST CARD */
-.test-grid {
+/* ---------- Position ---------- */
+.live-odometry-banner {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-around;
-    gap: 15px;
-    margin-top: 15px;
+    justify-content: center;
+    gap: 8px;
 }
 
-.test-stat-box {
-    text-align: center;
-    flex: 1;
-    min-width: 140px;
-    background: rgba(17, 20, 24, 0.6);
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #333;
-    transition: all 0.3s ease;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+.live-odometry-banner .chip {
+    font-weight: 800;
 }
 
-.test-stat-box:hover {
-    border-color: #555;
-    transform: translateY(-2px);
-}
-
-.test-stat-title {
-    font-size: 0.85em;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.test-stat-value {
-    font-size: 1.8em;
-    font-weight: bold;
-    margin-top: 8px;
-    transition: color 0.3s ease;
-}
-
-.test-stat-value span {
-    font-size: 0.55em;
-    font-weight: normal;
-    color: #888;
-    margin-left: 2px;
-}
-
-.test-stat-status {
-    font-size: 0.8em;
-    margin-top: 6px;
-    font-weight: bold;
-}
-
-/* Status colors */
-.status-text-excellent { color: #2ecc71; text-shadow: 0 0 5px rgba(46, 204, 113, 0.3); }
-.status-text-good { color: #3498db; text-shadow: 0 0 5px rgba(52, 152, 219, 0.3); }
-.status-text-fair { color: #f1c40f; text-shadow: 0 0 5px rgba(241, 196, 15, 0.3); }
-.status-text-poor { color: #e74c3c; text-shadow: 0 0 5px rgba(231, 76, 60, 0.3); }
-
-/* Progress Bar */
-.progress-bar-container {
+.pos-inputs input {
     width: 100%;
-    height: 8px;
-    background: #111;
-    border-radius: 4px;
-    overflow: hidden;
-    margin-top: 15px;
-    border: 1px solid #222;
 }
 
-.progress-bar-fill {
-    width: 0%;
-    height: 100%;
-    background: linear-gradient(90deg, #00bcd4, #2ecc71, #f1c40f);
-    transition: width 0.15s ease-out;
-}
-
-/* ==========================================================================
-   VIDEO CARDS & STREAMING
-   ========================================================================== */
+/* ---------- Caméras ---------- */
 .video-card {
     display: flex;
     flex-direction: column;
+    gap: 12px;
     overflow: hidden;
-    padding: 14px !important;
 }
 
 .video-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
     gap: 10px;
     flex-wrap: wrap;
 }
@@ -171,17 +140,25 @@
 .video-title-group {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    text-align: left;
+}
+
+.video-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: var(--font-weight-title);
 }
 
 .video-icon {
-    font-size: 1.4em;
+    font-size: 1.6em;
 }
 
 .video-subtitle {
-    font-size: 0.75em;
-    color: #888;
+    font-size: 0.8em;
+    color: var(--text-muted);
     display: block;
+    margin-top: 2px;
 }
 
 .video-actions-group {
@@ -192,131 +169,66 @@
 }
 
 .badge-status-pill {
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.72em;
-    font-weight: bold;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.75em;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    border: 2px solid var(--line);
+    color: #fff;
 }
 
-.badge-offline {
-    background: rgba(244, 67, 54, 0.18);
-    color: #f44336;
-    border: 1px solid rgba(244, 67, 54, 0.4);
-}
+.badge-offline { background: var(--danger-strong); }
+.badge-online  { background: var(--success-strong); }
+.badge-warning { background: var(--orange); }
 
-.badge-online {
-    background: rgba(46, 204, 113, 0.18);
-    color: #2ecc71;
-    border: 1px solid rgba(46, 204, 113, 0.4);
-}
-
-.badge-warning {
-    background: rgba(255, 152, 0, 0.18);
-    color: #ff9800;
-    border: 1px solid rgba(255, 152, 0, 0.4);
-}
-
+/* Boutons d'action vidéo (classes posées par debug.js) */
 .btn-video-action {
-    background: #21262d;
-    color: #c9d1d9;
-    border: 1px solid #30363d;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 0.82em;
-    font-weight: 600;
+    --vbtn: var(--surface-3);
+    --vbtn-text: var(--btn-fg);
+    background: var(--gloss), var(--vbtn);
+    color: var(--vbtn-text);
+    border: var(--line-w) solid var(--line);
+    padding: 7px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85em;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     user-select: none;
+    box-shadow: 0 calc(var(--depth) - 2px) 0 var(--ink);
+    margin-bottom: calc(var(--depth) - 2px);
+    text-shadow: var(--btn-text-shadow);
+    transition: transform 0.06s, filter 0.15s;
 }
 
-.btn-video-action:hover {
-    background: #30363d;
-    color: #ffffff;
-    border-color: #8b949e;
-}
+.btn-video-action:hover  { filter: brightness(1.1); }
+.btn-video-action:active { transform: translateY(var(--press)); box-shadow: 0 0 0 var(--ink); }
 
-.btn-video-action:active {
-    transform: scale(0.97);
-}
-
-.btn-aruco-active {
-    background: rgba(0, 210, 255, 0.15);
-    color: #00d2ff;
-    border-color: rgba(0, 210, 255, 0.4);
-}
-
-.btn-aruco-active:hover {
-    background: rgba(0, 210, 255, 0.25);
-    border-color: #00d2ff;
-}
-
-.btn-aruco-inactive {
-    background: #21262d;
-    color: #888;
-    border-color: #333;
-}
-
-.btn-vision-power {
-    background: rgba(255, 152, 0, 0.12);
-    color: #ff9800;
-    border-color: rgba(255, 152, 0, 0.3);
-}
-
-.btn-vision-power.running {
-    background: rgba(244, 67, 54, 0.15);
-    color: #f44336;
-    border-color: rgba(244, 67, 54, 0.4);
-}
-
-.btn-resolution-toggle {
-    background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(79, 70, 229, 0.2));
-    color: #c084fc;
-    border-color: rgba(168, 85, 247, 0.4);
-    box-shadow: 0 0 8px rgba(168, 85, 247, 0.2);
-}
-
-.btn-resolution-toggle:hover {
-    background: linear-gradient(135deg, rgba(147, 51, 234, 0.35), rgba(79, 70, 229, 0.35));
-    border-color: #c084fc;
-    box-shadow: 0 0 12px rgba(192, 132, 252, 0.4);
-}
-
-.btn-resolution-toggle.mode-60fps {
-    background: linear-gradient(135deg, rgba(234, 88, 12, 0.25), rgba(202, 138, 4, 0.25));
-    color: #fbbf24;
-    border-color: rgba(251, 191, 36, 0.4);
-    box-shadow: 0 0 8px rgba(251, 191, 36, 0.25);
-}
-
-.btn-fullscreen {
-    background: #238636;
-    color: #ffffff;
-    border-color: #2ea043;
-}
-
-.btn-fullscreen:hover {
-    background: #2ea043;
-    border-color: #3fb950;
-}
+.btn-aruco-active         { --vbtn: var(--cyan); --vbtn-text: #00222b; text-shadow: none; }
+.btn-aruco-inactive       { --vbtn: var(--surface-2); --vbtn-text: var(--text-muted); }
+.btn-vision-power         { --vbtn: var(--success-strong); --vbtn-text: #fff; }
+.btn-vision-power.running { --vbtn: var(--danger-strong); }
+.btn-resolution-toggle    { --vbtn: var(--surface-3); --vbtn-text: var(--accent); }
+.btn-resolution-toggle.mode-60fps { --vbtn: var(--orange); --vbtn-text: #fff; }
+.btn-fullscreen           { --vbtn: var(--blue); --vbtn-text: #fff; }
 
 .video-display-container {
     position: relative;
     background: #000;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     overflow: hidden;
-    min-height: 280px;
+    min-height: 260px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #30363d;
+    border: var(--line-w) solid var(--line);
 }
 
 .video-feed {
@@ -324,7 +236,7 @@
     height: auto;
     max-height: 480px;
     object-fit: contain;
-    display: block;
+    display: block; /* le JS masque/affiche via style.display */
     cursor: zoom-in;
     background: #000;
 }
@@ -334,138 +246,23 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 10px;
     padding: 30px;
-    color: var(--text-muted);
+    color: #c8d3e0;
     text-align: center;
 }
 
 .placeholder-icon {
     font-size: 2.5em;
-    margin-bottom: 10px;
-    opacity: 0.6;
+    opacity: 0.7;
 }
 
-.fullscreen-close-btn {
-    display: none !important;
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(20, 20, 20, 0.9);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    padding: 10px 20px;
-    border-radius: 25px;
-    font-size: 0.95em;
-    font-weight: 700;
-    cursor: pointer;
-    backdrop-filter: blur(10px);
-    z-index: 999999;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
-    transition: all 0.2s ease;
-}
-
-.fullscreen-close-btn:hover {
-    background: rgba(244, 67, 54, 0.9);
-    border-color: #f44336;
-    transform: scale(1.05);
-}
-
-/* PLEIN ÉCRAN : Règle classe JavaScript (.is-fullscreen) */
-.video-display-container.is-fullscreen {
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
-    border: none !important;
-    background: #000 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    z-index: 999999 !important;
-}
-
-.video-display-container.is-fullscreen .video-feed {
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    object-fit: contain !important;
-    cursor: zoom-out !important;
-}
-
-.video-display-container.is-fullscreen .fullscreen-close-btn {
-    display: block !important;
-}
-
-/* PLEIN ÉCRAN : Règle standard :fullscreen */
-.video-display-container:fullscreen {
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
-    border: none !important;
-    background: #000 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-.video-display-container:fullscreen .video-feed {
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    object-fit: contain !important;
-    cursor: zoom-out !important;
-}
-
-.video-display-container:fullscreen .fullscreen-close-btn {
-    display: block !important;
-}
-
-/* PLEIN ÉCRAN : Règle Webkit :-webkit-full-screen */
-.video-display-container:-webkit-full-screen {
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
-    border: none !important;
-    background: #000 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-.video-display-container:-webkit-full-screen .video-feed {
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    object-fit: contain !important;
-    cursor: zoom-out !important;
-}
-
-.video-display-container:-webkit-full-screen .fullscreen-close-btn {
-    display: block !important;
-}
-
-/* ==============================================================================
-   --- PANNEAU TÉLÉMÉTRIE ZÉNITHALE (X, Y, THETA, ROBOT ET TABLE) ---
-   ============================================================================== */
+/* Télémétrie zénithale */
 .zenithale-telemetry-panel {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
-    gap: 10px;
-    margin-top: 12px;
-    padding: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+    padding: 10px;
     background: var(--chip-bg);
     border: var(--line-w) solid var(--line);
     border-radius: var(--radius-sm);
@@ -503,7 +300,6 @@
     font-size: 1.3em;
     font-weight: 800;
     color: var(--cyan);
-    letter-spacing: -0.5px;
 }
 
 .telemetry-unit {
@@ -513,11 +309,10 @@
 }
 
 .telemetry-badge-status {
-    font-size: 0.82em;
+    font-size: 0.8em;
     font-weight: 800;
-    padding: 4px 10px;
+    padding: 3px 10px;
     border-radius: 999px;
-    letter-spacing: 0.4px;
     border: 2px solid var(--line);
     color: #fff;
 }
@@ -532,9 +327,7 @@
     text-align: center;
 }
 
-.telemetry-subval.ready {
-    color: var(--success);
-}
+.telemetry-subval.ready { color: var(--success); }
 
 .telemetry-tags {
     font-family: var(--font-mono);
@@ -544,27 +337,212 @@
     text-align: center;
     font-weight: 700;
 }
-/* =======================================================
-   TÉLÉPHONE (portrait) : une seule colonne
-   ======================================================= */
-@media (max-width: 700px) {
-    .debug-grid {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 10px;
-        padding: 10px;
-        width: 100%;
-    }
 
-    .debug-grid > .card {
-        grid-column: auto !important; /* annule les span 2 inline */
-        min-width: 0;
-    }
-
-    .debug-grid h3 {
-        margin-top: 0;
-    }
-
-    .debug-grid select, .debug-grid input, .debug-grid button {
-        max-width: 100%;
-    }
+/* Plein écran vidéo (classe .is-fullscreen posée par debug.js + API Fullscreen) */
+.fullscreen-close-btn {
+    display: none !important;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(20, 20, 20, 0.9);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 0.95em;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 999999;
 }
+
+.fullscreen-close-btn:hover {
+    background: rgba(232, 38, 58, 0.95);
+}
+
+.video-display-container.is-fullscreen,
+.video-display-container:fullscreen,
+.video-display-container:-webkit-full-screen {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    background: #000 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.video-display-container.is-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 999999 !important;
+}
+
+.video-display-container.is-fullscreen .video-feed,
+.video-display-container:fullscreen .video-feed,
+.video-display-container:-webkit-full-screen .video-feed {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    object-fit: contain !important;
+    cursor: zoom-out !important;
+}
+
+.video-display-container.is-fullscreen .fullscreen-close-btn,
+.video-display-container:fullscreen .fullscreen-close-btn,
+.video-display-container:-webkit-full-screen .fullscreen-close-btn {
+    display: block !important;
+}
+
+/* ---------- Consommation & logs ---------- */
+.chart-container {
+    position: relative;
+    height: 260px;
+    background: var(--chip-bg);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+}
+
+.log-box {
+    height: 260px;
+}
+
+.log-line {
+    padding: 3px 0;
+    border-bottom: 1px solid var(--border);
+    line-height: 1.35;
+}
+
+.log-time { color: var(--text-faint); margin-right: 6px; }
+.log-info { color: var(--cyan); }
+.log-warn { color: var(--warning); }
+.log-err  { color: var(--danger); }
+
+/* ---------- Système & outils ---------- */
+.tool-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.tool-buttons .btn {
+    flex: 1 1 140px;
+}
+
+/* ---------- Diagnostic réseau ---------- */
+.test-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.test-stat-box {
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 12px 8px;
+    text-align: center;
+}
+
+.test-stat-title {
+    font-size: 0.75em;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.test-stat-value {
+    font-family: var(--font-mono);
+    font-size: 1.5em;
+    font-weight: 800;
+    margin: 6px 0 2px;
+}
+
+.test-stat-value span {
+    font-size: 0.55em;
+    color: var(--text-muted);
+}
+
+.test-stat-status {
+    font-size: 0.8em;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+/* Classes posées par debug.js selon la qualité mesurée */
+.status-text-excellent { color: var(--success); }
+.status-text-good      { color: var(--cyan); }
+.status-text-fair      { color: var(--warning); }
+.status-text-poor      { color: var(--danger); }
+
+.progress-bar-container {
+    height: 12px;
+    background: var(--chip-bg);
+    border: 2px solid var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 0;
+    background: var(--accent);
+    transition: width 0.2s;
+}
+
+.test-status-msg {
+    text-align: center;
+    font-size: 0.9em;
+    color: var(--text-muted);
+}
+
+@media (max-width: 760px) {
+    .test-grid { grid-template-columns: minmax(0, 1fr); }
+    .toggle-pair { grid-template-columns: minmax(0, 1fr); }
+    .video-display-container { min-height: 180px; }
+}
+
+/* ---------- Windows 95 : reliefs propres à cette page ---------- */
+html[data-theme="win95"] .btn-toggle-active,
+html[data-theme="win95"] .test-stat-box,
+html[data-theme="win95"] .dev-status {
+    border-style: solid !important;
+    border-width: 2px !important;
+    border-color: var(--w95-raised-color) !important;
+    box-shadow: var(--w95-raised-shadow) !important;
+    border-radius: 0 !important;
+    margin-bottom: 0;
+}
+
+html[data-theme="win95"] .btn-toggle-active.state-on { background: #c0c0c0; color: #006400; }
+html[data-theme="win95"] .btn-toggle-active:active {
+    border-color: #000 #fff #fff #000 !important;
+    box-shadow: inset 1px 1px #808080 !important;
+    transform: translate(1px, 1px);
+}
+
+html[data-theme="win95"] .chart-container,
+html[data-theme="win95"] .progress-bar-container {
+    border-style: solid;
+    border-width: 2px;
+    border-color: var(--w95-sunken-color);
+    border-radius: 0;
+    background: #fff;
+}
+
+html[data-theme="win95"] .log-box { background: #000; color: #c0c0c0; }
+html[data-theme="win95"] .log-info { color: #00ffff; }
+html[data-theme="win95"] .log-warn { color: #ffff00; }
+html[data-theme="win95"] .log-err  { color: #ff5555; }
+html[data-theme="win95"] .log-time { color: #808080; }
+html[data-theme="win95"] .status-text-good { color: #000080; }
+
+/* #static-strat-box est réaffiché par debug.js en display:block : libellé et liste restent empilés */
+.field > .field-label { display: block; }
+.field > select,
+.field > input[type="number"] { width: 100%; box-sizing: border-box; }

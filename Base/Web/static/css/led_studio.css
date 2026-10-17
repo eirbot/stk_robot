@@ -1,102 +1,125 @@
-/* LED Studio Styles */
-body {
-    background-color: #1e1e1e;
-    color: #eee;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
+/* =======================================================
+   LED STUDIO — thèmes via common.css
+   La grille de LED (.led) et son fond noir représentent le
+   panneau réel : ils ne sont pas thémés.
+   ======================================================= */
 
 * {
     box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    font-size: 16px;
+    overflow: hidden;
 }
 
 .studio-container {
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-height: 0;
+    text-align: left;
 }
 
-/* HEADER */
-header {
-    background-color: #252526;
-    padding: 10px 20px;
+/* ---------- Barre d'outils ---------- */
+.studio-toolbar {
+    background: var(--gloss-soft), var(--surface);
+    color: var(--text);
+    border-bottom: var(--line-w) solid var(--line);
+    padding: 18px 14px 10px; /* place pour le damier de l'en-tête */
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid #333;
-}
-
-header h1 {
-    margin: 0;
-    font-size: 1.2rem;
-}
-
-.actions {
-    display: flex;
     gap: 10px;
-    align-items: center;
+    flex-shrink: 0;
 }
 
-.separator {
-    width: 1px;
-    height: 30px;
-    background: #444;
-    margin: 0 10px;
+.studio-toolbar .strat-select {
+    margin: 0;
+    min-width: 0;
+    max-width: 100%;
 }
 
-/* MAIN LAYOUT */
+.studio-toolbar .btn {
+    white-space: nowrap;
+}
+
+.toolbar-spacer {
+    flex: 1;
+}
+
+/* ---------- Mise en page ---------- */
 main {
     display: flex;
     flex: 1;
+    min-height: 0;
+    gap: 14px;
+    padding: 14px;
     overflow: hidden;
 }
 
-.panel {
-    padding: 15px;
-    background: #2d2d30;
-    margin: 5px;
-    border-radius: 4px;
+.panel.card {
+    margin: 0;
+    padding: 14px;
+    min-width: 0;
+    color: var(--text);
 }
 
-/* SEQUENCER (LEFT) */
+.panel .card-title {
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+}
+
+/* ---------- Séquenceur (gauche) ---------- */
 .sequencer {
-    width: 250px;
+    width: 270px;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #333;
 }
 
 .step-list {
     flex: 1;
+    min-height: 80px;
     overflow-y: auto;
     margin-bottom: 10px;
-    background: #1e1e1e;
-    border: 1px solid #333;
-    padding: 5px;
+    background: var(--chip-bg);
+    border: 2px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 6px;
 }
 
 .step-item {
-    background: #333;
-    padding: 10px;
-    margin-bottom: 5px;
+    background: var(--surface-2);
+    color: var(--text);
+    padding: 8px 10px;
+    margin-bottom: 6px;
     cursor: pointer;
-    border: 2px solid transparent;
-    border-radius: 4px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-.step-item.active {
-    border-color: #007acc;
-    background: #3c3c3c;
+    gap: 8px;
 }
 
 .step-item:hover {
-    background: #3e3e42;
+    background: var(--surface-3);
+}
+
+.step-item.active {
+    border-color: var(--accent);
+    background: var(--surface-3);
+    box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.step-item small {
+    color: var(--text-muted);
 }
 
 .step-preview {
@@ -104,34 +127,34 @@ main {
     height: 20px;
     border-radius: 50%;
     background: #000;
-    border: 1px solid #555;
+    border: 1px solid var(--line);
 }
 
 .step-info {
     font-size: 0.9rem;
+    min-width: 0;
 }
 
-/* REORDER & ACTION BUTTONS IN STEP */
+/* Boutons de réordonnancement / copie / suppression d'une étape */
 .step-actions {
     display: flex;
     align-items: center;
     gap: 5px;
+    flex-shrink: 0;
 }
 
 .step-actions button {
-    background: #444;
-    border: 1px solid #555;
+    background: var(--surface-3);
+    border: 2px solid var(--line);
+    color: var(--btn-fg);
     cursor: pointer;
-    color: #eee;
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: 8px;
     font-size: 0.8rem;
 }
 
-.step-actions button:hover {
-    background: #555;
-    color: #fff;
-    border-color: #777;
+.step-actions button:hover:not(:disabled) {
+    filter: brightness(1.15);
 }
 
 .move-btns {
@@ -144,10 +167,21 @@ main {
     padding: 0 4px;
     font-size: 0.6rem;
     line-height: 1;
-    height: 12px;
+    height: 14px;
 }
 
-/* MATRIX AREA (CENTER) */
+.btn.full-width {
+    width: 100%;
+}
+
+.playback-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+/* ---------- Matrice (centre) ---------- */
 .matrix-area {
     flex: 1;
     display: flex;
@@ -156,46 +190,91 @@ main {
 
 .toolbar {
     display: flex;
-    gap: 20px;
-    background: #333;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    background: var(--surface-2);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
     padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     align-items: center;
 }
 
-.tool-btn {
-    background: #444;
-    border: 1px solid #555;
-    color: #fff;
-    width: 40px;
-    height: 40px;
+.color-picker-group,
+.step-settings,
+.step-settings label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.step-settings {
+    gap: 8px 16px;
+}
+
+#colorPicker {
+    width: 44px;
+    height: 34px;
+    padding: 2px;
+    background: var(--surface-3);
+    border: 2px solid var(--line);
+    border-radius: 8px;
     cursor: pointer;
-    border-radius: 4px;
-    font-size: 1.5rem;
-    /* Larger emoji */
+}
+
+#stepDuration {
+    width: 70px;
+}
+
+.tool-group {
+    display: flex;
+    gap: 6px;
+}
+
+.tool-btn {
+    background: var(--gloss), var(--surface-3);
+    border: 2px solid var(--line);
+    color: var(--btn-fg);
+    width: 42px;
+    height: 42px;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-size: 1.4rem;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .tool-btn.active {
-    background: #007acc;
-    border-color: #009dfd;
+    background: var(--gloss), var(--accent);
+    color: var(--accent-text);
+    border-color: var(--line);
+    box-shadow: inset 0 0 0 2px var(--border-strong);
 }
 
+/* Fond noir = panneau LED réel */
 .matrix-wrapper {
     flex: 1;
     background: #000;
-    border: 1px solid #444;
+    border: var(--line-w) solid var(--line);
+    border-radius: var(--radius-sm);
     overflow: auto;
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 20px;
+    min-height: 0;
 }
 
-/* 18 columns, auto rows */
+.matrix-info {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* 18 colonnes, lignes automatiques (données : non thémé) */
 .led-matrix {
     display: grid;
     grid-template-columns: repeat(18, 1fr);
@@ -217,97 +296,37 @@ main {
     transition: transform 0.1s;
 }
 
-/* BUTTONS */
-.btn {
-    padding: 8px 15px;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-    color: #fff;
-    font-weight: bold;
-    background: #444;
-    transition: background 0.2s;
-}
-
-.btn:hover {
-    background: #555;
-}
-
-.btn.primary {
-    background: #007acc;
-}
-
-.btn.primary:hover {
-    background: #005a9e;
-}
-
-.btn.success {
-    background: #4caf50;
-}
-
-.btn.success:hover {
-    background: #388e3c;
-}
-
-.btn.danger {
-    background: #f44336;
-}
-
-.btn.danger:hover {
-    background: #d32f2f;
-}
-
-.btn.full-width {
-    width: 100%;
-    margin-top: 5px;
-}
-
-/* MODAL */
+/* ---------- Fenêtre de sauvegarde ---------- */
 .modal {
     display: none;
     position: fixed;
     z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.6);
     justify-content: center;
     align-items: center;
-    backdrop-filter: blur(2px);
+    padding: 16px;
 }
 
 .modal.show {
     display: flex;
 }
 
-.modal-content {
-    background: #252526;
-    padding: 25px;
-    border-radius: 8px;
-    min-width: 350px;
+.modal-content.card {
+    width: 100%;
+    max-width: 420px;
+    margin: 0;
     text-align: left;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-    border: 1px solid #444;
-}
-
-.modal-content h3 {
-    margin-top: 0;
 }
 
 .modal-content input {
     width: 100%;
+    margin: 4px 0 18px;
     padding: 10px;
-    margin: 15px 0 20px 0;
-    background: #1e1e1e;
-    border: 1px solid #555;
-    color: #fff;
-    border-radius: 4px;
-    font-size: 1rem;
 }
 
 .modal-content input:focus {
-    border-color: #007acc;
+    border-color: var(--accent);
     outline: none;
 }
 
@@ -315,4 +334,112 @@ main {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+}
+
+/* ---------- Windows 95 : reliefs par côté ---------- */
+html[data-theme="win95"] .step-list,
+html[data-theme="win95"] .matrix-wrapper,
+html[data-theme="win95"] #colorPicker {
+    border: 2px solid;
+    border-color: var(--w95-sunken-color);
+    box-shadow: var(--w95-sunken-shadow);
+    border-radius: 0;
+}
+
+html[data-theme="win95"] .tool-btn,
+html[data-theme="win95"] .step-actions button,
+html[data-theme="win95"] .step-item {
+    background: #c0c0c0;
+    color: #000;
+    border: 2px solid;
+    border-color: var(--w95-raised-color);
+    box-shadow: var(--w95-raised-shadow);
+    border-radius: 0;
+}
+
+html[data-theme="win95"] .tool-btn.active,
+html[data-theme="win95"] .tool-btn:active,
+html[data-theme="win95"] .step-actions button:active {
+    border-color: #000000 #ffffff #ffffff #000000;
+    box-shadow: inset 1px 1px #808080;
+    background: #dfdfdf;
+}
+
+html[data-theme="win95"] .step-item.active {
+    background: #000080;
+    color: #fff;
+}
+
+html[data-theme="win95"] .step-item.active small {
+    color: #dfdfdf;
+}
+
+html[data-theme="win95"] .toolbar {
+    border-color: #808080;
+    border-radius: 0;
+}
+
+/* ---------- Téléphone ---------- */
+@media (max-width: 800px) {
+    html,
+    body {
+        height: auto;
+    }
+
+    body {
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .studio-container {
+        height: auto;
+    }
+
+    .studio-toolbar {
+        padding: 18px 10px 10px;
+        gap: 8px;
+    }
+
+    .studio-toolbar .strat-select {
+        flex: 1 1 100%;
+    }
+
+    .toolbar-spacer {
+        display: none;
+    }
+
+    main {
+        flex-direction: column;
+        overflow: visible;
+        padding: 10px;
+        gap: 12px;
+    }
+
+    .sequencer {
+        width: auto;
+        order: 2;
+    }
+
+    .step-list {
+        max-height: 240px;
+    }
+
+    .matrix-area {
+        order: 1;
+    }
+
+    .matrix-wrapper {
+        flex: none;
+        padding: 8px;
+    }
+
+    /* 18 LED doivent tenir dans la largeur */
+    .led-matrix {
+        gap: 2px;
+    }
+
+    .led {
+        width: min(25px, calc((100vw - 90px) / 18 - 2px));
+        height: min(25px, calc((100vw - 90px) / 18 - 2px));
+    }
 }

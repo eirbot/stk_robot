@@ -281,14 +281,15 @@ document.addEventListener("DOMContentLoaded", function () {
     // Création de l'infobulle (Tooltip) pour la souris
     const coordTooltip = document.createElement('div');
     coordTooltip.style.position = 'absolute';
-    coordTooltip.style.background = 'rgba(0, 0, 0, 0.8)';
-    coordTooltip.style.color = '#fff';
+    coordTooltip.style.background = 'var(--chip-bg)';
+    coordTooltip.style.color = 'var(--text)';
+    coordTooltip.style.border = '2px solid var(--line)';
     coordTooltip.style.padding = '4px 8px';
-    coordTooltip.style.borderRadius = '4px';
+    coordTooltip.style.borderRadius = 'var(--radius-sm)';
     coordTooltip.style.pointerEvents = 'none'; // Click-through
     coordTooltip.style.display = 'none';
     coordTooltip.style.fontSize = '12px';
-    coordTooltip.style.fontFamily = 'monospace';
+    coordTooltip.style.fontFamily = 'var(--font-mono)';
     coordTooltip.style.zIndex = '1000';
     document.body.appendChild(coordTooltip);
 

@@ -1,543 +1,285 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DEBUG & CONFIG</title>
     <script src="/static/js/theme.js?v=2"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=5.3">
-    <link rel="stylesheet" href="/static/css/debug.css?v=2.8">
-
-    <style>
-        /* Styles garantis pour les flux vidéo et boutons d'action */
-        .video-card {
-            display: flex !important;
-            flex-direction: column !important;
-            overflow: hidden !important;
-            background: var(--gloss-soft), var(--surface) !important;
-            border: var(--line-w) solid var(--line) !important;
-            border-radius: var(--radius) !important;
-            padding: 14px !important;
-            box-shadow: var(--panel-highlight), 0 var(--depth) 0 var(--ink), var(--soft-shadow) !important;
-        }
-
-        .video-card-header {
-            display: flex !important;
-            justify-content: space-between !important;
-            align-items: center !important;
-            margin-bottom: 12px !important;
-            gap: 10px !important;
-            flex-wrap: wrap !important;
-        }
-
-        .video-title-group {
-            display: flex !important;
-            align-items: center !important;
-            gap: 10px !important;
-            text-align: left !important;
-        }
-
-        .video-icon {
-            font-size: 1.5em !important;
-            display: inline-block !important;
-        }
-
-        .video-subtitle {
-            font-size: 0.75em !important;
-            color: var(--text-muted) !important;
-            display: block !important;
-            margin-top: 2px !important;
-        }
-
-        .video-actions-group {
-            display: flex !important;
-            align-items: center !important;
-            gap: 8px !important;
-            flex-wrap: wrap !important;
-        }
-
-        .badge-status-pill {
-            padding: 4px 12px !important;
-            border-radius: 999px !important;
-            font-size: 0.75em !important;
-            font-weight: 700 !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.5px !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            gap: 4px !important;
-            border: 2px solid var(--line) !important;
-            color: #fff !important;
-        }
-
-        .badge-offline { background: var(--danger-strong) !important; }
-        .badge-online  { background: var(--success-strong) !important; }
-
-        /* Boutons d'action vidéo = boutons du thème */
-        .btn-video-action {
-            --vbtn: var(--surface-3);
-            --vbtn-text: var(--btn-fg);
-            background: var(--gloss), var(--vbtn) !important;
-            color: var(--vbtn-text) !important;
-            border: var(--line-w) solid var(--line) !important;
-            padding: 7px 14px !important;
-            border-radius: var(--radius-sm) !important;
-            font-size: 0.85em !important;
-            font-weight: 700 !important;
-            cursor: pointer !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            gap: 6px !important;
-            user-select: none !important;
-            box-shadow: 0 calc(var(--depth) - 2px) 0 var(--ink) !important;
-            margin-bottom: calc(var(--depth) - 2px) !important;
-            transition: transform 0.06s, filter 0.15s !important;
-        }
-
-        .btn-video-action:hover  { filter: brightness(1.1) !important; }
-        .btn-video-action:active { transform: translateY(var(--press)) !important; box-shadow: 0 0 0 var(--ink) !important; }
-
-        .btn-aruco-active       { --vbtn: var(--cyan); --vbtn-text: #00222b; }
-        .btn-aruco-inactive     { --vbtn: var(--surface-2); --vbtn-text: var(--text-muted); }
-        .btn-vision-power       { --vbtn: var(--success-strong); --vbtn-text: #fff; }
-        .btn-vision-power.running { --vbtn: var(--danger-strong); }
-        .btn-resolution-toggle  { --vbtn: var(--surface-3); --vbtn-text: var(--accent); }
-        .btn-resolution-toggle.mode-60fps { --vbtn: var(--orange); --vbtn-text: #fff; }
-        .btn-fullscreen         { --vbtn: var(--blue); --vbtn-text: #fff; }
-
-        .video-display-container {
-            position: relative !important;
-            background: var(--chip-bg) !important;
-            border-radius: var(--radius-sm) !important;
-            overflow: hidden !important;
-            min-height: 280px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            border: var(--line-w) solid var(--line) !important;
-        }
-
-        .video-feed {
-            width: 100% !important;
-            height: auto !important;
-            max-height: 480px !important;
-            object-fit: contain !important;
-            display: block; /* sans !important : le JS masque l'image via style.display */
-            cursor: zoom-in !important;
-            background: #000 !important;
-        }
-
-        /* BOUTON PLEIN ÉCRAN FERMER - STRICTEMENT MASQUÉ HORS PLEIN ÉCRAN */
-        .fullscreen-close-btn {
-            display: none !important;
-            position: absolute !important;
-            top: 20px !important;
-            right: 20px !important;
-            background: rgba(20, 20, 20, 0.9) !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(255, 255, 255, 0.4) !important;
-            padding: 10px 20px !important;
-            border-radius: 25px !important;
-            font-size: 0.95em !important;
-            font-weight: 700 !important;
-            cursor: pointer !important;
-            backdrop-filter: blur(10px) !important;
-            z-index: 999999 !important;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7) !important;
-            transition: all 0.2s ease !important;
-        }
-
-        .fullscreen-close-btn:hover {
-            background: rgba(244, 67, 54, 0.9) !important;
-            border-color: #f44336 !important;
-            transform: scale(1.05) !important;
-        }
-
-        /* PLEIN ÉCRAN : Règle classe JavaScript (.is-fullscreen) */
-        .video-display-container.is-fullscreen {
-            width: 100vw !important;
-            height: 100vh !important;
-            max-width: 100vw !important;
-            max-height: 100vh !important;
-            border-radius: 0 !important;
-            border: none !important;
-            background: #000 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            z-index: 999999 !important;
-        }
-
-        .video-display-container.is-fullscreen .video-feed {
-            width: 100vw !important;
-            height: 100vh !important;
-            max-width: 100vw !important;
-            max-height: 100vh !important;
-            object-fit: contain !important;
-            cursor: zoom-out !important;
-        }
-
-        .video-display-container.is-fullscreen .fullscreen-close-btn {
-            display: block !important;
-        }
-
-        /* PLEIN ÉCRAN : Règle standard :fullscreen */
-        .video-display-container:fullscreen {
-            width: 100vw !important;
-            height: 100vh !important;
-            max-width: 100vw !important;
-            max-height: 100vh !important;
-            border-radius: 0 !important;
-            border: none !important;
-            background: #000 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-
-        .video-display-container:fullscreen .video-feed {
-            width: 100vw !important;
-            height: 100vh !important;
-            max-width: 100vw !important;
-            max-height: 100vh !important;
-            object-fit: contain !important;
-            cursor: zoom-out !important;
-        }
-
-        .video-display-container:fullscreen .fullscreen-close-btn {
-            display: block !important;
-        }
-
-        /* PLEIN ÉCRAN : Règle Webkit :-webkit-full-screen */
-        .video-display-container:-webkit-full-screen {
-            width: 100vw !important;
-            height: 100vh !important;
-            max-width: 100vw !important;
-            max-height: 100vh !important;
-            border-radius: 0 !important;
-            border: none !important;
-            background: #000 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-
-        .video-display-container:-webkit-full-screen .video-feed {
-            width: 100vw !important;
-            height: 100vh !important;
-            max-width: 100vw !important;
-            max-height: 100vh !important;
-            object-fit: contain !important;
-            cursor: zoom-out !important;
-        }
-
-        .video-display-container:-webkit-full-screen .fullscreen-close-btn {
-            display: block !important;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/common.css?v=5.4">
+    <link rel="stylesheet" href="/static/css/debug.css?v=3.1">
 
     <script src="/static/js/chart.js" defer></script>
-    <script src="/static/js/common.js?v=2.7" defer></script>
-    <script src="/static/js/debug.js?v=2.7" defer></script>
+    <script src="/static/js/common.js?v=2.6" defer></script>
+    <script src="/static/js/debug.js?v=3.0" defer></script>
 </head>
 
 <body class="mode-BLEUE">
-    <div class="header">
+    <header class="header">
         <a href="/" class="btn-back">← Accueil</a>
-        <div style="font-weight:bold;">DEBUG & CONFIG</div>
+        <h1 class="page-title">🛠️ Debug &amp; Config</h1>
         <div class="sys-info" id="sys-info">...</div>
-    </div>
+    </header>
 
-    <div class="debug-grid">
+    <main class="page debug-page">
 
-        <div class="card" style="grid-column: span 2;">
-            <h3>Consommation (A)</h3>
-            <div class="chart-container">
-                <canvas id="currentChart"></canvas>
-            </div>
-        </div>
+        <!-- ===================== LIGNE 1 : ÉTAT / STRAT / POSITION ===================== -->
+        <section class="debug-row debug-row-3">
 
-        <div class="card">
-            <h3>🔌 État Périphériques</h3>
-            <div class="dev-status"><span>LiDAR</span>
-                <div id="status-lidar" class="status-dot"></div>
-            </div>
-            <div class="dev-status"><span>ESP Moteurs</span>
-                <div id="status-esp_motors" class="status-dot"></div>
-            </div>
-            <div class="dev-status"><span>ESP Bras</span>
-                <div id="status-esp_arms" class="status-dot"></div>
-            </div>
-            <div class="dev-status"><span>Caméra</span>
-                <div id="status-camera" class="status-dot"></div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>🧠 Stratégie & Modules</h3>
-
-            <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #444;">
-                <label>Mode Stratégie :</label>
-                <select id="strat-mode" onchange="updateStratConfig()"
-                    style="background:#333; color:white; border:1px solid #555; padding:5px; width: 100%; margin-top:5px;">
-                    <option value="DYNAMIC">Dynamique (Auto)</option>
-                    <option value="STATIC">Statique (Blockly)</option>
-                </select>
-
-                <div id="static-strat-box" style="margin-top:10px; display:none;">
-                    <label>Fichier Blockly :</label>
-                    <select id="strat-select" onchange="updateStratConfig()"
-                        style="width:100%; background:#333; color:white; border:1px solid #555; padding:5px;">
-                        <option value="" disabled selected>Chargement...</option>
-                    </select>
-                </div>
+            <div class="card">
+                <h2 class="card-title">🔌 Périphériques</h2>
+                <ul class="dev-list">
+                    <li class="dev-status"><span>LiDAR</span><div id="status-lidar" class="status-dot"></div></li>
+                    <li class="dev-status"><span>ESP Moteurs</span><div id="status-esp_motors" class="status-dot"></div></li>
+                    <li class="dev-status"><span>ESP Bras</span><div id="status-esp_arms" class="status-dot"></div></li>
+                    <li class="dev-status"><span>Caméra</span><div id="status-camera" class="status-dot"></div></li>
+                </ul>
             </div>
 
-            <div style="margin-top: 10px; padding-bottom: 10px; border-bottom: 1px solid #444;">
-                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-                    <input type="checkbox" id="test-mode" onchange="updateLidarConfig('test_mode', this.checked)"
-                        style="width:20px; height:20px; accent-color:#FF9800;">
-                    🧪 Mode test (pas d'arrêt à 100 s)
-                </label>
-            </div>
+            <div class="card">
+                <h2 class="card-title">🧠 Stratégie &amp; modules</h2>
+                <div class="stack">
+                    <div class="field">
+                        <label class="field-label" for="strat-mode">Mode stratégie</label>
+                        <select id="strat-mode" onchange="updateStratConfig()">
+                            <option value="DYNAMIC">Dynamique (Auto)</option>
+                            <option value="STATIC">Statique (Blockly)</option>
+                        </select>
+                    </div>
 
-            <div style="margin-top: 10px; padding-bottom: 10px; border-bottom: 1px solid #444;">
-                <label>Mode LiDAR :</label>
-                <select id="lidar-mode" onchange="updateLidarConfig('lidar_mode', this.value)"
-                    style="background:#333; color:white; border:1px solid #555; padding:5px; width: 100%; margin-top:5px;">
-                    <option value="OFF">Éteint (Désactivé)</option>
-                    <option value="MATCH">Match (Cône d'évitement)</option>
-                    <option value="HOMOLOGATION">Homologation (Scan 360°)</option>
-                </select>
-            </div>
+                    <div id="static-strat-box" class="field" style="display:none;">
+                        <label class="field-label" for="strat-select">Fichier Blockly</label>
+                        <select id="strat-select" onchange="updateStratConfig()">
+                            <option value="" disabled selected>Chargement...</option>
+                        </select>
+                    </div>
 
-            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
-                <button id="btn-toggle-cam" onclick="toggleCamera()" class="btn-toggle-active state-off">
-                    📷 Activer la caméra
-                </button>
-                <button id="btn-toggle-lidar" onclick="toggleLidar()" class="btn-toggle-active state-off">
-                    🚨 Activer le LiDAR
-                </button>
-            </div>
-        </div>
+                    <div class="field">
+                        <label class="field-label" for="lidar-mode">Mode LiDAR</label>
+                        <select id="lidar-mode" onchange="updateLidarConfig('lidar_mode', this.value)">
+                            <option value="OFF">Éteint (Désactivé)</option>
+                            <option value="MATCH">Match (Cône d'évitement)</option>
+                            <option value="HOMOLOGATION">Homologation (Scan 360°)</option>
+                        </select>
+                    </div>
 
-        <div class="card" style="grid-column: span 2;">
-            <h3>📝 Logs Système</h3>
-            <div id="logs-box" class="log-box">
-                <div class="log-line"><span class="log-time">--:--:--</span> <span class="log-info">Interface
-                        Prête...</span></div>
-            </div>
-        </div>
+                    <label class="check">
+                        <input type="checkbox" id="test-mode" onchange="updateLidarConfig('test_mode', this.checked)">
+                        🧪 Mode test (pas d'arrêt à 100 s)
+                    </label>
 
-        <div class="card" style="grid-column: span 2;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h3>📍 Position Robot (Odométrie & Vision)</h3>
-                <button onclick="setRobotPosition()" class="btn-tiny"
-                    style="background:#4CAF50; padding:8px 15px;">APPLIQUER</button>
-            </div>
-            <!-- Affichage Télémétrie en temps réel -->
-            <div class="live-odometry-banner" style="background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 15px; margin-bottom:12px; display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:10px;">
-                <div style="font-size:0.85em; color:#8b949e; font-weight:700;">POSITION ACTUELLE :</div>
-                <div><span style="color:#58a6ff; font-weight:bold;">X:</span> <span id="live-pos-x" style="font-family:monospace; font-size:1.15em; font-weight:bold; color:#f0f6fc;">--</span> <span style="font-size:0.8em; color:#8b949e;">mm</span></div>
-                <div><span style="color:#58a6ff; font-weight:bold;">Y:</span> <span id="live-pos-y" style="font-family:monospace; font-size:1.15em; font-weight:bold; color:#f0f6fc;">--</span> <span style="font-size:0.8em; color:#8b949e;">mm</span></div>
-                <div><span style="color:#58a6ff; font-weight:bold;">θ:</span> <span id="live-pos-theta" style="font-family:monospace; font-size:1.15em; font-weight:bold; color:#f0f6fc;">--</span> <span style="font-size:0.8em; color:#8b949e;">°</span></div>
-            </div>
-            <div style="display: flex; gap: 15px; align-items: center; justify-content: center;">
-                <div style="display:flex; flex-direction:column; gap:5px;">
-                    <label style="font-size:0.8em; color:#aaa;">X (mm)</label>
-                    <input type="number" id="pos-x" value="200"
-                        style="width: 80px; background: #333; color: white; border: 1px solid #555; padding: 5px;">
-                </div>
-                <div style="display:flex; flex-direction:column; gap:5px;">
-                    <label style="font-size:0.8em; color:#aaa;">Y (mm)</label>
-                    <input type="number" id="pos-y" value="1200"
-                        style="width: 80px; background: #333; color: white; border: 1px solid #555; padding: 5px;">
-                </div>
-                <div style="display:flex; flex-direction:column; gap:5px;">
-                    <label style="font-size:0.8em; color:#aaa;">θ (Deg)</label>
-                    <input type="number" id="pos-theta" value="0"
-                        style="width: 80px; background: #333; color: white; border: 1px solid #555; padding: 5px;">
-                </div>
-            </div>
-            <div style="margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; display: flex; gap: 10px; justify-content: center;">
-                <button id="btn-copy-vision-pos" type="button" onclick="copyVisionToInputs()" class="btn-tiny" style="background:#0284c7; padding:8px 12px; font-weight:bold;" title="Copier les coordonnées X, Y, θ vues par la caméra vers les entrées ci-dessus">📋 Copier Vision → Entrées</button>
-                <button id="btn-calibrate-vision" class="btn-flash" style="background:#2196F3; flex:1; font-size:0.95em;">Calibrer Vision (Zénithale)</button>
-            </div>
-        </div>
-
-        <!-- FLUX VIDÉO 1 : Caméra Zénithale USB (PC) -->
-        <div class="card video-card" id="card-video-zenithale">
-            <div class="video-card-header">
-                <div class="video-title-group">
-                    <span class="video-icon">🔭</span>
-                    <div>
-                        <h3 style="margin:0; font-size:1.05em;">Caméra Zénithale USB</h3>
-                        <span class="video-subtitle">PC • Détection ArUco & Recalage Table</span>
+                    <div class="toggle-pair">
+                        <button id="btn-toggle-cam" onclick="toggleCamera()" class="btn-toggle-active state-off">📷 Activer la caméra</button>
+                        <button id="btn-toggle-lidar" onclick="toggleLidar()" class="btn-toggle-active state-off">🚨 Activer le LiDAR</button>
                     </div>
                 </div>
-                <div class="video-actions-group">
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">📍 Position du robot</h2>
+                <div class="stack">
+                    <div class="live-odometry-banner">
+                        <span class="chip"><span class="chip-label">X</span><span id="live-pos-x">--</span><span class="chip-unit">mm</span></span>
+                        <span class="chip"><span class="chip-label">Y</span><span id="live-pos-y">--</span><span class="chip-unit">mm</span></span>
+                        <span class="chip"><span class="chip-label">θ</span><span id="live-pos-theta">--</span><span class="chip-unit">°</span></span>
+                    </div>
+
+                    <div class="grid-3 pos-inputs">
+                        <div class="field">
+                            <label class="field-label" for="pos-x">X (mm)</label>
+                            <input type="number" id="pos-x" value="200">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="pos-y">Y (mm)</label>
+                            <input type="number" id="pos-y" value="1200">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="pos-theta">θ (°)</label>
+                            <input type="number" id="pos-theta" value="0">
+                        </div>
+                    </div>
+
+                    <button onclick="setRobotPosition()" class="btn btn-success">✔ Appliquer la position</button>
+                    <div class="row">
+                        <button id="btn-copy-vision-pos" type="button" onclick="copyVisionToInputs()" class="btn btn-sm grow" title="Copier les coordonnées X, Y, θ vues par la caméra vers les entrées ci-dessus">📋 Vision → entrées</button>
+                        <button id="btn-calibrate-vision" class="btn btn-sm btn-primary grow">🎯 Calibrer la vision</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================== LIGNE 2 : CAMÉRAS ===================== -->
+        <section class="debug-row debug-row-2">
+
+            <!-- FLUX VIDÉO 1 : Caméra Zénithale USB (PC) -->
+            <div class="card video-card" id="card-video-zenithale">
+                <div class="video-card-header">
+                    <div class="video-title-group">
+                        <span class="video-icon">🔭</span>
+                        <div>
+                            <h2 class="video-title">Caméra zénithale USB</h2>
+                            <span class="video-subtitle">PC • Détection ArUco &amp; recalage table</span>
+                        </div>
+                    </div>
                     <span id="zenithale-badge" class="badge-status-pill badge-offline">HORS LIGNE</span>
-                    <button id="btn-toggle-resolution" onclick="toggleCameraResolution()" class="btn-video-action btn-resolution-toggle" title="Basculer entre 4K @ 30fps et 1080p @ 60fps">
-                        📺 4K @ 30fps
-                    </button>
-                    <button id="btn-toggle-aruco" onclick="toggleArucoOverlay()" class="btn-video-action btn-aruco-active" title="Activer / Masquer les annotations ArUco">
-                        🎯 ArUco : ON
-                    </button>
-                    <button id="btn-toggle-vision-worker" onclick="toggleVisionWorker()" class="btn-video-action btn-vision-power" title="Démarrer / Arrêter le processus de vision">
-                        ▶ Démarrer
-                    </button>
-                    <button id="btn-fullscreen-zenithale" onclick="toggleFullscreen('container-zenithale')" class="btn-video-action btn-fullscreen" title="Afficher en plein écran">
-                        ⛶ Plein Écran
-                    </button>
-                </div>
-            </div>
-
-            <div id="container-zenithale" class="video-display-container">
-                <img id="zenithale-stream" src="" alt="Flux Caméra Zénithale USB" class="video-feed" style="display:none;" ondblclick="toggleFullscreen('container-zenithale')" title="Double-cliquer pour basculer en plein écran">
-                <div id="zenithale-placeholder" class="video-placeholder">
-                    <div class="placeholder-icon">📹</div>
-                    <div id="zenithale-placeholder-text">En attente du flux de la caméra USB...</div>
-                    <button onclick="startVisionWorker()" class="btn btn-primary" style="margin-top:10px;">
-                        Lancer le flux USB
-                    </button>
-                </div>
-                <button id="fs-close-zenithale" class="fullscreen-close-btn" style="display: none;" onclick="exitFullscreen()">✕ Quitter Plein Écran</button>
-            </div>
-
-            <!-- BANDEAU TÉLÉMÉTRIE EN DIRECT : X, Y, THETA & STATUTS -->
-            <div id="zenithale-telemetry-panel" class="zenithale-telemetry-panel">
-                <div class="telemetry-item">
-                    <span class="telemetry-label">ROBOT (TAG #2)</span>
-                    <span id="zen-robot-status" class="telemetry-badge-status not-detected">NON DÉTECTÉ</span>
-                </div>
-                <div class="telemetry-item">
-                    <span class="telemetry-label">X</span>
-                    <div class="telemetry-value-wrap">
-                        <span id="zen-pos-x" class="telemetry-value">--</span>
-                        <span class="telemetry-unit">mm</span>
-                    </div>
-                </div>
-                <div class="telemetry-item">
-                    <span class="telemetry-label">Y</span>
-                    <div class="telemetry-value-wrap">
-                        <span id="zen-pos-y" class="telemetry-value">--</span>
-                        <span class="telemetry-unit">mm</span>
-                    </div>
-                </div>
-                <div class="telemetry-item">
-                    <span class="telemetry-label">THETA (θ)</span>
-                    <div class="telemetry-value-wrap">
-                        <span id="zen-pos-theta" class="telemetry-value">--</span>
-                        <span class="telemetry-unit">°</span>
-                    </div>
-                </div>
-                <div class="telemetry-item">
-                    <span class="telemetry-label">TABLE / CALIB</span>
-                    <span id="zen-table-status" class="telemetry-subval">ATTENTE VINYLES</span>
-                </div>
-                <div class="telemetry-item">
-                    <span class="telemetry-label">TAGS VISIBLES</span>
-                    <span id="zen-tags-list" class="telemetry-tags">--</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- FLUX VIDÉO 2 : Caméra Embarquée (Robot) -->
-        <div class="card video-card" id="card-video-embarquee">
-            <div class="video-card-header">
-                <div class="video-title-group">
-                    <span class="video-icon">🤖</span>
-                    <div>
-                        <h3 style="margin:0; font-size:1.05em;">Caméra Embarquée</h3>
-                        <span class="video-subtitle">Raspberry Pi • Flux Match (Port 8081)</span>
-                    </div>
                 </div>
                 <div class="video-actions-group">
+                    <button id="btn-toggle-resolution" onclick="toggleCameraResolution()" class="btn-video-action btn-resolution-toggle" title="Basculer entre 4K @ 30fps et 1080p @ 60fps">📺 4K @ 30fps</button>
+                    <button id="btn-toggle-aruco" onclick="toggleArucoOverlay()" class="btn-video-action btn-aruco-active" title="Activer / Masquer les annotations ArUco">🎯 ArUco : ON</button>
+                    <button id="btn-toggle-vision-worker" onclick="toggleVisionWorker()" class="btn-video-action btn-vision-power" title="Démarrer / Arrêter le processus de vision">▶ Démarrer</button>
+                    <button id="btn-fullscreen-zenithale" onclick="toggleFullscreen('container-zenithale')" class="btn-video-action btn-fullscreen" title="Afficher en plein écran">⛶ Plein écran</button>
+                </div>
+
+                <div id="container-zenithale" class="video-display-container">
+                    <img id="zenithale-stream" src="" alt="Flux Caméra Zénithale USB" class="video-feed" style="display:none;" ondblclick="toggleFullscreen('container-zenithale')" title="Double-cliquer pour basculer en plein écran">
+                    <div id="zenithale-placeholder" class="video-placeholder">
+                        <div class="placeholder-icon">📹</div>
+                        <div id="zenithale-placeholder-text">En attente du flux de la caméra USB...</div>
+                        <button onclick="startVisionWorker()" class="btn btn-primary">Lancer le flux USB</button>
+                    </div>
+                    <button id="fs-close-zenithale" class="fullscreen-close-btn" style="display: none;" onclick="exitFullscreen()">✕ Quitter le plein écran</button>
+                </div>
+
+                <!-- Télémétrie en direct : X, Y, θ & statuts -->
+                <div id="zenithale-telemetry-panel" class="zenithale-telemetry-panel">
+                    <div class="telemetry-item">
+                        <span class="telemetry-label">Robot (tag #2)</span>
+                        <span id="zen-robot-status" class="telemetry-badge-status not-detected">NON DÉTECTÉ</span>
+                    </div>
+                    <div class="telemetry-item">
+                        <span class="telemetry-label">X</span>
+                        <div class="telemetry-value-wrap"><span id="zen-pos-x" class="telemetry-value">--</span><span class="telemetry-unit">mm</span></div>
+                    </div>
+                    <div class="telemetry-item">
+                        <span class="telemetry-label">Y</span>
+                        <div class="telemetry-value-wrap"><span id="zen-pos-y" class="telemetry-value">--</span><span class="telemetry-unit">mm</span></div>
+                    </div>
+                    <div class="telemetry-item">
+                        <span class="telemetry-label">θ</span>
+                        <div class="telemetry-value-wrap"><span id="zen-pos-theta" class="telemetry-value">--</span><span class="telemetry-unit">°</span></div>
+                    </div>
+                    <div class="telemetry-item">
+                        <span class="telemetry-label">Table / calib</span>
+                        <span id="zen-table-status" class="telemetry-subval">ATTENTE VINYLES</span>
+                    </div>
+                    <div class="telemetry-item">
+                        <span class="telemetry-label">Tags visibles</span>
+                        <span id="zen-tags-list" class="telemetry-tags">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FLUX VIDÉO 2 : Caméra Embarquée (Robot) -->
+            <div class="card video-card" id="card-video-embarquee">
+                <div class="video-card-header">
+                    <div class="video-title-group">
+                        <span class="video-icon">🤖</span>
+                        <div>
+                            <h2 class="video-title">Caméra embarquée</h2>
+                            <span class="video-subtitle">Raspberry Pi • Flux match (port 8081)</span>
+                        </div>
+                    </div>
                     <span id="embarquee-badge" class="badge-status-pill badge-offline">HORS LIGNE</span>
-                    <button id="btn-fullscreen-embarquee" onclick="toggleFullscreen('container-embarquee')" class="btn-video-action btn-fullscreen" title="Afficher en plein écran">
-                        ⛶ Plein Écran
-                    </button>
+                </div>
+                <div class="video-actions-group">
+                    <button id="btn-fullscreen-embarquee" onclick="toggleFullscreen('container-embarquee')" class="btn-video-action btn-fullscreen" title="Afficher en plein écran">⛶ Plein écran</button>
+                </div>
+
+                <div id="container-embarquee" class="video-display-container">
+                    <img id="camera-stream" src="" alt="Flux Caméra Embarquée" class="video-feed" style="display:none;" ondblclick="toggleFullscreen('container-embarquee')" title="Double-cliquer pour basculer en plein écran">
+                    <div id="camera-placeholder" class="video-placeholder">
+                        <div class="placeholder-icon">🎥</div>
+                        <div id="camera-placeholder-text">En attente du flux vidéo de la caméra robot...</div>
+                    </div>
+                    <button id="fs-close-embarquee" class="fullscreen-close-btn" style="display: none;" onclick="exitFullscreen()">✕ Quitter le plein écran</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================== LIGNE 3 : CONSOMMATION / LOGS ===================== -->
+        <section class="debug-row debug-row-2">
+            <div class="card">
+                <h2 class="card-title">📈 Consommation (A)</h2>
+                <div class="chart-container">
+                    <canvas id="currentChart"></canvas>
                 </div>
             </div>
 
-            <div id="container-embarquee" class="video-display-container">
-                <img id="camera-stream" src="" alt="Flux Caméra Embarquée" class="video-feed" style="display:none;" ondblclick="toggleFullscreen('container-embarquee')" title="Double-cliquer pour basculer en plein écran">
-                <div id="camera-placeholder" class="video-placeholder">
-                    <div class="placeholder-icon">🎥</div>
-                    <div id="camera-placeholder-text">En attente du flux vidéo de la caméra robot...</div>
+            <div class="card">
+                <h2 class="card-title">📝 Logs système</h2>
+                <div id="logs-box" class="log-box">
+                    <div class="log-line"><span class="log-time">--:--:--</span> <span class="log-info">Interface prête...</span></div>
                 </div>
-                <button id="fs-close-embarquee" class="fullscreen-close-btn" style="display: none;" onclick="exitFullscreen()">✕ Quitter Plein Écran</button>
             </div>
-        </div>
+        </section>
 
-        <div class="card" style="grid-column: span 2;">
-            <h3>⚡ Système</h3>
-            <div style="margin-bottom:15px; text-align:center;">
-                <label style="display:block; margin-bottom:5px;">Luminosité LED : <span id="bright-val">20</span>
-                    %</label>
-                <input type="range" id="bright-slider" min="0" max="100" step="5" value="20"
-                    style="width:80%; accent-color: #E91E63;"
-                    oninput="document.getElementById('bright-val').innerText=this.value"
-                    onchange="updateBrightness(this.value)">
-            </div>
-            <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:15px;">
-                <label>🎨 Thème :</label>
-                <select class="theme-select" data-theme-select></select>
-            </div>
-            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px; justify-content: center;">
-                <button id="btn-flash-motors" onclick="flashESP('motors')" class="btn-flash">Flash MOTEURS</button>
-                <button id="btn-flash-arms" onclick="flashESP('arms')" class="btn-flash">Flash BRAS</button>
-                <button id="btn-update-rasp" onclick="updateRasp()" class="btn-flash" style="background:#2e7d32;">Update code RASP</button>
-            </div>
-            <div style="display:flex; gap:10px; justify-content: center;">
-                <a href="/media" class="btn-nav" style="background-color:#673AB7; flex:1;">🎵 SONS</a>
-                <a href="/led_studio" class="btn-nav" style="background-color:#E91E63; flex:1;">🎨 LEDS</a>
-                <a href="/map" class="btn-nav" style="flex:1;">🗺️ CARTE</a>
-            </div>
-        </div>
+        <!-- ===================== LIGNE 4 : SYSTÈME / DIAGNOSTIC ===================== -->
+        <section class="debug-row debug-row-2">
+            <div class="card">
+                <h2 class="card-title">⚡ Système &amp; outils</h2>
+                <div class="stack">
+                    <div class="grid-2">
+                        <div class="field">
+                            <label class="field-label" for="bright-slider">Luminosité LED : <span id="bright-val">20</span> %</label>
+                            <input type="range" id="bright-slider" min="0" max="100" step="5" value="20"
+                                oninput="document.getElementById('bright-val').innerText=this.value"
+                                onchange="updateBrightness(this.value)">
+                        </div>
+                        <div class="field">
+                            <label class="field-label">🎨 Thème de l'interface</label>
+                            <select class="theme-select" data-theme-select></select>
+                        </div>
+                    </div>
 
-        <div class="card" style="grid-column: span 2;">
-            <h3>⚡ Diagnostic Réseau & Connexion</h3>
-            <div class="test-grid">
-                <div class="test-stat-box">
-                    <div class="test-stat-title">Latence</div>
-                    <div id="test-latency" class="test-stat-value">-- <span>ms</span></div>
-                    <div id="test-latency-status" class="test-stat-status">-</div>
-                </div>
-                <div class="test-stat-box">
-                    <div class="test-stat-title">Débit Descendant</div>
-                    <div id="test-download" class="test-stat-value">-- <span>Mbps</span></div>
-                    <div id="test-download-status" class="test-stat-status">-</div>
-                </div>
-                <div class="test-stat-box">
-                    <div class="test-stat-title">Débit Montant</div>
-                    <div id="test-upload" class="test-stat-value">-- <span>Mbps</span></div>
-                    <div id="test-upload-status" class="test-stat-status">-</div>
-                </div>
-            </div>
-            
-            <div class="progress-bar-container" id="test-progress-container" style="display: none;">
-                <div class="progress-bar-fill" id="test-progress-bar"></div>
-            </div>
-            
-            <div style="margin-top: 15px; text-align: center;">
-                <span id="test-status-msg" style="font-size: 0.9em; color: #888;">Prêt pour le diagnostic.</span>
-            </div>
-            
-            <div style="margin-top: 15px; display: flex; justify-content: center;">
-                <button id="btn-run-speedtest" onclick="runDiagnosticTest()" class="btn-toggle-active state-on" style="background: linear-gradient(135deg, #00bcd4, #0097a7); box-shadow: 0 0 10px rgba(0, 188, 212, 0.4); max-width: 400px;">
-                    Lancer le test de connexion
-                </button>
-            </div>
-        </div>
+                    <div class="field-label">Mise à jour du robot</div>
+                    <div class="tool-buttons">
+                        <button id="btn-flash-motors" onclick="flashESP('motors')" class="btn btn-warning">⚙️ Flash moteurs</button>
+                        <button id="btn-flash-arms" onclick="flashESP('arms')" class="btn btn-warning">🦾 Flash bras</button>
+                        <button id="btn-update-rasp" onclick="updateRasp()" class="btn btn-success">⬆ Update code Rasp</button>
+                    </div>
 
-    </div>
+                    <div class="field-label">Autres pages</div>
+                    <div class="tool-buttons">
+                        <a href="/media" class="btn btn-sm">🎵 Sons</a>
+                        <a href="/led_studio" class="btn btn-sm">🎨 LEDs</a>
+                        <a href="/map" class="btn btn-sm">🗺️ Carte</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">📡 Diagnostic réseau</h2>
+                <div class="stack">
+                    <div class="test-grid">
+                        <div class="test-stat-box">
+                            <div class="test-stat-title">Latence</div>
+                            <div id="test-latency" class="test-stat-value">-- <span>ms</span></div>
+                            <div id="test-latency-status" class="test-stat-status">-</div>
+                        </div>
+                        <div class="test-stat-box">
+                            <div class="test-stat-title">Débit descendant</div>
+                            <div id="test-download" class="test-stat-value">-- <span>Mbps</span></div>
+                            <div id="test-download-status" class="test-stat-status">-</div>
+                        </div>
+                        <div class="test-stat-box">
+                            <div class="test-stat-title">Débit montant</div>
+                            <div id="test-upload" class="test-stat-value">-- <span>Mbps</span></div>
+                            <div id="test-upload-status" class="test-stat-status">-</div>
+                        </div>
+                    </div>
+
+                    <div class="progress-bar-container" id="test-progress-container" style="display: none;">
+                        <div class="progress-bar-fill" id="test-progress-bar"></div>
+                    </div>
+
+                    <span id="test-status-msg" class="test-status-msg">Prêt pour le diagnostic.</span>
+
+                    <button id="btn-run-speedtest" onclick="runDiagnosticTest()" class="btn btn-primary">Lancer le test de connexion</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
 </body>
 
 </html>

@@ -1,67 +1,96 @@
+/* static/css/map.css — Carte 3D : seule l'interface autour de la scène suit le thème */
+
 #simu3d-container {
-    width: 100vw;
-    height: calc(100vh - 62px); /* calc height below header */
+    flex: 1 1 0; /* base 0 : la hauteur suit la fenêtre, pas le canvas (redimensionnement) */
+    width: 100%;
+    min-height: 320px;
     position: relative;
-    background: #0f1115;
-    cursor: crosshair; /* Set cursor to crosshair for precise pointing */
+    /* sous la bande damier de l'en-tête (absente en sombre / win95) */
+    margin-top: calc(var(--line-w) + 8px * var(--checker-opacity));
+    background: var(--surface); /* visible seulement avant le rendu 3D */
+    cursor: crosshair; /* Pointage précis sur la table */
+    overflow: hidden;
 }
 
+/* Position du robot (texte écrit par map.js) */
 .info-pos {
     position: absolute;
-    bottom: 20px;
-    left: 20px;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    width: fit-content;
+    max-width: calc(100% - 32px);
+    box-sizing: border-box;
     z-index: 10;
-    background: rgba(20, 24, 33, 0.85);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #e2e8f0;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 1.1em;
-    padding: 12px 20px;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-    pointer-events: none; /* Click pass-through to OrbitControls */
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    background: var(--surface);
+    border: var(--line-w) solid var(--line);
+    box-shadow: 0 var(--depth) 0 var(--ink), var(--soft-shadow);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.95rem;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    text-align: left;
+    pointer-events: none; /* Clics transmis à OrbitControls */
 }
 
+/* Bouton de bascule 2D / 3D (base : .btn .btn-sm .btn-primary) */
 .btn-view-toggle {
-    position: absolute;
-    top: 20px;
-    left: 20px;
+    position: absolute !important;
+    top: 16px;
+    left: 16px;
     z-index: 15;
-    background: rgba(0, 123, 255, 0.85);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: white;
-    font-family: inherit;
-    font-weight: bold;
-    font-size: 0.95em;
-    padding: 12px 20px;
-    border-radius: 10px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-    cursor: pointer;
-    transition: 0.2s ease-in-out;
 }
 
-.btn-view-toggle:hover {
-    background: rgba(0, 123, 255, 1);
-    transform: translateY(-2px);
-}
-
+/* Coordonnées sous le curseur */
 .coord-tooltip {
     position: absolute;
     z-index: 20;
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #38bdf8; /* Nice tech cyan color */
-    font-family: 'Courier New', Courier, monospace;
-    font-weight: bold;
-    font-size: 0.9em;
-    padding: 6px 12px;
-    border-radius: 6px;
+    background: var(--chip-bg);
+    border: 2px solid var(--line);
+    color: var(--cyan);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
     pointer-events: none;
-    transform: translate(15px, 15px); /* Offset from cursor */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    white-space: nowrap;
+    transform: translate(15px, 15px); /* Décalage par rapport au curseur */
+    box-shadow: var(--soft-shadow);
+}
+
+/* --- Windows 95 --- */
+html[data-theme="win95"] .info-pos {
+    background: #c0c0c0;
+    color: #000;
+    border: 2px solid;
+    border-color: var(--w95-raised-color);
+    box-shadow: var(--w95-raised-shadow);
+}
+
+html[data-theme="win95"] .coord-tooltip {
+    background: #ffffe1; /* bulle d'aide Windows */
+    color: #000;
+    border: 1px solid #000;
+}
+
+html[data-theme="win95"] #simu3d-container {
+    background: #000;
+}
+
+@media (max-width: 600px) {
+    .info-pos {
+        font-size: 0.8rem;
+        padding: 8px 10px;
+        bottom: 10px;
+        left: 10px;
+        max-width: calc(100% - 20px);
+    }
+
+    .btn-view-toggle {
+        top: 10px;
+        left: 10px;
+    }
 }

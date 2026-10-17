@@ -1,128 +1,129 @@
 /* =======================================================
-   EIRBOT 2026 - CONTROLE JOYSTICK STYLES
+   EIRBOT 2026 — PAGE CONTRÔLE (joystick, actionneurs)
+   N'utilise QUE les variables de thème de common.css (aucune couleur
+   ni police en dur). Cartes et boutons : composants communs (.card,
+   .btn...) ajoutés dans le template ; ce fichier ne fait que la mise en
+   page et les éléments propres à la page (joystick, jauges, clavier...).
+   Les classes posées par controle.js (badge-conn, badge-status, status-*,
+   badge-gamepad, active, targeted...) sont conservées telles quelles.
    ======================================================= */
 
-:root {
-    --bg-dark: #0d1117;
-    --card-bg: rgba(22, 27, 34, 0.85);
-    --card-border: rgba(255, 255, 255, 0.1);
-    --primary-cyan: #00d2ff;
-    --accent-blue: #007bff;
-    --accent-yellow: #ffb703;
-    --danger-red: #ff334b;
-    --success-green: #00e676;
-    --text-main: #f0f6fc;
-    --text-muted: #8b949e;
-    --font-heading: 'Outfit', sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
-}
-
 body {
-    background-color: var(--bg-dark);
-    color: var(--text-main);
-    font-family: var(--font-heading);
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
     overflow-x: hidden;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
 }
 
-/* Header Adjustments */
-.header {
-    background: rgba(22, 27, 34, 0.95);
-    backdrop-filter: blur(10px);
-    padding: 12px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--card-border);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-
+/* ---------- En-tête ---------- */
 .header-left {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
+    min-width: 0;
+    flex-wrap: wrap;
 }
 
-.page-title {
-    font-size: 1.3rem;
-    margin: 0;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    background: linear-gradient(135deg, #fff 30%, var(--primary-cyan) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.badge-conn {
+/* Pastilles d'état de l'en-tête (classe complète réécrite par controle.js) */
+.badge-conn,
+.badge-gamepad,
+.badge-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 0.75rem;
     font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 20px;
     letter-spacing: 0.5px;
-    transition: all 0.3s ease;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 2px solid var(--border);
+    background: var(--chip-bg);
+    color: var(--text-muted);
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
 }
 
-.badge-conn.connected {
-    background: rgba(0, 230, 118, 0.15);
-    color: var(--success-green);
-    border: 1px solid rgba(0, 230, 118, 0.4);
-    box-shadow: 0 0 10px rgba(0, 230, 118, 0.2);
+.badge-conn.connected,
+.status-free {
+    color: var(--success);
+    border-color: var(--success);
 }
 
-.badge-conn.disconnected {
-    background: rgba(255, 51, 75, 0.15);
-    color: var(--danger-red);
-    border: 1px solid rgba(255, 51, 75, 0.4);
+.badge-conn.disconnected,
+.status-stop {
+    color: var(--danger);
+    border-color: var(--danger);
 }
 
-/* Main Container Layout */
+.status-stop {
+    animation: blink 1s infinite;
+}
+
+.status-alert {
+    color: var(--warning);
+    border-color: var(--warning);
+}
+
+.badge-gamepad {
+    cursor: pointer;
+}
+
+.badge-gamepad.connected {
+    color: var(--cyan);
+    border-color: var(--cyan);
+}
+
+.badge-gamepad:hover {
+    border-color: var(--accent);
+}
+
+/* ---------- Grille principale ---------- */
 .control-container {
     display: grid;
-    grid-template-columns: 1.1fr 0.9fr;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
     gap: 20px;
-    padding: 20px;
+    padding: 28px 20px 20px;
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
     flex: 1;
+    align-content: start;
+    font-size: 16px;
 }
 
-/* Base Card Style */
-.card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 16px;
-    padding: 20px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    transition: border-color 0.3s ease;
+.control-container .card {
+    margin-bottom: 0;
 }
 
-.card h2 {
+.card-title {
     font-size: 1.05rem;
-    margin: 0 0 16px 0;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    color: #e6edf3;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding-bottom: 10px;
+}
+
+/* Sous-panneaux (groupes à l'intérieur d'une carte) */
+.control-target-selector,
+.keyboard-preview,
+.wheel-speeds,
+.actuator-presets-bar,
+.actuator-card,
+.gamepad-device-info,
+.mapping-card,
+.gamepad-visualizer {
+    background: var(--surface-2);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+/* Cases de données (valeurs lisibles sur fond de pastille) */
+.gauge-item,
+.telemetry-cell {
+    background: var(--chip-bg);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
 }
 
 /* =======================================================
-   JOYSTICK ZONE
+   ZONE JOYSTICK
    ======================================================= */
 .joystick-section {
     display: flex;
@@ -142,14 +143,11 @@ body {
     color: var(--text-muted);
 }
 
-/* =======================================================
-   SÉLECTEUR DE CIBLE (ROBOT VS BRAS 1-4)
-   ======================================================= */
+/* ---------- Sélecteur de cible (robot / bras 1-4) ---------- */
 .control-target-selector {
-    background: rgba(13, 17, 23, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    padding: 10px 14px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 14px 6px;
     margin-bottom: 12px;
     display: flex;
     flex-direction: column;
@@ -160,23 +158,25 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
 .target-label {
     font-size: 0.75rem;
     font-weight: 800;
     letter-spacing: 0.8px;
-    color: #c9d1d9;
+    color: var(--text-muted);
 }
 
 .target-hints {
     font-size: 0.7rem;
     font-family: var(--font-mono);
-    color: var(--primary-cyan);
-    background: rgba(0, 210, 255, 0.1);
+    color: var(--cyan);
+    background: var(--chip-bg);
     padding: 2px 8px;
     border-radius: 6px;
-    border: 1px solid rgba(0, 210, 255, 0.25);
+    border: 1px solid var(--border);
 }
 
 .target-buttons {
@@ -187,64 +187,35 @@ body {
 
 .target-btn {
     flex: 1 1 auto;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #c9d1d9;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-family: var(--font-heading);
-    font-weight: 700;
+    padding: 7px 10px;
     font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     gap: 6px;
 }
 
-.target-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.25);
-    color: #fff;
-    transform: translateY(-1px);
-}
-
-.target-btn.active {
-    background: linear-gradient(135deg, rgba(0, 210, 255, 0.25), rgba(0, 123, 255, 0.35));
-    border-color: var(--primary-cyan);
-    color: #fff;
-    box-shadow: 0 0 12px rgba(0, 210, 255, 0.35);
+.target-btn.active,
+.btn-preset.active {
+    --btn: var(--accent);
+    --btn-text: var(--accent-text);
+    text-shadow: none;
 }
 
 .tb-num {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
+    background: var(--chip-bg);
+    color: var(--text);
     font-size: 0.7rem;
     font-family: var(--font-mono);
     padding: 1px 6px;
     border-radius: 4px;
+    text-shadow: none;
 }
 
 .target-btn.active .tb-num {
-    background: var(--primary-cyan);
-    color: #000;
+    background: var(--accent-text);
+    color: var(--accent);
     font-weight: 800;
 }
 
-/* Carte Actionneur Ciblée */
-.actuator-card.targeted {
-    border-color: var(--primary-cyan);
-    box-shadow: 0 0 20px rgba(0, 210, 255, 0.35), inset 0 0 15px rgba(0, 210, 255, 0.05);
-    background: rgba(16, 26, 38, 0.85);
-    transform: translateY(-2px);
-}
-
-.actuator-card.targeted .act-title {
-    color: #fff;
-    text-shadow: 0 0 8px var(--primary-cyan);
-}
-
+/* ---------- Plateau du joystick ---------- */
 .joystick-wrapper {
     position: relative;
     width: 100%;
@@ -259,19 +230,19 @@ body {
     width: 290px;
     height: 290px;
     border-radius: 50%;
-    background: radial-gradient(circle, #1a222d 0%, #0d1218 80%);
-    border: 3px solid rgba(0, 210, 255, 0.25);
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 25px rgba(0, 210, 255, 0.1);
+    background: radial-gradient(circle, var(--surface-2) 0%, var(--chip-bg) 85%);
+    border: var(--line-w) solid var(--line);
+    box-shadow: inset 0 0 0 4px var(--surface-3), 0 var(--depth) 0 var(--ink), var(--soft-shadow);
     cursor: grab;
     touch-action: none;
     overflow: hidden;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .joystick-base:active {
     cursor: grabbing;
-    border-color: var(--primary-cyan);
-    box-shadow: 0 0 40px rgba(0, 210, 255, 0.3), inset 0 0 35px rgba(0, 210, 255, 0.2);
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 4px var(--accent), 0 var(--depth) 0 var(--ink), var(--soft-shadow);
 }
 
 .joystick-inner-ring {
@@ -282,14 +253,16 @@ body {
     width: 170px;
     height: 170px;
     border-radius: 50%;
-    border: 1px dashed rgba(255, 255, 255, 0.15);
+    border: 2px dashed var(--border-strong);
+    opacity: 0.6;
     pointer-events: none;
 }
 
 .joystick-crosshair-h,
 .joystick-crosshair-v {
     position: absolute;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--border-strong);
+    opacity: 0.35;
     pointer-events: none;
 }
 
@@ -297,7 +270,7 @@ body {
     top: 50%;
     left: 0;
     right: 0;
-    height: 1px;
+    height: 2px;
     transform: translateY(-50%);
 }
 
@@ -305,7 +278,7 @@ body {
     left: 50%;
     top: 0;
     bottom: 0;
-    width: 1px;
+    width: 2px;
     transform: translateX(-50%);
 }
 
@@ -313,17 +286,18 @@ body {
     position: absolute;
     font-size: 0.7rem;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--text-muted);
     pointer-events: none;
     letter-spacing: 1px;
+    white-space: nowrap;
 }
 
-.mark-n { top: 12px; left: 50%; transform: translateX(-50%); }
-.mark-s { bottom: 12px; left: 50%; transform: translateX(-50%); }
-.mark-w { left: 12px; top: 50%; transform: translateY(-50%); }
-.mark-e { right: 12px; top: 50%; transform: translateY(-50%); }
+.mark-n { top: 14px; left: 50%; transform: translateX(-50%); }
+.mark-s { bottom: 14px; left: 50%; transform: translateX(-50%); }
+.mark-w { left: 14px; top: 50%; transform: translateY(-50%); }
+.mark-e { right: 14px; top: 50%; transform: translateY(-50%); }
 
-/* Stick / Nipple */
+/* Stick mobile (déplacé par controle.js via style.transform) */
 .joystick-knob {
     position: absolute;
     top: 50%;
@@ -332,10 +306,11 @@ body {
     height: 90px;
     margin-left: -45px;
     margin-top: -45px;
+    box-sizing: border-box;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #2a3848 0%, #151e28 80%);
-    border: 2px solid var(--primary-cyan);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 210, 255, 0.4);
+    background: var(--gloss), radial-gradient(circle at 35% 35%, var(--surface-3) 0%, var(--surface) 85%);
+    border: 4px solid var(--accent);
+    box-shadow: 0 0 0 var(--line-w) var(--line), 0 var(--depth) 0 var(--ink), var(--soft-shadow);
     pointer-events: none;
     transition: transform 0.05s linear;
     display: flex;
@@ -345,89 +320,63 @@ body {
 
 .knob-glow {
     position: absolute;
-    width: 100%;
-    height: 100%;
+    inset: 6px;
     border-radius: 50%;
-    box-shadow: inset 0 0 15px rgba(0, 210, 255, 0.3);
+    border: 2px solid var(--border);
 }
 
 .knob-center {
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: var(--primary-cyan);
-    box-shadow: 0 0 12px var(--primary-cyan);
+    background: var(--accent);
+    border: 2px solid var(--line);
 }
 
-/* Quick Actions */
+/* ---------- Actions rapides ---------- */
 .joystick-quick-actions {
     display: flex;
-    gap: 16px;
+    gap: 14px;
     width: 100%;
     margin-top: 15px;
+    align-items: stretch;
+}
+
+.joystick-quick-actions .btn {
+    padding: 14px;
 }
 
 .btn-emergency {
     flex: 2;
-    background: linear-gradient(135deg, #ff1a35 0%, #c00018 100%);
-    color: white;
-    font-family: var(--font-heading);
-    font-weight: 800;
     font-size: 1.1rem;
-    padding: 16px;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(255, 26, 53, 0.4);
-    transition: all 0.2s ease;
-    letter-spacing: 0.5px;
-    animation: pulse-red 2s infinite;
+    font-weight: 800;
+    animation: pulse-danger 2s infinite;
 }
 
-.btn-emergency:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(255, 26, 53, 0.6);
-}
-
-.btn-emergency:active {
-    transform: translateY(1px);
-}
-
-@keyframes pulse-red {
-    0% { box-shadow: 0 0 0 0 rgba(255, 26, 53, 0.6); }
-    70% { box-shadow: 0 0 0 12px rgba(255, 26, 53, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 26, 53, 0); }
+@keyframes pulse-danger {
+    0%   { outline: 0 solid var(--danger); outline-offset: 0; }
+    70%  { outline: 10px solid transparent; outline-offset: 2px; }
+    100% { outline: 0 solid transparent; outline-offset: 0; }
 }
 
 .btn-neutral {
     flex: 1;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #f0f6fc;
-    font-family: var(--font-heading);
-    font-weight: 700;
     font-size: 0.95rem;
-    padding: 16px;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
 }
 
-.btn-neutral:hover {
-    background: rgba(255, 255, 255, 0.15);
+.btn-gamepad-toggle {
+    flex: 1;
+    font-size: 0.85rem;
 }
 
-/* Keyboard Preview */
+/* ---------- Aperçu clavier ---------- */
 .keyboard-preview {
     margin-top: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    background: rgba(0, 0, 0, 0.25);
     padding: 12px 20px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .key-row {
@@ -438,24 +387,24 @@ body {
 .virtual-key {
     width: 48px;
     height: 48px;
-    background: #1c232d;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-sizing: border-box;
+    background: var(--gloss), var(--surface-3);
+    border: 2px solid var(--line);
     border-radius: 8px;
-    box-shadow: 0 4px 0 #0f141a;
+    box-shadow: 0 4px 0 var(--ink);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #e6edf3;
-    transition: all 0.1s ease;
+    color: var(--btn-fg);
+    transition: transform 0.06s, box-shadow 0.06s;
 }
 
 .virtual-key.active {
-    background: var(--primary-cyan);
-    color: #000;
-    border-color: var(--primary-cyan);
+    background: var(--accent);
+    color: var(--accent-text);
     transform: translateY(3px);
-    box-shadow: 0 1px 0 #0099bb, 0 0 15px rgba(0, 210, 255, 0.5);
+    box-shadow: 0 1px 0 var(--ink);
 }
 
 .key-main {
@@ -466,7 +415,7 @@ body {
 
 .key-sub {
     font-size: 0.65rem;
-    opacity: 0.6;
+    opacity: 0.7;
 }
 
 .key-hint {
@@ -476,27 +425,24 @@ body {
 }
 
 /* =======================================================
-   SIDEBAR SECTION (Gauges, Telemetry, Settings)
+   COLONNE DROITE (jauges, télémétrie, réglages)
    ======================================================= */
 .sidebar-section {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    min-width: 0;
 }
 
-/* Gauges */
 .gauges-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 16px;
     margin-bottom: 16px;
 }
 
 .gauge-item {
-    background: rgba(0, 0, 0, 0.25);
     padding: 14px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .gauge-label {
@@ -508,9 +454,10 @@ body {
 
 .gauge-value {
     font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
     font-size: 1.6rem;
     font-weight: 800;
-    color: #fff;
+    color: var(--text);
     margin-bottom: 8px;
 }
 
@@ -520,12 +467,10 @@ body {
     font-weight: 400;
 }
 
+/* Piste : composant commun .progress (ajouté dans le template) */
 .progress-track {
     width: 100%;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 4px;
-    overflow: hidden;
+    box-sizing: border-box;
     position: relative;
 }
 
@@ -536,19 +481,19 @@ body {
 }
 
 .fill-linear {
-    background: linear-gradient(90deg, #00d2ff, #007bff);
+    background: linear-gradient(90deg, var(--cyan), var(--blue));
 }
 
 .fill-angular {
-    background: linear-gradient(90deg, #ff9100, #ffd600);
+    background: linear-gradient(90deg, var(--orange), var(--yellow));
 }
 
 .wheel-speeds {
     display: flex;
     justify-content: space-around;
-    background: rgba(0, 0, 0, 0.2);
+    flex-wrap: wrap;
+    gap: 6px;
     padding: 10px;
-    border-radius: 10px;
     font-size: 0.85rem;
 }
 
@@ -559,25 +504,24 @@ body {
 
 .wheel-val {
     font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
     font-weight: 700;
-    color: #00d2ff;
+    color: var(--cyan);
 }
 
-/* Telemetry Grid */
+/* ---------- Télémétrie ---------- */
 .telemetry-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
 }
 
 .telemetry-cell {
-    background: rgba(0, 0, 0, 0.25);
     padding: 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     flex-direction: column;
     gap: 4px;
+    text-align: left;
 }
 
 .cell-label {
@@ -589,47 +533,19 @@ body {
 
 .cell-val {
     font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
     font-size: 1.2rem;
     font-weight: 700;
-    color: #fff;
+    color: var(--text);
 }
 
 .badge-status {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 700;
     width: fit-content;
+    font-size: 0.85rem;
     margin-top: 2px;
 }
 
-.status-free {
-    background: rgba(0, 230, 118, 0.15);
-    color: var(--success-green);
-    border: 1px solid rgba(0, 230, 118, 0.3);
-}
-
-.status-alert {
-    background: rgba(255, 183, 3, 0.15);
-    color: var(--accent-yellow);
-    border: 1px solid rgba(255, 183, 3, 0.3);
-}
-
-.status-stop {
-    background: rgba(255, 51, 75, 0.2);
-    color: var(--danger-red);
-    border: 1px solid rgba(255, 51, 75, 0.4);
-    animation: pulse-badge 1s infinite;
-}
-
-@keyframes pulse-badge {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
-}
-
-/* Settings Card */
+/* ---------- Réglages ---------- */
 .setting-group {
     margin-bottom: 18px;
 }
@@ -638,64 +554,49 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     margin-bottom: 8px;
 }
 
 .setting-title-row label {
     font-size: 0.9rem;
-    color: #c9d1d9;
+    color: var(--text);
     font-weight: 600;
+    text-align: left;
 }
 
 .badge-setting {
     font-family: var(--font-mono);
     font-size: 0.85rem;
     font-weight: 700;
-    color: var(--primary-cyan);
-    background: rgba(0, 210, 255, 0.1);
+    color: var(--cyan);
+    background: var(--chip-bg);
+    border: 1px solid var(--border);
     padding: 2px 8px;
     border-radius: 6px;
+    white-space: nowrap;
 }
 
 .preset-buttons {
     display: flex;
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .btn-preset {
     flex: 1;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #c9d1d9;
     padding: 6px;
-    border-radius: 6px;
     font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-preset:hover {
-    background: rgba(255, 255, 255, 0.12);
-}
-
-.btn-preset.active {
-    background: rgba(0, 210, 255, 0.2);
-    border-color: var(--primary-cyan);
-    color: var(--primary-cyan);
-    box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
 }
 
 input[type="range"] {
     width: 100%;
-    accent-color: var(--primary-cyan);
     cursor: pointer;
 }
 
 .setting-toggle-row {
     padding-top: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 2px dashed var(--border);
 }
 
 .toggle-container {
@@ -713,43 +614,47 @@ input[type="range"] {
     position: relative;
     width: 44px;
     height: 24px;
-    background: rgba(255, 255, 255, 0.1);
+    box-sizing: border-box;
+    background: var(--chip-bg);
+    border: 2px solid var(--line);
     border-radius: 24px;
-    transition: 0.3s;
+    transition: background 0.2s;
     flex-shrink: 0;
 }
 
 .toggle-slider::before {
     content: "";
     position: absolute;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
-    top: 3px;
-    left: 3px;
-    background: #fff;
-    transition: 0.3s;
+    top: 2px;
+    left: 2px;
+    background: var(--text-muted);
+    transition: transform 0.2s, background 0.2s;
 }
 
 .toggle-container input:checked + .toggle-slider {
-    background: var(--primary-cyan);
+    background: var(--accent);
 }
 
 .toggle-container input:checked + .toggle-slider::before {
+    background: var(--accent-text);
     transform: translateX(20px);
 }
 
 .toggle-label {
     font-size: 0.85rem;
-    color: #c9d1d9;
+    color: var(--text);
+    text-align: left;
 }
 
 /* =======================================================
-   RESPONSIVE DESIGN
+   RESPONSIVE
    ======================================================= */
 @media (max-width: 950px) {
     .control-container {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .joystick-base {
@@ -766,78 +671,13 @@ input[type="range"] {
 }
 
 /* =======================================================
-   BADGE & BOUTONS MANETTE
-   ======================================================= */
-.badge-gamepad {
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 5px 12px;
-    border-radius: 20px;
-    letter-spacing: 0.5px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid transparent;
-}
-
-.badge-gamepad.connected {
-    background: rgba(0, 210, 255, 0.15);
-    color: var(--primary-cyan);
-    border-color: rgba(0, 210, 255, 0.4);
-    box-shadow: 0 0 12px rgba(0, 210, 255, 0.25);
-    animation: gp-glow 2s infinite alternate;
-}
-
-@keyframes gp-glow {
-    0% { box-shadow: 0 0 6px rgba(0, 210, 255, 0.2); }
-    100% { box-shadow: 0 0 15px rgba(0, 210, 255, 0.4); }
-}
-
-.badge-gamepad.disconnected {
-    background: rgba(139, 148, 158, 0.12);
-    color: var(--text-muted);
-    border-color: rgba(139, 148, 158, 0.25);
-}
-
-.badge-gamepad:hover {
-    transform: translateY(-1px);
-    border-color: var(--primary-cyan);
-}
-
-.btn-gamepad-toggle {
-    background: rgba(0, 210, 255, 0.1);
-    color: var(--primary-cyan);
-    border: 1px solid rgba(0, 210, 255, 0.3);
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-}
-
-.btn-gamepad-toggle:hover {
-    background: rgba(0, 210, 255, 0.2);
-    box-shadow: 0 0 12px rgba(0, 210, 255, 0.3);
-    transform: translateY(-2px);
-}
-
-/* =======================================================
-   PANNEAU ACTIONNEURS & PRESETS
+   ACTIONNEURS & PRESETS
    ======================================================= */
 .actuators-section {
     grid-column: 1 / -1;
-    margin-top: 10px;
     display: flex;
     flex-direction: column;
     gap: 18px;
-    background: rgba(22, 27, 34, 0.9);
 }
 
 .actuators-header {
@@ -846,89 +686,49 @@ input[type="range"] {
     align-items: center;
     flex-wrap: wrap;
     gap: 12px;
+    border-bottom: 2px dashed var(--border);
+    padding-bottom: 10px;
+}
+
+.actuators-header .card-title {
+    margin: 0;
+    padding: 0;
+    border: none;
 }
 
 .actuator-feedback {
     font-size: 0.85rem;
     font-family: var(--font-mono);
     color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--chip-bg);
     padding: 4px 12px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    transition: all 0.3s ease;
+    border: 2px solid var(--border);
+    transition: color 0.2s, background 0.2s, border-color 0.2s;
 }
 
 .actuator-feedback.active {
-    color: var(--primary-cyan);
-    background: rgba(0, 210, 255, 0.15);
-    border-color: rgba(0, 210, 255, 0.4);
-    box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+    color: var(--accent-text);
+    background: var(--accent);
+    border-color: var(--line);
 }
 
 .actuator-presets-bar {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    background: rgba(13, 17, 23, 0.6);
-    padding: 12px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 12px 12px 6px;
 }
 
 .btn-actuator-preset {
     flex: 1 1 auto;
     min-width: 130px;
-    background: rgba(255, 255, 255, 0.06);
-    color: #e6edf3;
-    border: 1px solid rgba(255, 255, 255, 0.12);
     padding: 10px 14px;
-    border-radius: 10px;
-    font-family: var(--font-heading);
     font-size: 0.85rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     gap: 6px;
 }
 
-.btn-actuator-preset:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.btn-actuator-preset:active {
-    transform: translateY(0);
-}
-
-.btn-actuator-preset.primary {
-    background: linear-gradient(135deg, rgba(0, 210, 255, 0.2), rgba(0, 123, 255, 0.25));
-    border-color: rgba(0, 210, 255, 0.4);
-    color: #fff;
-}
-
-.btn-actuator-preset.primary:hover {
-    background: linear-gradient(135deg, rgba(0, 210, 255, 0.35), rgba(0, 123, 255, 0.4));
-    box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
-}
-
-.btn-actuator-preset.warning {
-    background: rgba(255, 183, 3, 0.12);
-    border-color: rgba(255, 183, 3, 0.35);
-    color: var(--accent-yellow);
-}
-
-.btn-actuator-preset.warning:hover {
-    background: rgba(255, 183, 3, 0.25);
-    box-shadow: 0 0 15px rgba(255, 183, 3, 0.3);
-}
-
-/* Grille des Actionneurs Individuels */
+/* Grille des 4 actionneurs */
 .actuators-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -936,40 +736,47 @@ input[type="range"] {
 }
 
 .actuator-card {
-    background: rgba(13, 17, 23, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
     padding: 14px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    transition: all 0.25s ease;
+    gap: 10px;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .actuator-card:hover {
-    border-color: rgba(0, 210, 255, 0.3);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    border-color: var(--border-strong);
+}
+
+/* Bras ciblé par le joystick (classe posée par controle.js) */
+.actuator-card.targeted {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent);
+}
+
+.actuator-card.targeted .act-title {
+    color: var(--accent);
 }
 
 .act-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 2px dashed var(--border);
     padding-bottom: 8px;
 }
 
 .act-title {
     font-weight: 800;
     font-size: 0.95rem;
-    color: var(--primary-cyan);
+    color: var(--cyan);
     letter-spacing: 0.5px;
 }
 
 .act-badge {
     font-size: 0.7rem;
     color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--chip-bg);
+    border: 1px solid var(--border);
     padding: 2px 8px;
     border-radius: 6px;
 }
@@ -982,7 +789,7 @@ input[type="range"] {
 
 .act-control-group label {
     font-size: 0.8rem;
-    color: #c9d1d9;
+    color: var(--text-muted);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -990,7 +797,8 @@ input[type="range"] {
 
 .val-badge {
     font-family: var(--font-mono);
-    color: var(--primary-cyan);
+    font-variant-numeric: tabular-nums;
+    color: var(--cyan);
     font-weight: 700;
 }
 
@@ -1001,26 +809,14 @@ input[type="range"] {
 
 .quick-height-buttons {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 4px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
 }
 
-.quick-height-buttons button {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #c9d1d9;
+.quick-height-buttons .btn {
     padding: 4px 0;
-    border-radius: 6px;
     font-size: 0.75rem;
-    cursor: pointer;
     font-family: var(--font-mono);
-    transition: all 0.2s ease;
-}
-
-.quick-height-buttons button:hover {
-    background: rgba(0, 210, 255, 0.15);
-    color: var(--primary-cyan);
-    border-color: rgba(0, 210, 255, 0.3);
 }
 
 .act-buttons-row {
@@ -1030,42 +826,19 @@ input[type="range"] {
 
 .btn-act-sub {
     flex: 1;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #e6edf3;
-    padding: 6px 8px;
-    border-radius: 8px;
+    padding: 6px 6px;
     font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     gap: 4px;
-}
-
-.btn-act-sub:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
-    transform: translateY(-1px);
-}
-
-.btn-act-sub:active {
-    transform: translateY(0);
+    min-width: 0;
 }
 
 /* =======================================================
-   MODAL AIDE MANETTE
+   FENÊTRE D'AIDE MANETTE
    ======================================================= */
 .modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(8px);
+    inset: 0;
+    background: color-mix(in srgb, var(--page-bg-flat) 85%, transparent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1081,47 +854,37 @@ input[type="range"] {
 }
 
 .modal-card {
-    background: #161b22;
-    border: 1px solid rgba(0, 210, 255, 0.3);
-    border-radius: 16px;
     max-width: 650px;
     width: 100%;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    padding: 0;
+    margin: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    text-align: left;
+    font-size: 16px;
 }
 
 .modal-header {
-    background: rgba(13, 17, 23, 0.9);
-    padding: 16px 20px;
+    background: var(--surface-2);
+    padding: 12px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 10px;
+    border-bottom: 2px dashed var(--border);
 }
 
 .modal-header h3 {
     margin: 0;
     font-size: 1.1rem;
-    font-weight: 800;
-    color: var(--primary-cyan);
+    font-weight: var(--font-weight-title);
+    color: var(--accent);
 }
 
 .btn-modal-close {
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-}
-
-.btn-modal-close:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 10px;
+    font-size: 1rem;
 }
 
 .modal-body {
@@ -1134,11 +897,9 @@ input[type="range"] {
 }
 
 .gamepad-device-info {
-    background: rgba(13, 17, 23, 0.7);
     padding: 10px 14px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     align-items: center;
     font-size: 0.85rem;
@@ -1150,7 +911,7 @@ input[type="range"] {
 
 .info-val {
     font-weight: 700;
-    color: var(--primary-cyan);
+    color: var(--cyan);
     font-family: var(--font-mono);
 }
 
@@ -1161,17 +922,14 @@ input[type="range"] {
 }
 
 .mapping-card {
-    background: rgba(13, 17, 23, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
     padding: 12px;
 }
 
 .mapping-card h4 {
     margin: 0 0 8px 0;
     font-size: 0.85rem;
-    color: #e6edf3;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    border-bottom: 2px dashed var(--border);
     padding-bottom: 6px;
 }
 
@@ -1180,17 +938,14 @@ input[type="range"] {
     padding-left: 16px;
     font-size: 0.75rem;
     line-height: 1.6;
-    color: #c9d1d9;
+    color: var(--text-muted);
 }
 
 .mapping-card b {
-    color: var(--primary-cyan);
+    color: var(--cyan);
 }
 
 .gamepad-visualizer {
-    background: rgba(13, 17, 23, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
     padding: 12px;
     display: flex;
     flex-direction: column;
@@ -1205,7 +960,7 @@ input[type="range"] {
 }
 
 .gp-vis-axis b {
-    color: var(--primary-cyan);
+    color: var(--cyan);
 }
 
 .gp-buttons-indicator {
@@ -1214,16 +969,161 @@ input[type="range"] {
     gap: 6px;
     min-height: 24px;
     align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+}
+
+/* Écrits par controle.js */
+.gp-buttons-indicator .text-muted {
+    color: var(--text-muted);
 }
 
 .gp-active-key {
-    background: var(--primary-cyan);
-    color: #000;
+    background: var(--accent);
+    color: var(--accent-text);
     font-weight: 800;
     font-size: 0.7rem;
     padding: 2px 6px;
     border-radius: 4px;
-    box-shadow: 0 0 6px rgba(0, 210, 255, 0.5);
+    border: 1px solid var(--line);
+}
+
+/* =======================================================
+   THÈME « Windows 95 » : reliefs par côté (variables --w95-* de common.css)
+   ======================================================= */
+/* Pastilles d'état : rectangles à bord noir */
+html[data-theme="win95"] .badge-conn,
+html[data-theme="win95"] .badge-gamepad,
+html[data-theme="win95"] .badge-status,
+html[data-theme="win95"] .target-hints,
+html[data-theme="win95"] .badge-setting,
+html[data-theme="win95"] .act-badge,
+html[data-theme="win95"] .actuator-feedback,
+html[data-theme="win95"] .tb-num,
+html[data-theme="win95"] .gp-active-key {
+    border-radius: 0;
+    border: 1px solid var(--text);
+}
+
+/* Cadres de groupe gravés */
+html[data-theme="win95"] .control-target-selector,
+html[data-theme="win95"] .keyboard-preview,
+html[data-theme="win95"] .wheel-speeds,
+html[data-theme="win95"] .actuator-presets-bar,
+html[data-theme="win95"] .gamepad-device-info,
+html[data-theme="win95"] .mapping-card,
+html[data-theme="win95"] .gamepad-visualizer {
+    border: 2px groove var(--surface);
+    border-radius: 0;
+}
+
+/* Champs creusés (valeurs sur fond blanc) */
+html[data-theme="win95"] .gauge-item,
+html[data-theme="win95"] .telemetry-cell {
+    border: 2px solid;
+    border-color: var(--w95-sunken-color);
+    box-shadow: var(--w95-sunken-shadow);
+    border-radius: 0;
+}
+
+/* Fenêtres internes en relief */
+html[data-theme="win95"] .actuator-card,
+html[data-theme="win95"] .virtual-key {
+    border: 2px solid;
+    border-color: var(--w95-raised-color);
+    box-shadow: var(--w95-raised-shadow);
+    border-radius: 0;
+}
+
+html[data-theme="win95"] .actuator-card.targeted {
+    outline: 2px dotted var(--text);
+    outline-offset: 2px;
+}
+
+html[data-theme="win95"] .actuator-card.targeted .act-title {
+    color: var(--accent);
+}
+
+/* Touche / bouton sélectionné : enfoncé, surligné « sélection » */
+html[data-theme="win95"] .virtual-key.active,
+html[data-theme="win95"] .target-btn.active,
+html[data-theme="win95"] .btn-preset.active {
+    background: var(--accent) !important;
+    color: var(--accent-text) !important;
+    border-color: var(--w95-sunken-color) !important;
+    box-shadow: var(--w95-sunken-shadow) !important;
+    transform: none;
+}
+
+html[data-theme="win95"] .btn-actuator-preset.primary { color: var(--accent) !important; }
+html[data-theme="win95"] .btn-emergency {
+    color: var(--danger) !important;
+    animation: none;
+}
+
+/* Joystick : cuvette creusée, stick en relief */
+html[data-theme="win95"] .joystick-base {
+    background: var(--chip-bg);
+    border: 3px solid;
+    border-color: var(--w95-sunken-color);
+    box-shadow: var(--w95-sunken-shadow);
+}
+
+html[data-theme="win95"] .joystick-base:active {
+    box-shadow: var(--w95-sunken-shadow), inset 0 0 0 4px var(--accent);
+}
+
+html[data-theme="win95"] .joystick-knob {
+    background: var(--surface);
+    border: 4px solid;
+    border-color: var(--w95-raised-color);
+    box-shadow: var(--w95-raised-shadow), 0 0 0 2px var(--accent);
+}
+
+html[data-theme="win95"] .knob-center {
+    border-color: var(--text);
+}
+
+html[data-theme="win95"] .fill-linear  { background: var(--accent); }
+html[data-theme="win95"] .fill-angular { background: var(--success); }
+
+html[data-theme="win95"] .toggle-slider {
+    border-radius: 0;
+    border: 2px solid;
+    border-color: var(--w95-sunken-color);
+}
+
+html[data-theme="win95"] .toggle-slider::before {
+    border-radius: 0;
+}
+
+/* Fenêtre d'aide : barre de titre bleue */
+html[data-theme="win95"] .modal-header {
+    background: var(--accent);
+    border-bottom: none;
+    padding: 4px 6px 4px 10px;
+}
+
+html[data-theme="win95"] .modal-header h3 {
+    color: var(--accent-text);
+    font-size: 0.95rem;
+}
+
+html[data-theme="win95"] .actuators-header {
+    background: var(--accent);
+    margin: -14px -14px 0;
+    padding: 3px 4px 3px 8px;
+    border-bottom: none;
+}
+
+html[data-theme="win95"] .actuators-header .card-title {
+    background: none;
+    margin: 0;
+    padding: 0;
+}
+
+html[data-theme="win95"] .actuators-header .actuator-feedback {
+    padding: 1px 8px;
 }
 
 /* =======================================================
@@ -1242,7 +1142,8 @@ input[type="range"] {
     .control-container {
         grid-template-columns: minmax(0, 1fr);
         gap: 12px;
-        padding: 10px;
+        padding: 20px 10px 10px;
+        font-size: 15px;
     }
 
     .control-container > *, .card {
