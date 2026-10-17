@@ -545,4 +545,5 @@ html[data-theme="win95"] .status-text-good { color: #000080; }
 /* #static-strat-box est réaffiché par debug.js en display:block : libellé et liste restent empilés */
 .field > .field-label { display: block; }
 .field > select,
+.field > .ui-select,
 .field > input[type="number"] { width: 100%; box-sizing: border-box; }

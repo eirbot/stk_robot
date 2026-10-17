@@ -581,7 +581,8 @@ button, a, select, input {
    FORMULAIRES
    ======================================================= */
 select,
-.strat-select {
+.strat-select,
+.ui-select-button {
     -webkit-appearance: none;
     appearance: none;
     background-color: var(--surface-2);
@@ -712,6 +713,94 @@ body.breathing-JAUNE {
         padding: 14px;
     }
 }
+
+/* =======================================================
+   MENUS DÉROULANTS THÉMÉS (composant de theme.js)
+   Le <select> natif reste dans le DOM, masqué (.ui-select-native) ;
+   bouton + liste sont dessinés avec le thème.
+   ======================================================= */
+.ui-select {
+    position: relative;
+    display: inline-flex;
+    vertical-align: middle;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.ui-select-native {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.ui-select-button {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    max-width: 100%;
+    text-align: left;
+    line-height: 1.25;
+}
+
+.ui-select-button:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.ui-select-button:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.ui-select-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.field > .ui-select,
+.ui-select.block {
+    display: flex;
+    width: 100%;
+}
+
+.field > .ui-select > .ui-select-button,
+.ui-select.block > .ui-select-button {
+    width: 100%;
+}
+
+.ui-select-list {
+    position: fixed;
+    z-index: 100000;
+    max-height: min(320px, 60vh);
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 4px;
+    background: var(--surface);
+    color: var(--text);
+    border: var(--line-w) solid var(--line);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 var(--depth) 0 var(--ink), var(--soft-shadow);
+    font-family: var(--font);
+    font-size: 0.95rem;
+    text-align: left;
+}
+
+.ui-select-option {
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.ui-select-option.is-active   { background: var(--surface-2); }
+.ui-select-option.is-selected { background: var(--accent); color: var(--accent-text); }
+.ui-select-option.is-disabled { opacity: 0.45; cursor: default; }
 
 /* =======================================================
    COMPOSANTS COMPLÉMENTAIRES (formulaires, mise en page, données)
@@ -972,6 +1061,7 @@ html[data-theme="win95"] input[type="password"],
 html[data-theme="win95"] textarea,
 html[data-theme="win95"] .sys-info-item,
 html[data-theme="win95"] select,
+html[data-theme="win95"] .ui-select-button,
 html[data-theme="win95"] .video-display-container,
 html[data-theme="win95"] .zenithale-telemetry-panel {
     border-style: solid !important;
@@ -1070,3 +1160,13 @@ html[data-theme="win95"] .header { color: #fff; }
 html[data-theme="win95"] .header .sys-info { color: #000; }
 html[data-theme="win95"] .video-placeholder { color: #c0c0c0 !important; }
 html[data-theme="win95"] select option { border-radius: 0; }
+html[data-theme="win95"] .ui-select-list {
+    border: 1px solid #000;
+    border-radius: 0;
+    box-shadow: none;
+    background: #fff;
+    padding: 0;
+}
+html[data-theme="win95"] .ui-select-option { border-radius: 0; padding: 3px 8px; }
+html[data-theme="win95"] .ui-select-option.is-active,
+html[data-theme="win95"] .ui-select-option.is-selected { background: #000080; color: #fff; }
