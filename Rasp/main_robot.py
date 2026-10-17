@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
+import platform
 import time
 import threading
 import subprocess
@@ -10,6 +11,23 @@ import webview
 from ihm import run_ihm
 import ihm.shared as shared
 from strat.main_strat import strat_loop
+
+# e_machine ELF -> platform.machine()
+_ELF_ARCH = {0x3E: "x86_64", 0xB7: "aarch64", 0x28: "armv7l"}
+
+def _lidar_bin_a_recompiler(bin_path, cpp_path):
+    """Binaire absent, plus ancien que le .cpp, ou compilé pour une autre architecture (ex : x86 copié depuis un PC)."""
+    if not os.path.exists(bin_path):
+        return True
+    if os.path.getmtime(cpp_path) > os.path.getmtime(bin_path):
+        return True
+    try:
+        with open(bin_path, "rb") as f:
+            header = f.read(20)
+        arch = _ELF_ARCH.get(int.from_bytes(header[18:20], "little"))
+        return header[:4] != b"\x7fELF" or arch != platform.machine()
+    except OSError:
+        return True
 
 # --- MAIN ---
 if __name__ == "__main__":
@@ -27,12 +45,12 @@ if __name__ == "__main__":
         led_script = os.path.join(os.path.dirname(__file__), 'utils', 'led_service.py')
         if os.path.exists(led_script):
             print(f"[MAIN] 2. Lancement du service LED : {led_script}")
-            led_process = subprocess.Popen([sys.executable, led_script])
+            led_process = subprocess.Popen([sys.executable, led_script], preexec_fn=shared.die_with_parent)
         
         # 2. Driver LiDAR C++
         lidar_cpp = os.path.join(os.path.dirname(__file__), 'LiDAR', 'lidar_udp.cpp')
         lidar_bin = os.path.join(os.path.dirname(__file__), 'LiDAR', 'lidar_udp')
-        if not os.path.exists(lidar_bin):
+        if _lidar_bin_a_recompiler(lidar_bin, lidar_cpp):
             print("[MAIN] 3. Compilation du driver LiDAR C++...")
             subprocess.run(["g++", "-O3", lidar_cpp, "-o", lidar_bin], check=True)
             
@@ -41,7 +59,7 @@ if __name__ == "__main__":
         # On ne lance le LiDAR physiquement que si le mode initial n'est pas OFF
         if shared.state.get("lidar_mode", "OFF") != "OFF":
             print("[MAIN] 4. Lancement du service LiDAR UDP...")
-            shared.lidar_process = subprocess.Popen([lidar_bin])
+            shared.lidar_process = subprocess.Popen([lidar_bin], preexec_fn=shared.die_with_parent)
         else:
             print("[MAIN] 4. LiDAR configuré sur OFF par défaut. Lancement physique différé.")
         

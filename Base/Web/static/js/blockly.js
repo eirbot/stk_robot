@@ -871,7 +871,9 @@ document.addEventListener("DOMContentLoaded", function () {
             .then(d => {
                 if (d.status === 'success') {
                     loadBlocklyStrats('stratSelect');
-                    document.getElementById('status').innerText = "✅ Sauvegardé";
+                    document.getElementById('status').innerText = d.robot
+                        ? "✅ Sauvegardé et envoyé au robot"
+                        : "⚠️ Sauvegardé sur la base, robot injoignable (utiliser Update code RASP)";
                 }
             });
     });

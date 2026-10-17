@@ -501,7 +501,19 @@ func setupRoutes(app *fiber.App) {
 		if err1 != nil || err2 != nil {
 			return c.Status(500).JSON(fiber.Map{"status": "error"})
 		}
-		return c.JSON(fiber.Map{"status": "success"})
+
+		// Envoi direct au robot : il rescanne strat/strategies chaque seconde, pas de redémarrage.
+		// Best effort : robot éteint = sauvegarde quand même OK sur la base.
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		raspIP := resolveRaspIP()
+		scpCmd := exec.CommandContext(ctx, "scp", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=3",
+			basePath+".xml", basePath+".py", fmt.Sprintf("eirbot@%s:Documents/robot_stk/strat/strategies/", raspIP))
+		if out, err := scpCmd.CombinedOutput(); err != nil {
+			fmt.Printf("[STRAT] Envoi de %s au robot (%s) impossible : %v %s\n", cleanName, raspIP, err, strings.TrimSpace(string(out)))
+			return c.JSON(fiber.Map{"status": "success", "robot": false})
+		}
+		return c.JSON(fiber.Map{"status": "success", "robot": true})
 	})
 
 	// Routes de diagnostic pour le test de connexion (latence et débit)
@@ -666,6 +678,7 @@ func setupRoutes(app *fiber.App) {
 		sshOpts := "ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5"
 		rsyncCmd := exec.CommandContext(ctx, "rsync", "-rc", "--out-format=%n",
 			"--exclude=.venv", "--exclude=__pycache__", "--exclude=*.pyc", "--exclude=*.log", "--exclude=config.json",
+			"--exclude=LiDAR/lidar_udp", // binaire compilé sur la Rasp (aarch64) par main_robot.py
 			"-e", sshOpts, projectRoot+"/Rasp/", fmt.Sprintf("eirbot@%s:Documents/robot_stk/", raspIP))
 		rsyncOut, err := rsyncCmd.CombinedOutput()
 		if err != nil {

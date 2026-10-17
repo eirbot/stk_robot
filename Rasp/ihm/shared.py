@@ -54,6 +54,15 @@ if cam_cfg.get("enabled", True):
 
 # LiDAR partagé
 lidar_bin = None
+
+def die_with_parent():
+    """preexec_fn pour les Popen : le fils reçoit SIGTERM si le thread qui l'a lancé meurt
+    (stop.sh tue main_robot.py par SIGTERM, sans passer par ses blocs finally)."""
+    try:
+        import ctypes, signal
+        ctypes.CDLL("libc.so.6", use_errno=True).prctl(1, signal.SIGTERM)  # PR_SET_PDEATHSIG
+    except Exception:
+        pass
 lidar_process = None
 
 # Etat Global Partagé

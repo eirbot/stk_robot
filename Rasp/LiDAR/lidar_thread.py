@@ -66,7 +66,13 @@ class LidarCollisionThread(threading.Thread):
                 else:
                     if shared.lidar_process is None and shared.lidar_bin:
                         print("[LIDAR THREAD] LiDAR activé : Démarrage physique du capteur...")
-                        shared.lidar_process = subprocess.Popen([shared.lidar_bin])
+                        try:
+                            shared.lidar_process = subprocess.Popen([shared.lidar_bin], preexec_fn=shared.die_with_parent)
+                        except OSError as e:
+                            # Binaire absent/corrompu : on ne relance pas en boucle (CPU à 100 %, logs saturés)
+                            print(f"[LIDAR THREAD] Impossible de lancer {shared.lidar_bin} : {e}. Nouvel essai dans 5 s.")
+                            time.sleep(5)
+                            continue
 
                 # Si le LiDAR est désactivé, on évite de bloquer sur la socket
                 if mode == "OFF":
@@ -168,6 +174,7 @@ class LidarCollisionThread(threading.Thread):
             except Exception as e:
                 if self.running:
                     print(f"[LIDAR THREAD] Erreur : {e}")
+                    time.sleep(0.5)  # Pas de boucle d'erreurs à pleine vitesse
                 
     def stop(self):
         self.running = False
