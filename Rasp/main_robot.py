@@ -29,6 +29,48 @@ def _lidar_bin_a_recompiler(bin_path, cpp_path):
     except OSError:
         return True
 
+class RobotEffects:
+    """Effets matériels déclenchés par la machine d'état du match (core/match_state.py)."""
+
+    def _hw(self):
+        from strat.actions import esp, actionneurs
+        return esp, actionneurs
+
+    def led(self, cmd):
+        shared.send_led_cmd(cmd)
+
+    def on_match_start(self):
+        _, actionneurs = self._hw()
+        if actionneurs:
+            actionneurs.debloquer()  # le match précédent a pu les bloquer (fin à 100 s / STOP)
+        shared.send_led_cmd("PLAY:match_start")
+
+    def on_match_end(self, reason):
+        if reason == "timer":
+            # Règlement : à 100 s, arrêt des moteurs ET des actionneurs
+            esp, actionneurs = self._hw()
+            if esp:
+                esp.stop_robot()
+            if actionneurs:
+                actionneurs.bloquer()
+        if shared.state.get("music_enabled") and shared.audio:
+            shared.audio.stop()
+            shared.audio.play("end")
+        shared.send_led_cmd("MATCH_STOP")
+
+    def on_stop(self):
+        esp, actionneurs = self._hw()
+        if esp:
+            esp.stop_robot()
+        if actionneurs:
+            actionneurs.bloquer()
+
+    def on_reset(self):
+        _, actionneurs = self._hw()
+        if actionneurs:
+            actionneurs.debloquer()
+
+
 # --- MAIN ---
 if __name__ == "__main__":
     print("--- ROBOT 2026 : Démarrage ---")
@@ -63,6 +105,9 @@ if __name__ == "__main__":
         else:
             print("[MAIN] 4. LiDAR configuré sur OFF par défaut. Lancement physique différé.")
         
+        # Effets matériels de la machine d'état du match
+        shared.match.effects = RobotEffects()
+
         # 3. Hardware & Collision
         print("[MAIN] 5. Initialisation RobotActions & Collision Thread...")
         from strat.actions import RobotActions
@@ -88,11 +133,8 @@ if __name__ == "__main__":
         btn_thread = threading.Thread(target=run_buttons_loop, daemon=True)
         btn_thread.start()
 
-        # 6. Timer
-        print("[MAIN] 8. Lancement Thread Timer...")
-        from timer_thread import start_timer_thread
-        start_timer_thread()
-        
+        # (Le chrono est géré par shared.match.tick(), appelé par la boucle de fond de l'IHM)
+
         # Petit délai pour laisser le temps à Flask/SocketIO de démarrer
         time.sleep(3)
 
@@ -104,7 +146,7 @@ if __name__ == "__main__":
         # Ne pas écraser si on a une alerte tirette en cours
         if shared.state.get('tirette_msg') != "REMOVE_TO_RESET":
             print(f"[MAIN] Application de la couleur d'équipe : {shared.state['team']}")
-            shared.send_led_cmd(shared.team_color_cmd())
+            shared.match.show_team_color(force=True)
         else:
              print("[MAIN] Alerte Tirette active, on ne force pas la couleur d'équipe.")
              # On renvoie la commande car le service LED n'était peut-être pas prêt lors du thread boutons

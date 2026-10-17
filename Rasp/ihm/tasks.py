@@ -4,7 +4,7 @@ import psutil
 import os
 import numpy as np
 # On assure d'importer robot_pos
-from ihm.shared import state, audio, send_led_cmd, robot_pos, send_sys_info, team_color_cmd
+from ihm.shared import state, audio, send_led_cmd, robot_pos, send_sys_info
 from utils import get_ip, get_battery_voltage, get_cpu_temp, get_battery_current, get_voltage_float
 
 def background_loop():
@@ -12,20 +12,9 @@ def background_loop():
     last_sys_info_time = 0
     
     while True:
-        # 1. Timer Match (inchangé à 10Hz pour précision d'affichage)
-        if state["match_running"] and state["start_time"]:
-            elapsed = time.time() - state["start_time"]
-            remaining = 100.0 - elapsed
-            if remaining <= 0 and not state.get("test_mode", False):
-                state["timer_str"] = "0.0"; state["match_running"] = False; state["match_finished"] = True
-                # Règlement H.3 : à 100 s, arrêt des moteurs ET des actionneurs
-                from strat.actions import esp, actionneurs
-                if esp: esp.stop_robot()
-                if actionneurs: actionneurs.bloquer()
-                if state["music_enabled"] and audio: audio.stop(); audio.play('end')
-                send_led_cmd("MATCH_STOP")
-            else:
-                state["timer_str"] = f"{remaining:.1f}"
+        # 1. Chrono du match (fin à 100 s, mode test...) : géré par core/match_state.py
+        import ihm.shared as shared
+        shared.match.tick()
 
         # 2. Infos Système & Santé (cadencé à 1Hz pour ne pas saturer la bande passante ZMQ/WebSocket)
         now = time.time()
@@ -48,8 +37,8 @@ def background_loop():
                  # On renvoie la commande toutes les 2 secondes pour être PRIORITAIRE sur les autres anims
                  if not state.get("bat_low", False) or (now - last_alert > 2.0):
                      if not state.get("bat_low", False):
-                         print(f"[TASKS] ⚠️ BATTERIE FAIBLE ({volts}V) ! Alerte Prioritaire.")
-                         state["bat_low"] = True
+                         print(f"[TASKS] BATTERIE FAIBLE ({volts}V) ! Alerte prioritaire.")
+                         shared.match.set_battery_low(True)
                      
                      state["last_bat_alert"] = now
                      send_led_cmd("ANIM:BLINK:255,0,0,300") # Clignotement rapide rouge
@@ -58,9 +47,8 @@ def background_loop():
             elif volts > 19.5:
                  if state.get("bat_low", False):
                      print(f"[TASKS] Batterie rétablie ({volts}V).")
-                     state["bat_low"] = False
-                     # Retour à la couleur d'équipe (les changements d'équipe sont ignorés pendant l'alerte)
-                     send_led_cmd(team_color_cmd())
+                     # Fin d'alerte : MatchState remet la couleur d'équipe
+                     shared.match.set_battery_low(False)
 
             ip = get_ip()
             send_sys_info({

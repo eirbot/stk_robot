@@ -46,101 +46,66 @@ def discover_strategies():
 
     return strats
 
+def _load_strategy(strat_name):
+    """Importe (ou recharge, pour prendre les modifications) le module de stratégie."""
+    available = shared.strategies_list
+    if strat_name not in available:
+        available = discover_strategies()  # stratégie créée récemment
+    if strat_name not in available:
+        return None
+    full_mod_path = f"strat.strategies.{strat_name}"
+    if full_mod_path in sys.modules:
+        print(f"[STRAT] Rechargement de {strat_name}...")
+        return importlib.reload(sys.modules[full_mod_path])
+    print(f"[STRAT] Import de {strat_name}...")
+    return importlib.import_module(full_mod_path)
+
+
 def strat_loop():
+    """Exécute la stratégie quand le match démarre. Ne modifie jamais l'état du match :
+    c'est le rôle de shared.match (core/match_state.py) ; on lui signale seulement la fin."""
     print("[STRAT] Thread démarré.")
     robot = RobotActions()
-    
-    # On initialise l'état dans le partagé pour l'affichage Web
-    shared.state["fsm_state"] = "WAIT_START"
-    
     last_scan = 0.0
+    last_run_start = None  # start_time du dernier match exécuté (une exécution par match)
+
     while True:
-        # On synchronise l'état local avec l'IHM à chaque tour de boucle
-        current_state = shared.state["fsm_state"]
+        now = time.time()
+        if now - last_scan >= 1.0 and shared.match.phase != "RUNNING":
+            shared.strategies_list = discover_strategies()  # liste pour l'IHM, 1 Hz hors match
+            last_scan = now
 
-        # --- ETAT 1 : ATTENTE ---
-        if current_state == "WAIT_START":
-            # Mise à jour périodique de la liste pour l'IHM
-            # (Ex: toutes les secondes ou juste quand on est en wait)
-            # Pour faire simple : on refresh à chaque tour de boucle lent? Non trop bourrin.
-            # On le fait juste avant de démarrer ? Non car l'IHM en a besoin.
-            # Disons qu'on refresh refresh souvent en mode WAIT
-            # Scan des stratégies limité à 1 Hz, mais tirette/start réactifs (boucle à 100 Hz)
-            now = time.time()
-            if now - last_scan >= 1.0:
-                shared.strategies_list = discover_strategies()
-                last_scan = now
+        if shared.match.phase != "RUNNING" or shared.state.get("start_time") == last_run_start:
+            time.sleep(0.01)  # tirette / GO réactifs
+            continue
 
-            if shared.state["match_running"]:
-                print(f"[STRAT] GO ! Lancement : {shared.state['strat_id']}")
-                robot.is_returning = False
-                # Le match précédent a pu bloquer les actionneurs (fin à 100 s / STOP)
-                if actionneurs:
-                    actionneurs.debloquer()
-                shared.state["fsm_state"] = "RUNNING" # Update Etat
+        last_run_start = shared.state.get("start_time")
+        strat_name = shared.state["strat_id"]
+        print(f"[STRAT] GO ! Lancement : {strat_name}")
+        robot.is_returning = False
+        try:
+            mod = _load_strategy(strat_name)
+            if mod is None:
+                print(f"[STRAT] Erreur : stratégie '{strat_name}' inconnue ou fichier manquant !")
+                shared.send_log(f"Stratégie '{strat_name}' introuvable", "err")
             else:
-                time.sleep(0.01)
+                mod.run(robot)
+                print("[STRAT] Stratégie terminée.")
+            shared.match.strategy_finished()  # en mode test : fin du match
 
-        # --- ETAT 2 : MATCH ---
-        elif current_state == "RUNNING":
-            try:
-                # On récupère l'ID (qui est maintenant le nom du fichier, ex: "strat_match_1")
-                strat_name = shared.state["strat_id"]
-                
-                # Import dynamique ET Reload
-                # On ré-explore pour être sûr que la strat existe (cas création récente)
-                available = shared.strategies_list
-                if strat_name not in available:
-                    available = discover_strategies()
-                
-                if strat_name in available:
-                    full_mod_path = f"strat.strategies.{strat_name}"
-                    
-                    if full_mod_path in sys.modules:
-                        print(f"[STRAT] Reloading {strat_name}...")
-                        mod = importlib.reload(sys.modules[full_mod_path])
-                    else:
-                        print(f"[STRAT] Importing {strat_name}...")
-                        mod = importlib.import_module(full_mod_path)
-                    
-                    # Run
-                    mod.run(robot)
-
-                    if shared.state.get("test_mode", False):
-                        # Pas de 100 s en mode test : la fin de la strat termine le match
-                        print("[STRAT] Mode test : stratégie terminée, fin du match.")
-                        shared.state["match_running"] = False
-                        shared.state["match_finished"] = True
-
-                    # --- ATTENTE FIN DE MATCH (90s) ---
-                    # Si la stratégie finit avant les 90s, on attend patiemment le rappel à la base
-                    print("[STRAT] Stratégie terminée. Attente du rappel à la base (90s)...")
-                    while shared.state["match_running"]:
-                        robot._check_time() # Lèvera EndOfMatchException à 90s
-                        time.sleep(1)
-                else:
-                    print(f"[STRAT] Erreur : Stratégie '{strat_name}' inconnue ou fichier manquant !")
-                
-                print("[STRAT] Fini.")
-
-            except EndOfMatchException:
-                print("[STRAT] ⚠️ TIMEOUT -> RETOUR BASE")
-                robot.GoBase()
-            except Exception as e:
+            # Hors mode test, le match continue jusqu'aux 100 s (règlement).
+            # On attend la fin de CE match (même start_time) : un STOP + nouveau départ
+            # rapprochés ne doivent pas être confondus avec le match en cours.
+            while shared.match.running and shared.state.get("start_time") == last_run_start:
+                robot._check_time()
+                time.sleep(0.2)
+        except EndOfMatchException:
+            print("[STRAT] TIMEOUT -> RETOUR BASE")
+            robot.GoBase()
+        except Exception as e:
+            # Exception("Stop") levée par _check_abort quand le match s'arrête : cas normal
+            if shared.match.running:
                 print(f"[STRAT] Erreur d'exécution : {e}")
-                robot.stop()
-            finally:
-                # Ne pas écraser un état si l'IHM a déjà fait un RESET ou un STOP
-                if shared.state["fsm_state"] == "RUNNING":
-                    shared.state["fsm_state"] = "FINISHED"
-
-        # --- ETAT 3 : FINI ---
-        elif current_state == "FINISHED":
-            if not shared.state["match_running"]:
-                shared.state["fsm_state"] = "WAIT_START"
-            time.sleep(0.5)
-
-        # --- ETAT 4 : ARRÊT D'URGENCE / STOP ---
-        elif current_state == "STOPPED":
-            # Attente du RESET depuis l'IHM (le /reset remet fsm_state = 'WAIT_START')
-            time.sleep(0.5)
+                shared.send_log(f"Erreur stratégie : {e}", "err")
+            robot.stop()
+        print("[STRAT] Fini.")

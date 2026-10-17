@@ -5,26 +5,23 @@ import time
 from collections import deque
 
 from utils import LedStrip, AudioManager
+from core.config_store import ConfigError, ConfigStore
+from core.match_state import MatchError, MatchState, TEAM_COLORS
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR) 
-CONFIG_PATH = os.path.join(ROOT_DIR, "config.json")
+# ROBOT_CONFIG : autre fichier de config (tests, simulation)
+CONFIG_PATH = os.environ.get("ROBOT_CONFIG", os.path.join(ROOT_DIR, "config.json"))
 AUDIO_DIR = os.path.join(BASE_DIR, "audio")
 
 if not os.path.exists(AUDIO_DIR): os.makedirs(AUDIO_DIR)
 
 strategies_list = {}
 
-def load_config():
-    if not os.path.exists(CONFIG_PATH): return {}
-    with open(CONFIG_PATH, 'r') as f: return json.load(f)
-
-def save_config(new_cfg):
-    global cfg
-    cfg.update(new_cfg)
-    with open(CONFIG_PATH, 'w') as f: json.dump(cfg, f, indent=4)
-
-cfg = load_config()
+# Config du robot : source unique de vérité (validée, enregistrée par core/config_store.py).
+# `cfg` est le dict de config_store, modifié en place : il reste toujours à jour.
+config_store = ConfigStore(CONFIG_PATH)
+cfg = config_store.data
 
 zmq_client_instance = None
 
@@ -65,26 +62,18 @@ def die_with_parent():
         pass
 lidar_process = None
 
-# Etat Global Partagé
+# Etat Global Partagé. Les champs du match (fsm_state, match_running, tirette, timer_str,
+# team, strat_id, test_mode...) sont écrits UNIQUEMENT par `match` (core/match_state.py) :
+# le reste du code les lit ici, et appelle les méthodes de `match` pour les modifier.
 state = {
     "config": cfg,
-    "team": cfg.get("team", "BLEUE"),
-    "match_running": False,
-    "match_finished": False,
-    "timer_str": "100.0",
-    "start_time": None,
-    "tirette": "NON-ARMED",
     "lidar_mode": cfg.get("lidar_mode", "MATCH"),
     "music_enabled": cfg.get("music_enabled", True),
     "leds_enabled": cfg.get("leds_enabled", True),
-    "fsm_state": "INIT",
-    # Mode test : pas d'arrêt à 100 s (chrono négatif), le match finit avec la strat
-    "test_mode": bool(cfg.get("test_mode", False)),
-    "strat_mode": cfg.get("strat_mode", "DYNAMIC"),
-    "static_strat": cfg.get("static_strat"),
-    # En STATIC on démarre directement sur la strat de la config (sinon le robot lançait « 1 »)
-    "strat_id": cfg.get("static_strat") if cfg.get("strat_mode") == "STATIC" and cfg.get("static_strat") else cfg.get("strat_id", 1)
 }
+
+# Les effets matériels (LED, moteurs, actionneurs, son) sont branchés par main_robot.py
+match = MatchState(state, config_store)
 
 # Position Robot Partagée (Mise à jour par le Main, Lue par l'IHM)
 robot_pos = {'x': 1500, 'y': 1000, 'theta': 0}
@@ -100,48 +89,28 @@ def send_led_cmd(cmd):
         sock.close()
     except: pass
 
-def _save_local_config_key(key, val):
-    try:
-        path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config.json")
-        with open(path, encoding="utf-8") as f:
-            data = json.load(f)
-        if data.get(key) == val:
-            return
-        data[key] = val
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
-    except Exception as e:
-        print(f"[CONFIG] Sauvegarde de {key} impossible : {e}")
-
 def team_color_cmd():
     """Commande LED de la couleur de l'équipe courante."""
-    return "COLOR:255,160,0" if state.get("team") == "JAUNE" else "COLOR:0,0,255"
+    return TEAM_COLORS.get(state.get("team"), TEAM_COLORS["BLEUE"])
 
 def update_config_from_server(new_cfg):
-    global cfg
-    cfg.update(new_cfg)
+    """Modification de config demandée par la base (ou un bouton) : validée, enregistrée,
+    puis effets appliqués. Renvoie (clés modifiées, message d'erreur ou None)."""
+    try:
+        changed = match.apply_config(new_cfg)
+    except (MatchError, ConfigError) as e:
+        print(f"[CONFIG] Modification refusée {new_cfg} : {e}")
+        return {}, str(e)
+    if not changed:
+        return {}, None
+    new_cfg = {}
+    for key, value in changed.items():  # clés pointées -> dict imbriqué pour la suite
+        cur = new_cfg
+        parts = key.split(".")
+        for k in parts[:-1]:
+            cur = cur.setdefault(k, {})
+        cur[parts[-1]] = value
     state["config"] = cfg
-    
-    # 1. Couleur Equipe : appliquer seulement si l'équipe a changé et qu'aucune alerte n'est active
-    if "team" in new_cfg:
-        new_team = new_cfg["team"]
-        old_team = state.get("team")
-        if new_team != old_team:
-            state["team"] = new_team
-            # STOPPED ne bloque plus : après un arrêt on doit pouvoir changer d'équipe et le voir
-            has_active_alert = (
-                state.get("bat_low", False) or
-                state.get("tirette_msg") == "REMOVE_TO_RESET" or
-                state.get("tirette") == "ARMED" or
-                state.get("match_running", False)
-            )
-            if not has_active_alert:
-                send_led_cmd(team_color_cmd())
-            
-    # Mode test : persisté dans config.json du robot pour survivre à un redémarrage
-    if "test_mode" in new_cfg:
-        state["test_mode"] = bool(new_cfg["test_mode"])
-        _save_local_config_key("test_mode", state["test_mode"])
 
     # 2. Mode LiDAR
     if "lidar_mode" in new_cfg:
@@ -156,22 +125,8 @@ def update_config_from_server(new_cfg):
         state["leds_enabled"] = new_cfg["leds_enabled"]
         
         
-    # 7. Mode stratégie (Statique / Dynamique)
-    if "strat_mode" in new_cfg:
-        old_mode = state.get("strat_mode")
-        state["strat_mode"] = new_cfg["strat_mode"]
-        # Réassigner strat_id seulement si on bascule en STATIC
-        if old_mode != 'STATIC' and new_cfg["strat_mode"] == 'STATIC' and cfg.get('static_strat'):
-            state['strat_id'] = cfg['static_strat']
-            
-    # 8. Choix de la stratégie statique
-    if "static_strat" in new_cfg:
-        old_strat = state.get("static_strat")
-        state["static_strat"] = new_cfg["static_strat"]
-        # Réassigner strat_id seulement si la config static_strat a elle-même changé
-        if old_strat != new_cfg["static_strat"] and state.get("strat_mode") == 'STATIC':
-            state['strat_id'] = new_cfg["static_strat"]
-            
+    # (équipe, stratégie, mode test : gérés par match.apply_config)
+
     # 9. Volume Audio
     if "audio" in new_cfg:
         try:
@@ -203,3 +158,5 @@ def update_config_from_server(new_cfg):
             except Exception as e:
                 print(f"[CAM] Erreur lors de l'arrêt de la caméra : {e}")
             camera = None
+
+    return changed, None

@@ -87,19 +87,11 @@ class ButtonsThread:
         if not MOCK_GPIO:
              for p in [PIN_BAU, PIN_TIRETTE]: self.last_states[p] = GPIO.input(p)
 
-        # --- INITIAL STATE CHECK (Tirette) ---
-        # Si on démarre sans tirette (1), on est prêt à l'insérer (WAIT_INSERT).
-        # Si on démarre avec tirette (0), on attend qu'elle soit retirée (WAIT) -> Logic "REMOVE_TO_RESET" handled in loop
-        if self.last_states[PIN_TIRETTE] == TIRETTE_REMOVED_VAL:
-             print("[BUTTONS] Tirette ABSENTE au démarrage -> Prêt à armer.")
-             shared.state['tirette'] = "WAIT_INSERT"
-             shared.state['tirette_msg'] = "WAITING"
-             shared.send_led_cmd(shared.team_color_cmd())
-        else:
-             print("[BUTTONS] Tirette PRÉSENTE au démarrage -> Veuillez retirer !")
-             shared.state['tirette'] = "WAIT"
-             shared.state['tirette_msg'] = "REMOVE_TO_RESET"
-             shared.send_led_cmd("ANIM:BLINK:255,100,0,350")
+        # --- ÉTAT INITIAL DE LA TIRETTE ---
+        # Présente au démarrage : il faudra la retirer avant de pouvoir armer (core/match_state.py)
+        tirette_inserted = self.last_states[PIN_TIRETTE] == TIRETTE_INSERTED_VAL
+        print(f"[BUTTONS] Tirette {'PRÉSENTE (à retirer)' if tirette_inserted else 'ABSENTE (prêt à armer)'} au démarrage.")
+        shared.match.ready(tirette_inserted)
 
         while self.running:
             # Check Inputs (Active Low Buttons)
@@ -151,68 +143,30 @@ class ButtonsThread:
                 self.counters[pin] = 0
                 
                 if name == "BAU":
-                    # BAU Pressed (Closed to 3.3V) -> 1
-                    if val == 1: 
-                        print("[BUTTONS] 🚨 ARRET D'URGENCE (BAU) !")
-                        shared.state['match_running'] = False
-                        shared.state['fsm_state'] = "STOPPED"
-                        shared.send_led_cmd("COLOR:255,0,0") 
-                        # Reset tirette state to force re-arm
-                        shared.state['tirette'] = "WAIT" 
+                    # BAU enfoncé (fermé sur 3,3 V) -> 1
+                    if val == 1:
+                        print("[BUTTONS] ARRÊT D'URGENCE (BAU) !")
+                        shared.match.emergency_stop()
                     else:
-                         print("[BUTTONS] BAU Relâché.")
+                        print("[BUTTONS] BAU relâché.")
 
                 elif name == "TIRETTE":
-                    # TIRETTE FSM : WAIT -> ARMED -> TRIGGERED
-                    # Updated logic: 0 = Inserted, 1 = Removed
-                    
-                    is_inserted = (val == TIRETTE_INSERTED_VAL)
-                    
-                    current_state = shared.state.get('tirette', 'WAIT')
-                    
-                    if current_state == "WAIT" or current_state == "NON-ARMED":
-                        if is_inserted:
-                             # Warn user to remove
-                             if shared.state.get('tirette_msg') != "REMOVE_TO_RESET":
-                                 print("[BUTTONS] ⚠️ Sécurité : Veuillez RETIRER la tirette !")
-                                 shared.state['tirette_msg'] = "REMOVE_TO_RESET"
-                                 shared.send_led_cmd("ANIM:BLINK:255,100,0,350")
-                        else:
-                             # Tirette is Removed. Ready to ARM.
-                             print("[BUTTONS] ⏳ Tirette ABSENTE -> Prêt à armer (couleur d'équipe)")
-                             shared.state['tirette'] = "WAIT_INSERT"
-                             shared.state['tirette_msg'] = "WAITING"
-                             shared.send_led_cmd(shared.team_color_cmd()) # Fin du clignotement : couleur d'équipe fixe
+                    inserted = (val == TIRETTE_INSERTED_VAL)
+                    before = shared.state.get("tirette")
+                    shared.match.tirette_changed(inserted, bau_pressed=self.last_states[PIN_BAU] == 1)
+                    print(f"[BUTTONS] Tirette {'insérée' if inserted else 'retirée'} : "
+                          f"{before} -> {shared.state.get('tirette')} (match : {shared.match.phase})")
 
-
-                    elif current_state == "WAIT_INSERT":
-                        if is_inserted:
-                             print("[BUTTONS] ✅ Tirette INSÉRÉE -> ROBOT ARMÉ !")
-                             shared.state['tirette'] = "ARMED"
-                             shared.state['match_running'] = False
-                             # LED Vert Breath (Green=0,255,0)
-                             shared.send_led_cmd("ANIM:BREATH:0,255,0") 
-
-                    elif current_state == "ARMED":
-                        if not is_inserted: # Removed
-                             print("[BUTTONS] 🚀 TIRETTE RETIRÉE -> MATCH START !")
-                             shared.state['tirette'] = "TRIGGERED"
-                             shared.state['match_running'] = True
-                             shared.state['start_time'] = time.time()
-                             shared.send_led_cmd("PLAY:match_start")
-                             
-                    elif current_state == "TRIGGERED":
-                         # Match is running. If inserted again -> Stop? Or Just ignore?
-                         # Usually we ignore or treat as stop. Let's ignore for now or log.
-                         if is_inserted:
-                             print("[BUTTONS] Tirette remise (Info).")
-                             # Could allow re-arming if match finished?
+        else:
+            self.counters[pin] = 0
 
     # --- ACTIONS ---
     def action_team(self):
-        print("[BUTTONS] Demande Changement Equipe au serveur Go...")
-        if shared.zmq_client_instance:
-            shared.zmq_client_instance.send_event("action", "team")
+        try:
+            shared.match.toggle_team()
+            print(f"[BUTTONS] Équipe -> {shared.state['team']}")
+        except shared.MatchError as e:
+            print(f"[BUTTONS] Changement d'équipe refusé : {e}")
 
     def action_strat(self):
         # Cycle through strategies
@@ -233,12 +187,8 @@ class ButtonsThread:
             next_idx = 0
             
         new_id = available[next_idx]
-        print(f"[BUTTONS] Demande Changement Stratégie -> {new_id} au serveur Go...")
-        # Appliqué localement tout de suite : la base ne renvoie pas config_update au robot
-        # pour un config_edit qui vient de lui
-        shared.update_config_from_server({"static_strat": new_id})
-        if shared.zmq_client_instance:
-            shared.zmq_client_instance.send_event("config_edit", {"key": "static_strat", "val": new_id})
+        _, err = shared.update_config_from_server({"static_strat": new_id})
+        print(f"[BUTTONS] Stratégie -> {new_id}" + (f" refusée : {err}" if err else ""))
 
     def action_init(self):
         print("[BUTTONS] INIT des Actionneurs !")

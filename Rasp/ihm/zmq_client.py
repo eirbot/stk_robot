@@ -1,9 +1,20 @@
+import os
 import zmq
 import json
 import threading
 import time
 import ihm.shared as shared
 from utils.system_info import get_voltage_float, get_battery_current, get_ip
+
+def _read_code_version():
+    """Contenu du fichier VERSION écrit au déploiement (tools/deploy.sh, /api/update_rasp)."""
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "VERSION")
+    try:
+        with open(path, encoding="utf-8") as f:
+            return dict(line.strip().split("=", 1) for line in f if "=" in line)
+    except OSError:
+        return {"commit": "inconnu"}
+
 
 class ZmqClient(threading.Thread):
     def __init__(self, server_ip="127.0.0.1"):
@@ -25,6 +36,9 @@ class ZmqClient(threading.Thread):
         
         self.running = True
         self.last_sent_state = {}
+        self.last_publish_time = 0.0
+        self.force_publish = True
+        self.code_version = _read_code_version()
         # IP mise en cache : get_ip() ouvre des sockets, inutile de l'appeler à 10 Hz
         self._cached_ip = None
         self._cached_ip_time = 0.0
@@ -57,45 +71,33 @@ class ZmqClient(threading.Thread):
             if cmd_type not in ("cmd_vel", "vision_pose"):
                 print(f"[ZMQ CLIENT] Commande reçue : {cmd_type} -> {payload}")
             
-            if cmd_type == "config_update":
+            if cmd_type in ("config_update", "config_edit"):
+                # config_update : {clé: valeur, ...} ; config_edit : {"key": "a.b", "val": v}
+                if isinstance(payload, dict) and "key" in payload and "val" in payload:
+                    payload = {payload["key"]: payload["val"]}
                 if payload:
-                    shared.update_config_from_server(payload)
-                    
+                    _, err = shared.update_config_from_server(payload)
+                    if err:
+                        shared.send_log(f"Réglage refusé : {err}", "err")
+                    self.force_publish = True
+
             elif cmd_type == "action":
+                # L'état du match n'est modifié que par shared.match (core/match_state.py)
                 act = payload
-                if act == "start":
-                    if shared.state.get("fsm_state") in ("STOPPED", "FINISHED"):
-                        shared.state["fsm_state"] = "WAIT_START"
-                        shared.state["timer_str"] = "100.0"
-                        shared.state["match_finished"] = False
-                    shared.state["match_running"] = True
-                    shared.state["start_time"] = time.time()
-                elif act == "stop":
-                    shared.state["match_running"] = False
-                    shared.state["fsm_state"] = "STOPPED"
-                    shared.state["tirette"] = "WAIT_INSERT"
-                    try:
-                        from strat.actions import esp, actionneurs
-                        if esp:
-                            esp.stop_robot()
-                        if actionneurs:
-                            actionneurs.bloquer()
-                    except Exception as e:
-                        pass
-                elif act == "reset":
-                    shared.state["fsm_state"] = "WAIT_START"
-                    shared.state["timer_str"] = "100.0"
-                    shared.state["match_finished"] = False
-                    shared.state["match_running"] = False
-                    shared.state["tirette"] = "WAIT_INSERT"
-                    from strat.actions import actionneurs
-                    if actionneurs:
-                        actionneurs.debloquer()
-                elif act == "tirette":
-                    shared.state["tirette"] = "TRIGGERED"
-                    shared.state["match_running"] = True
-                    shared.state["start_time"] = time.time()
-                elif act == "init":
+                try:
+                    if act in ("start", "tirette"):
+                        shared.match.start()
+                    elif act == "stop":
+                        shared.match.stop()
+                    elif act == "reset":
+                        shared.match.reset()
+                    elif act == "team":
+                        shared.match.toggle_team()
+                except shared.MatchError as e:
+                    print(f"[ZMQ CLIENT] Action {act} refusée : {e}")
+                    shared.send_log(f"Action {act} refusée : {e}", "err")
+                self.force_publish = True
+                if act == "init":
                     print("[ZMQ CLIENT] Action INIT reçue (Pose match)")
                     try:
                         from strat.actions import actionneurs
@@ -282,25 +284,21 @@ class ZmqClient(threading.Thread):
 
                 self.send_event("telemetry", telemetry_data)
 
-                # 2. Envoi de l'état de contrôle uniquement s'il y a un changement
-                current_state = {
-                    "match_running": shared.state.get("match_running", False),
-                    "match_finished": shared.state.get("match_finished", False),
-                    "timer_str": shared.state.get("timer_str", "100.0"),
-                    "fsm_state": shared.state.get("fsm_state", "INIT"),
-                    "obstacle_detected": shared.state.get("obstacle_detected", False),
-                    "obstacle_type": shared.state.get("obstacle_type", 0)
-                }
-
-                if current_state != self.last_sent_state:
-                    # Envoi uniquement des champs modifiés pour éviter les écrasements concurrents (ex: couleur équipe)
-                    diff_state = {}
-                    for k, v in current_state.items():
-                        if k not in self.last_sent_state or self.last_sent_state[k] != v:
-                            diff_state[k] = v
-                    if diff_state:
-                        self.send_event("state_update", diff_state)
-                    self.last_sent_state = current_state.copy()
+                # 2. État du robot (source de vérité) : instantané complet, envoyé à chaque
+                #    changement et toutes les 2 s (la base se resynchronise après un redémarrage)
+                snapshot = shared.match.snapshot()
+                snapshot["obstacle_detected"] = shared.state.get("obstacle_detected", False)
+                snapshot["obstacle_type"] = shared.state.get("obstacle_type", 0)
+                if (self.force_publish or snapshot != self.last_sent_state
+                        or now - self.last_publish_time >= 2.0):
+                    self.force_publish = False
+                    self.last_sent_state = snapshot
+                    self.last_publish_time = now
+                    self.send_event("robot_state", {
+                        "state": snapshot,
+                        "config": shared.config_store.snapshot(),
+                        "version": self.code_version,
+                    })
 
             except Exception as e:
                 print(f"[ZMQ CLIENT] Erreur boucle d'envoi : {e}")
