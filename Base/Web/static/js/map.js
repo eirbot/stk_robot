@@ -26,13 +26,9 @@
 const TABLE_L_MM = 3000; // Longueur de la table (axe X Three.js)
 const TABLE_W_MM = 2000; // Largeur de la table (axe Y Three.js)
 
-function robotToThree(x, y) {
-    return { x: y, y: 1000 - x };
-}
-
-function threeToRobot(pt) {
-    return { x: 1000 - pt.y, y: pt.x };
-}
+// Conversions de repère : définition unique dans frames.js (cf. Rasp/core/frames.py)
+const robotToThree = EirbotFrames.robotToThree;
+const threeToRobot = EirbotFrames.threeToRobot;
 
 let scene, camera, renderer, controls;
 let robotGroup, visionGroup, lidarScanGroup;
@@ -455,8 +451,7 @@ function updateRobotMeshPosition(group, pos) {
 
     // pos.theta est en DEGRÉS, Three.js attend des RADIANS
     // theta = 0 (X robot) pointe vers -Y_three, d'où le décalage de -90°
-    const thetaRad = ((pos.theta || 0) * Math.PI) / 180;
-    group.rotation.z = thetaRad - Math.PI / 2;
+    group.rotation.z = EirbotFrames.thetaToThreeRad(pos.theta);
 }
 
 function updateTeamColor() {

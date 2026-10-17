@@ -8,6 +8,8 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from core import frames
+
 # --- COM ACTIONNEURS (via module dédié) ---
 try:
     from interface_actionneur.esp_actionneur import ESPActionneurs
@@ -46,9 +48,7 @@ TIME_TO_RETURN = 90
 class EndOfMatchException(Exception):
     pass
 
-def _angle_diff(a, b):
-    """a - b ramené dans [-180, 180[ (degrés)."""
-    return (a - b + 180.0) % 360.0 - 180.0
+_angle_diff = frames.angle_diff_deg
 
 class RobotActions:
     def __init__(self):
@@ -70,14 +70,8 @@ class RobotActions:
         self._check_time()
 
     def _apply_sym(self, x, y, theta=None):
-        """Symétrie axiale pour l'équipe JAUNE (Y négatif)"""
-        if self.is_yellow:
-            new_x = x
-            new_y = -y
-            # Pour une symétrie sur l'axe Y (miroir horizontal), l'angle s'inverse
-            new_theta = (-theta) % 360 if theta is not None else None
-            return new_x, new_y, new_theta
-        return x, y, theta
+        """Coordonnées écrites côté BLEUE -> coordonnées réelles de l'équipe courante (core/frames.py)."""
+        return frames.mirror_for_team(x, y, theta, team=shared.state["team"])
     
     def set_pos(self, x, y, theta):
         """
@@ -309,11 +303,9 @@ class RobotActions:
 
         # 3. Repère caméra -> repère odométrie (identité par défaut)
         repere = cfg.get("repere", {})
-        rot_deg = repere.get("rotation_deg", 0.0)
-        rot = math.radians(rot_deg)
-        x_cam, y_cam = (repere.get("dx", 0.0) + x_cam * math.cos(rot) - y_cam * math.sin(rot),
-                        repere.get("dy", 0.0) + x_cam * math.sin(rot) + y_cam * math.cos(rot))
-        theta_cam += rot_deg
+        x_cam, y_cam, theta_cam = frames.apply_rigid(x_cam, y_cam, theta_cam,
+                                                     repere.get("dx", 0.0), repere.get("dy", 0.0),
+                                                     repere.get("rotation_deg", 0.0))
 
         # 4. Garde-fou : un écart énorme = mauvaise détection ou repère mal réglé
         x_odo, y_odo, theta_odo = shared.robot_pos['x'], shared.robot_pos['y'], shared.robot_pos['theta']

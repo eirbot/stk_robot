@@ -600,11 +600,9 @@ document.addEventListener("DOMContentLoaded", function () {
     // ============================================================
 
     function applySymmetry(x, y, theta) {
+        // Symétrie d'équipe : définition unique dans frames.js (cf. Rasp/core/frames.py)
         let symToggle = document.getElementById('symToggle');
-        if (symToggle && symToggle.checked) {
-            return { x: x, y: -y, theta: -theta };
-        }
-        return { x: x, y: y, theta: theta };
+        return EirbotFrames.mirrorForTeam(x, y, theta, symToggle && symToggle.checked ? 'JAUNE' : 'BLEUE');
     }
 
     function parseSequence(firstBlock, currentX, currentY, currentTheta) {

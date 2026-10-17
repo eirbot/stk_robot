@@ -57,12 +57,14 @@ CAMERA_PRESETS = {
 }
 
 
+# Repères : définition unique dans Rasp/core/frames.py (même dépôt sur la base)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "Rasp"))
+from core.frames import camera_to_table  # noqa: E402
+
+
 def table_to_base(pos_m, theta_deg):
-    """
-    Convention MuJoCo / computePosition conservée telle quelle (repère table
-    avec la rotation Rzn) : seulement m -> mm, theta en degrés inchangé.
-    """
-    return pos_m[0] * 1000.0, pos_m[1] * 1000.0, theta_deg
+    """Pose computePosition (m, degrés) -> repère table/robot (mm, degrés), cf. core/frames.py."""
+    return camera_to_table(pos_m[0], pos_m[1], theta_deg)
 
 
 # ==============================================================================
