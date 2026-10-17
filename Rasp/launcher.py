@@ -10,7 +10,24 @@ PIN_BUTTON_3 = 15  # Mode BOARD
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 EXEC_SCRIPT = os.path.join(BASE_DIR, "exec.sh")
 STOP_SCRIPT = os.path.join(BASE_DIR, "stop.sh")
-LOG_FILE = "/home/eirbot/launcher_debug.log"
+# ~/launcher_debug.log (= /home/eirbot/launcher_debug.log sous le service), surchargeable
+LOG_FILE = os.environ.get("ROBOT_LAUNCHER_LOG", os.path.join(os.path.expanduser("~"), "launcher_debug.log"))
+LOG_MAX_BYTES = 5 * 1024 * 1024  # Rotation au-delà de 5 Mo
+LOG_BACKUPS = 3                  # launcher_debug.log.1 (le plus récent) à .3
+
+def rotate_log():
+    """Si le log dépasse LOG_MAX_BYTES : .2 -> .3, .1 -> .2, log -> .1 (le .3 précédent est écrasé)."""
+    try:
+        if os.path.getsize(LOG_FILE) <= LOG_MAX_BYTES:
+            return
+        for i in range(LOG_BACKUPS - 1, 0, -1):
+            src = f"{LOG_FILE}.{i}"
+            if os.path.exists(src):
+                os.replace(src, f"{LOG_FILE}.{i + 1}")
+        os.replace(LOG_FILE, f"{LOG_FILE}.1")
+    except OSError as e:
+        # Jamais bloquant : au pire on continue d'écrire dans le même fichier
+        print(f"[LAUNCHER] Rotation du log impossible : {e}")
 
 # Log de démarrage immédiat pour test
 with open(LOG_FILE, "a") as f:
@@ -42,7 +59,8 @@ def toggle_robot():
         print("[LAUNCHER] Le robot est arrêté -> Démarrage...")
         env = os.environ.copy()
         # On log tout ce qui sort dans un fichier de debug
-        log_file = open("/home/eirbot/launcher_debug.log", "a")
+        rotate_log()
+        log_file = open(LOG_FILE, "a")
         log_file.write(f"\n--- Démarrage le {time.ctime()} ---\n")
         subprocess.Popen(["/bin/bash", EXEC_SCRIPT], 
                          stdout=log_file, 

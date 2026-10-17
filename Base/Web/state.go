@@ -41,7 +41,7 @@ func getRaspIPFromDHCP() string {
 				if strings.Contains(hostname, "rasp") || strings.Contains(hostname, "robot") {
 					return ip
 				}
-				if strings.HasPrefix(ip, "192.168.10.") && ip != "192.168.10.2" && bestIP == "" {
+				if strings.HasPrefix(ip, lanPrefix) && ip != baseLanIP && bestIP == "" {
 					bestIP = ip
 				}
 			}
@@ -57,10 +57,10 @@ func getRaspIPFromDHCP() string {
 		lines := strings.Split(string(out), "\n")
 		for i := len(lines) - 1; i >= 0; i-- {
 			line := lines[i]
-			if strings.Contains(line, "DHCPACK") && (strings.Contains(strings.ToLower(line), "rasp") || strings.Contains(line, "192.168.10.")) {
+			if strings.Contains(line, "DHCPACK") && (strings.Contains(strings.ToLower(line), "rasp") || strings.Contains(line, lanPrefix)) {
 				fields := strings.Fields(line)
 				for _, f := range fields {
-					if strings.HasPrefix(f, "192.168.10.") && f != "192.168.10.2" {
+					if strings.HasPrefix(f, lanPrefix) && f != baseLanIP {
 						return f
 					}
 				}
@@ -106,7 +106,7 @@ func getHostIP() string {
 					continue
 				}
 				ipStr := ip.String()
-				if strings.HasPrefix(ipStr, "192.168.10.") {
+				if strings.HasPrefix(ipStr, lanPrefix) {
 					ip192_10 = ipStr
 				} else if strings.HasPrefix(ipStr, "192.168.") {
 					ip192 = ipStr

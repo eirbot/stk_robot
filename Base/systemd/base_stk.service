@@ -1,0 +1,26 @@
+[Unit]
+Description=Eirbot 2026 Base déportée (serveur web base_stk + worker vision)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+# Référence : le service installé est généré par Base/install_service.sh (user et chemins réels substitués)
+User=based
+# Le binaire cherche ../Rasp, Vision et Web relativement à Base/
+WorkingDirectory=/home/based/Documents/stk_robot/Base
+ExecStart=/home/based/Documents/stk_robot/Base/base_stk
+Restart=always
+RestartSec=3
+# Le worker vision (lancé par base_stk) écrit sur stdout : tout part dans journalctl -u base_stk
+Environment=PYTHONUNBUFFERED=1
+# Fenêtre MuJoCo du worker vision : DISPLAY et XAUTHORITY volontairement NON fixés ici.
+# Sans DISPLAY, vision_deporte_worker.py (ensure_display) vise :0 et retrouve lui-même le cookie X
+# le plus récent de l'utilisateur (/tmp/xauth_* ou ~/.Xauthority), dont le nom change à chaque session.
+# Au démarrage de la machine la session graphique n'est pas encore ouverte : le worker continue alors
+# sans fenêtre ; une fois connecté, relancer la vision depuis l'interface ou `sudo systemctl restart base_stk`.
+# Pour forcer un écran précis (comme Rasp/systemd/robot_launcher.service), décommenter :
+#Environment=DISPLAY=:0
+#Environment=XAUTHORITY=/home/based/.Xauthority
+
+[Install]
+WantedBy=multi-user.target

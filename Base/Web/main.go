@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,6 +18,8 @@ import (
 
 func findRaspPath() string {
 	paths := []string{
+		// Relatif au binaire ou à $STK_PROJECT_ROOT (cf. settings.go)
+		filepath.Join(findProjectRoot(), "Rasp"),
 		"../Rasp",    // Si exécuté depuis Base/
 		"../../Rasp", // Si exécuté depuis Base/Web/
 		"Rasp",       // Si exécuté depuis la racine du projet
@@ -57,6 +60,7 @@ func main() {
 		globalState.Telemetry.RaspIP = dhcpIP
 	}
 	globalState.Unlock()
+	fmt.Printf("[VERSION] base_stk %s (projet : %s)\n", buildVersion, findProjectRoot())
 	fmt.Printf("[NET] Base Déportée joignable sur : http://%s:8080\n", globalState.ServerIP)
 	if dhcpIP != "" {
 		fmt.Printf("[NET] IP Robot détectée via DHCP : %s\n", dhcpIP)

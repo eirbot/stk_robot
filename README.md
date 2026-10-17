@@ -129,6 +129,22 @@ Le code bas niveau utilise PlatformIO.
 - Ouvrir le dossier racine du projet.
 - Connecter la carte via USB et cliquer sur le bouton Upload (flèche droite) dans la barre d'état.
 
+### 3. Déploiement (PC de dev -> base / robot)
+
+`tools/deploy.sh` (aide : `tools/deploy.sh -h`, `--dry-run` pour voir les commandes sans les lancer) :
+
+```bash
+tools/deploy.sh base          # base : git pull, Base/build.sh, redémarrage du service base_stk
+tools/deploy.sh robot         # rsync de Rasp/ vers le robot + fichier VERSION + redémarrage de robot_launcher
+tools/deploy.sh --from-base robot   # idem mais poussé depuis la base
+tools/deploy.sh esp motors    # compile, fusionne et flashe l'ESP moteurs via la Rasp (esp arms : actionneurs)
+tools/deploy.sh status        # versions déployées et état des services
+```
+
+Hôtes et chemins : variables `BASE_HOST`, `ROBOT_HOST`, `ROBOT_USER`, `ROBOT_KEY`… (voir `-h`).
+Version : `GET /api/version` sur la base, fichier `~/Documents/robot_stk/VERSION` sur le robot.
+Service de la base, une seule fois : `sudo Base/install_service.sh` (logs : `journalctl -u base_stk -f`).
+
 ---
 
 ## 🔧 Hardware

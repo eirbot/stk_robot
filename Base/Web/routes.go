@@ -69,7 +69,7 @@ func findVisionDir() string {
 		"../Vision",
 		"Base/Vision",
 		"../../Base/Vision",
-		"/home/based/Documents/stk_robot/Base/Vision",
+		filepath.Join(findProjectRoot(), "Base", "Vision"), // cf. settings.go
 	}
 	for _, dir := range candidates {
 		if fi, err := os.Stat(dir); err == nil && fi.IsDir() {
@@ -638,6 +638,11 @@ func setupRoutes(app *fiber.App) {
 		return c.JSON(res)
 	})
 
+	// Version du binaire de la base (injectée par Base/build.sh)
+	app.Get("/api/version", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"base": buildVersion})
+	})
+
 	// Route API pour mettre à jour le code Python de la Rasp depuis la base :
 	// git pull (best effort) puis rsync de Rasp/ vers le robot et redémarrage du launcher
 	app.Post("/api/update_rasp", func(c *fiber.Ctx) error {
@@ -657,12 +662,7 @@ func setupRoutes(app *fiber.App) {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 
-		projectRoot := "/home/based/Documents/stk_robot"
-		if p, err := filepath.Abs("../.."); err == nil {
-			if _, err := os.Stat(filepath.Join(p, "Rasp", "main_robot.py")); err == nil {
-				projectRoot = p
-			}
-		}
+		projectRoot := findProjectRoot()
 
 		// 1. git pull : un échec (pas d'accès internet, modifs locales) n'empêche pas le déploiement
 		warning := ""
@@ -679,7 +679,7 @@ func setupRoutes(app *fiber.App) {
 		rsyncCmd := exec.CommandContext(ctx, "rsync", "-rc", "--out-format=%n",
 			"--exclude=.venv", "--exclude=__pycache__", "--exclude=*.pyc", "--exclude=*.log", "--exclude=config.json",
 			"--exclude=LiDAR/lidar_udp", // binaire compilé sur la Rasp (aarch64) par main_robot.py
-			"-e", sshOpts, projectRoot+"/Rasp/", fmt.Sprintf("eirbot@%s:Documents/robot_stk/", raspIP))
+			"-e", sshOpts, projectRoot+"/Rasp/", robotTarget(raspIP)+":"+robotDir+"/")
 		rsyncOut, err := rsyncCmd.CombinedOutput()
 		if err != nil {
 			return c.JSON(fiber.Map{
@@ -696,10 +696,19 @@ func setupRoutes(app *fiber.App) {
 			}
 		}
 
-		// 3. Redémarrage du launcher seulement si quelque chose a changé
+		// 3. Fichier VERSION (même format que tools/deploy.sh), écrit à chaque déploiement
+		versionCmd := exec.CommandContext(ctx, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
+			robotTarget(raspIP), fmt.Sprintf("cat > %s/VERSION", robotDir))
+		versionCmd.Stdin = strings.NewReader(raspVersionFile(projectRoot))
+		if out, err := versionCmd.CombinedOutput(); err != nil {
+			warning = strings.TrimSpace(warning + " ; écriture de VERSION impossible : " + strings.TrimSpace(string(out)))
+			fmt.Printf("[UPDATE RASP] Écriture de VERSION impossible : %v %s\n", err, string(out))
+		}
+
+		// 4. Redémarrage du launcher seulement si quelque chose a changé
 		if len(changed) > 0 {
 			restartCmd := exec.CommandContext(ctx, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
-				fmt.Sprintf("eirbot@%s", raspIP), "sudo systemctl restart robot_launcher")
+				robotTarget(raspIP), "sudo systemctl restart robot_launcher")
 			if out, err := restartCmd.CombinedOutput(); err != nil {
 				return c.JSON(fiber.Map{
 					"status": "error",
@@ -748,20 +757,10 @@ func setupRoutes(app *fiber.App) {
 		}
 
 		// 1. Détermination du répertoire racine du projet (contenant platformio.ini)
-		projectRoot := "/home/based/Documents/stk_robot"
-		if p, err := filepath.Abs("../.."); err == nil {
-			if _, err := os.Stat(filepath.Join(p, "platformio.ini")); err == nil {
-				projectRoot = p
-			}
-		}
+		projectRoot := findProjectRoot()
 
-		// 2. Détermination du chemin vers le binaire pio
-		pioPath := "/home/based/.local/bin/pio"
-		if p, err := exec.LookPath("pio"); err == nil {
-			pioPath = p
-		} else if _, err := os.Stat("/home/based/.platformio/penv/bin/pio"); err == nil {
-			pioPath = "/home/based/.platformio/penv/bin/pio"
-		}
+		// 2. Détermination du chemin vers le binaire pio (cf. settings.go)
+		pioPath := findPio()
 
 		// 3. Compilation avec PlatformIO pour l'environnement demandé
 		fmt.Printf("[FLASH] Démarrage compilation PlatformIO pour '%s' dans %s...\n", envName, projectRoot)
@@ -785,7 +784,7 @@ func setupRoutes(app *fiber.App) {
 		// 5. Transfert des binaires (.bin) vers la Rasp
 		remoteDir := fmt.Sprintf("/tmp/esp_flash/%s", envName)
 		mkdirCmd := exec.CommandContext(ctx, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
-			fmt.Sprintf("eirbot@%s", raspIP), fmt.Sprintf("mkdir -p %s", remoteDir))
+			robotTarget(raspIP), fmt.Sprintf("mkdir -p %s", remoteDir))
 		if out, err := mkdirCmd.CombinedOutput(); err != nil {
 			return c.JSON(fiber.Map{
 				"status": "error",
@@ -807,7 +806,7 @@ func setupRoutes(app *fiber.App) {
 
 		scpArgs := []string{"-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5"}
 		scpArgs = append(scpArgs, binFiles...)
-		scpArgs = append(scpArgs, fmt.Sprintf("eirbot@%s:%s/", raspIP, remoteDir))
+		scpArgs = append(scpArgs, fmt.Sprintf("%s:%s/", robotTarget(raspIP), remoteDir))
 		scpCmd := exec.CommandContext(ctx, "scp", scpArgs...)
 		if out, err := scpCmd.CombinedOutput(); err != nil {
 			return c.JSON(fiber.Map{
@@ -820,20 +819,20 @@ func setupRoutes(app *fiber.App) {
 
 		// 6. Libération du port série sur la Rasp (fuser -k pour libérer main_robot.py si actif)
 		freeCmd := exec.CommandContext(ctx, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
-			fmt.Sprintf("eirbot@%s", raspIP), fmt.Sprintf("sudo fuser -k %s 2>/dev/null; sleep 0.5", serialPort))
+			robotTarget(raspIP), fmt.Sprintf("sudo fuser -k %s 2>/dev/null; sleep 0.5", serialPort))
 		_ = freeCmd.Run()
 
 		// 7. Flashage via esptool.py sur la Raspberry Pi
 		flashScript := fmt.Sprintf(
-			"python3 /home/eirbot/esptool/esptool.py --chip esp32 --port %s --baud 460800 write_flash -z "+
+			"python3 %s --chip esp32 --port %s --baud 460800 write_flash -z "+
 				"--flash_mode dio --flash_freq 40m --flash_size 4MB "+
 				"0x1000 %s/bootloader.bin 0x8000 %s/partitions.bin 0x10000 %s/firmware.bin",
-			serialPort, remoteDir, remoteDir, remoteDir,
+			robotEsptool, serialPort, remoteDir, remoteDir, remoteDir,
 		)
 
 		fmt.Printf("[FLASH] Envoi de la commande de flash sur la Rasp (%s sur %s)...\n", envName, serialPort)
 		flashCmd := exec.CommandContext(ctx, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=30",
-			fmt.Sprintf("eirbot@%s", raspIP), flashScript)
+			robotTarget(raspIP), flashScript)
 		flashOut, err := flashCmd.CombinedOutput()
 		if err != nil {
 			fmt.Printf("[FLASH] Échec du flash:\n%s\n", string(flashOut))
@@ -940,7 +939,7 @@ func resolveRaspIP() string {
 		raspIP = getRaspIPFromDHCP()
 	}
 	if !isValidIP(raspIP) {
-		raspIP = "192.168.10.89"
+		raspIP = robotFallbackIP
 	}
 	return raspIP
 }
