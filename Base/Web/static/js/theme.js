@@ -8,7 +8,8 @@
     var THEMES = {
         stk: 'STK (jour)',
         nuit: 'STK (nuit)',
-        sombre: 'Sombre'
+        sombre: 'Sombre',
+        win95: 'Windows 95'
     };
     var DEFAULT = 'stk';
     var KEY = 'eirbot-theme';

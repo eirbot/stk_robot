@@ -70,6 +70,7 @@
     --text-muted: #b9dcff;
     --text-faint: #7fa8d6;
     --brand: #ffd23f;
+    --btn-fg: #ffffff;             /* texte des boutons neutres */
 
     /* Couleurs */
     --accent: #ffd23f;
@@ -359,7 +360,7 @@ button, a, select, input {
    ======================================================= */
 .btn {
     --btn: var(--surface-3);
-    --btn-text: #fff;
+    --btn-text: var(--btn-fg);
     --btn-depth: calc(var(--depth) - 1px);
     display: inline-flex;
     align-items: center;
@@ -574,3 +575,214 @@ body.breathing-JAUNE {
         padding: 14px;
     }
 }
+
+/* =======================================================
+   THÈME « Windows 95 »
+   Les reliefs Win95 ont une couleur par côté (blanc en haut/gauche,
+   noir en bas/droite) : impossible avec un seul token de bordure,
+   d'où les règles de composants ci-dessous en plus des variables.
+   ======================================================= */
+html[data-theme="win95"] {
+    --page-bg: #008080;
+    --page-bg-flat: #008080;
+    --header-bg: linear-gradient(90deg, #000080, #1084d0);
+
+    --surface: #c0c0c0;
+    --surface-2: #c0c0c0;
+    --surface-3: #c0c0c0;
+    --chip-bg: #ffffff;
+    --border: #808080;
+    --border-strong: #808080;
+
+    --line: #808080;
+    --line-w: 2px;
+    --ink: transparent;
+    --depth: 0px;
+    --press: 0px;
+    --panel-highlight: inset 0 0 0 0 transparent;
+    --soft-shadow: 0 0 0 transparent;
+    --gloss: none;
+    --gloss-soft: none;
+    --text-stroke: 0px;
+    --btn-text-shadow: none;
+    --checker-opacity: 0;
+
+    --text: #000000;
+    --text-muted: #404040;
+    --text-faint: #808080;
+    --brand: #ffffff;
+    --btn-fg: #000000;
+
+    --accent: #000080;
+    --accent-text: #ffffff;
+    --orange: #c0c0c0;
+    --blue: #000080;
+    --yellow: #ffff00;
+    --success: #008000;
+    --success-strong: #008000;
+    --warning: #808000;
+    --danger: #c00000;
+    --danger-strong: #c00000;
+    --cyan: #000080;
+    --timer: #00ff00;
+
+    --font: Tahoma, 'Microsoft Sans Serif', 'MS Sans Serif', Arial, sans-serif;
+    --font-mono: 'Courier New', Courier, monospace;
+    --font-weight-title: 700;
+    --radius: 0px;
+    --radius-sm: 0px;
+
+    --w95-raised-color: #ffffff #000000 #000000 #ffffff;
+    --w95-raised-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf;
+    --w95-sunken-color: #808080 #ffffff #ffffff #808080;
+    --w95-sunken-shadow: inset 1px 1px #000000, inset -1px -1px #dfdfdf;
+}
+
+/* --- Fenêtres et boutons en relief --- */
+html[data-theme="win95"] .card,
+html[data-theme="win95"] .dashboard,
+html[data-theme="win95"] .tile,
+html[data-theme="win95"] .btn,
+html[data-theme="win95"] .btn-back,
+html[data-theme="win95"] .btn-nav,
+html[data-theme="win95"] .btn-sys,
+html[data-theme="win95"] .team-box,
+html[data-theme="win95"] .video-card,
+html[data-theme="win95"] .btn-video-action,
+html[data-theme="win95"] .telemetry-item {
+    border-style: solid !important;
+    border-width: 2px !important;
+    border-color: var(--w95-raised-color) !important;
+    box-shadow: var(--w95-raised-shadow) !important;
+    border-radius: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+html[data-theme="win95"] .btn:active,
+html[data-theme="win95"] .btn-back:active,
+html[data-theme="win95"] .btn-nav:active,
+html[data-theme="win95"] .tile:active,
+html[data-theme="win95"] .team-box:active,
+html[data-theme="win95"] .btn-video-action:active {
+    border-color: #000000 #ffffff #ffffff #000000 !important;
+    box-shadow: inset 1px 1px #808080 !important;
+    transform: translate(1px, 1px) !important;
+}
+
+/* Boutons gris, couleur seulement sur le texte (sauf l'équipe) */
+html[data-theme="win95"] .btn,
+html[data-theme="win95"] .btn-video-action,
+html[data-theme="win95"] .btn-nav {
+    background: #c0c0c0 !important;
+    color: #000 !important;
+    filter: none !important;
+}
+
+html[data-theme="win95"] .btn-success { color: #006400 !important; }
+html[data-theme="win95"] .btn-danger  { color: #a00000 !important; }
+html[data-theme="win95"] .btn-team,
+html[data-theme="win95"] .team-box    { background: var(--team) !important; color: var(--team-text) !important; }
+html[data-theme="win95"] body.mode-BLEUE .team-box,
+html[data-theme="win95"] body.mode-BLEUE .btn-team { color: #fff !important; }
+
+/* --- Champs creusés (sunken) --- */
+html[data-theme="win95"] .pos-item,
+html[data-theme="win95"] .sys-info-item,
+html[data-theme="win95"] select,
+html[data-theme="win95"] .video-display-container,
+html[data-theme="win95"] .zenithale-telemetry-panel {
+    border-style: solid !important;
+    border-width: 2px !important;
+    border-color: var(--w95-sunken-color) !important;
+    box-shadow: var(--w95-sunken-shadow) !important;
+    border-radius: 0 !important;
+    background: #ffffff;
+    color: #000;
+}
+
+html[data-theme="win95"] .video-display-container {
+    background: #000 !important;
+}
+
+html[data-theme="win95"] .zenithale-telemetry-panel {
+    background: #c0c0c0 !important;
+}
+
+/* --- Barre de titre bleue (en-tête, titres de cartes) --- */
+html[data-theme="win95"] .header {
+    border-bottom: 2px solid #000;
+}
+
+html[data-theme="win95"] .brand {
+    text-shadow: none;
+    font-size: 1.2rem;
+}
+
+html[data-theme="win95"] .brand-dot {
+    border-radius: 0;
+    border: 1px solid #fff;
+}
+
+html[data-theme="win95"] .sys-info-volt {
+    color: #000;
+}
+
+html[data-theme="win95"] .card-title {
+    background: linear-gradient(90deg, #000080, #1084d0);
+    color: #fff;
+    margin: -14px -14px 12px;
+    padding: 4px 8px;
+    border: none;
+    font-size: 0.95rem;
+}
+
+/* --- Badges et tuiles --- */
+html[data-theme="win95"] .badge,
+html[data-theme="win95"] .tirette-box,
+html[data-theme="win95"] .badge-status-pill,
+html[data-theme="win95"] .telemetry-badge-status {
+    border-radius: 0 !important;
+    border: 1px solid #000 !important;
+}
+
+html[data-theme="win95"] .tile-icon {
+    border-radius: 0;
+    border: 2px solid;
+    border-color: var(--w95-raised-color);
+    background: #c0c0c0;
+}
+
+/* --- Chrono : afficheur LCD --- */
+html[data-theme="win95"] .timer-box {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--timer);
+    background: #000;
+    padding: 4px 18px;
+    border: 2px solid;
+    border-color: var(--w95-sunken-color);
+    text-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
+    -webkit-text-stroke: 0;
+}
+
+/* --- Écran robot : barre des boutons façon barre des tâches --- */
+html[data-theme="win95"] body.robot-screen .robot-buttons-bar {
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+}
+
+html[data-theme="win95"] body.robot-screen .robot-btn-hint {
+    border-right: 2px solid;
+    border-color: #808080;
+}
+
+html[data-theme="win95"] body.robot-screen .btn-main {
+    text-shadow: none;
+}
+
+html[data-theme="win95"] body.robot-screen .btn-hint-strat .btn-main { color: #000080; }
+html[data-theme="win95"] body.robot-screen .btn-sub { color: #404040; }
+html[data-theme="win95"] body.robot-screen .btn-hint-team .btn-main { color: #000; }
+html[data-theme="win95"] .header { color: #fff; }
+html[data-theme="win95"] .header .sys-info { color: #000; }
+html[data-theme="win95"] .video-placeholder { color: #c0c0c0 !important; }

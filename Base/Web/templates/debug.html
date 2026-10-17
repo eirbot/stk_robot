@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DEBUG & CONFIG</title>
-    <script src="/static/js/theme.js?v=1"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=5.0">
-    <link rel="stylesheet" href="/static/css/debug.css?v=2.7">
+    <script src="/static/js/theme.js?v=2"></script>
+    <link rel="stylesheet" href="/static/css/common.css?v=5.3">
+    <link rel="stylesheet" href="/static/css/debug.css?v=2.8">
 
     <style>
         /* Styles garantis pour les flux vidéo et boutons d'action */
@@ -15,11 +15,11 @@
             display: flex !important;
             flex-direction: column !important;
             overflow: hidden !important;
-            background: #161b22 !important;
-            border: 1px solid #30363d !important;
-            border-radius: 8px !important;
+            background: var(--gloss-soft), var(--surface) !important;
+            border: var(--line-w) solid var(--line) !important;
+            border-radius: var(--radius) !important;
             padding: 14px !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+            box-shadow: var(--panel-highlight), 0 var(--depth) 0 var(--ink), var(--soft-shadow) !important;
         }
 
         .video-card-header {
@@ -35,6 +35,7 @@
             display: flex !important;
             align-items: center !important;
             gap: 10px !important;
+            text-align: left !important;
         }
 
         .video-icon {
@@ -44,7 +45,7 @@
 
         .video-subtitle {
             font-size: 0.75em !important;
-            color: #8b949e !important;
+            color: var(--text-muted) !important;
             display: block !important;
             margin-top: 2px !important;
         }
@@ -57,8 +58,8 @@
         }
 
         .badge-status-pill {
-            padding: 5px 12px !important;
-            border-radius: 12px !important;
+            padding: 4px 12px !important;
+            border-radius: 999px !important;
             font-size: 0.75em !important;
             font-weight: 700 !important;
             text-transform: uppercase !important;
@@ -66,119 +67,55 @@
             display: inline-flex !important;
             align-items: center !important;
             gap: 4px !important;
+            border: 2px solid var(--line) !important;
+            color: #fff !important;
         }
 
-        .badge-offline {
-            background: rgba(244, 67, 54, 0.15) !important;
-            color: #ff6b6b !important;
-            border: 1px solid rgba(244, 67, 54, 0.4) !important;
-        }
+        .badge-offline { background: var(--danger-strong) !important; }
+        .badge-online  { background: var(--success-strong) !important; }
 
-        .badge-online {
-            background: rgba(46, 204, 113, 0.15) !important;
-            color: #2ecc71 !important;
-            border: 1px solid rgba(46, 204, 113, 0.4) !important;
-            box-shadow: 0 0 8px rgba(46, 204, 113, 0.25) !important;
-        }
-
+        /* Boutons d'action vidéo = boutons du thème */
         .btn-video-action {
-            background: #21262d !important;
-            color: #e6edf3 !important;
-            border: 1px solid #363b42 !important;
-            padding: 8px 14px !important;
-            border-radius: 6px !important;
+            --vbtn: var(--surface-3);
+            --vbtn-text: var(--btn-fg);
+            background: var(--gloss), var(--vbtn) !important;
+            color: var(--vbtn-text) !important;
+            border: var(--line-w) solid var(--line) !important;
+            padding: 7px 14px !important;
+            border-radius: var(--radius-sm) !important;
             font-size: 0.85em !important;
-            font-weight: 600 !important;
+            font-weight: 700 !important;
             cursor: pointer !important;
-            transition: all 0.2s ease !important;
             display: inline-flex !important;
             align-items: center !important;
             gap: 6px !important;
             user-select: none !important;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+            box-shadow: 0 calc(var(--depth) - 2px) 0 var(--ink) !important;
+            margin-bottom: calc(var(--depth) - 2px) !important;
+            transition: transform 0.06s, filter 0.15s !important;
         }
 
-        .btn-video-action:hover {
-            background: #30363d !important;
-            color: #ffffff !important;
-            border-color: #8b949e !important;
-            transform: translateY(-1px) !important;
-        }
+        .btn-video-action:hover  { filter: brightness(1.1) !important; }
+        .btn-video-action:active { transform: translateY(var(--press)) !important; box-shadow: 0 0 0 var(--ink) !important; }
 
-        .btn-aruco-active {
-            background: rgba(0, 210, 255, 0.2) !important;
-            color: #00d2ff !important;
-            border-color: #00b4db !important;
-            box-shadow: 0 0 8px rgba(0, 210, 255, 0.3) !important;
-        }
-
-        .btn-aruco-active:hover {
-            background: rgba(0, 210, 255, 0.3) !important;
-            border-color: #00e5ff !important;
-            box-shadow: 0 0 12px rgba(0, 210, 255, 0.5) !important;
-        }
-
-        .btn-aruco-inactive {
-            background: #21262d !important;
-            color: #8b949e !important;
-            border-color: #30363d !important;
-        }
-
-        .btn-vision-power {
-            background: rgba(46, 204, 113, 0.15) !important;
-            color: #2ecc71 !important;
-            border-color: rgba(46, 204, 113, 0.4) !important;
-        }
-
-        .btn-vision-power.running {
-            background: rgba(244, 67, 54, 0.15) !important;
-            color: #ff6b6b !important;
-            border-color: rgba(244, 67, 54, 0.4) !important;
-        }
-
-        /* Bouton Bascule Résolution 4K/1080p */
-        .btn-resolution-toggle {
-            background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(79, 70, 229, 0.2)) !important;
-            color: #c084fc !important;
-            border-color: rgba(168, 85, 247, 0.4) !important;
-            box-shadow: 0 0 8px rgba(168, 85, 247, 0.2) !important;
-        }
-
-        .btn-resolution-toggle:hover {
-            background: linear-gradient(135deg, rgba(147, 51, 234, 0.35), rgba(79, 70, 229, 0.35)) !important;
-            border-color: #c084fc !important;
-            box-shadow: 0 0 12px rgba(192, 132, 252, 0.4) !important;
-        }
-
-        .btn-resolution-toggle.mode-60fps {
-            background: linear-gradient(135deg, rgba(234, 88, 12, 0.25), rgba(202, 138, 4, 0.25)) !important;
-            color: #fbbf24 !important;
-            border-color: rgba(251, 191, 36, 0.4) !important;
-            box-shadow: 0 0 8px rgba(251, 191, 36, 0.25) !important;
-        }
-
-        .btn-fullscreen {
-            background: linear-gradient(135deg, #1f6feb, #238636) !important;
-            color: #ffffff !important;
-            border: 1px solid #388bfd !important;
-        }
-
-        .btn-fullscreen:hover {
-            background: linear-gradient(135deg, #388bfd, #2ea043) !important;
-            border-color: #58a6ff !important;
-            box-shadow: 0 0 10px rgba(56, 139, 253, 0.4) !important;
-        }
+        .btn-aruco-active       { --vbtn: var(--cyan); --vbtn-text: #00222b; }
+        .btn-aruco-inactive     { --vbtn: var(--surface-2); --vbtn-text: var(--text-muted); }
+        .btn-vision-power       { --vbtn: var(--success-strong); --vbtn-text: #fff; }
+        .btn-vision-power.running { --vbtn: var(--danger-strong); }
+        .btn-resolution-toggle  { --vbtn: var(--surface-3); --vbtn-text: var(--accent); }
+        .btn-resolution-toggle.mode-60fps { --vbtn: var(--orange); --vbtn-text: #fff; }
+        .btn-fullscreen         { --vbtn: var(--blue); --vbtn-text: #fff; }
 
         .video-display-container {
             position: relative !important;
-            background: #0d1117 !important;
-            border-radius: 8px !important;
+            background: var(--chip-bg) !important;
+            border-radius: var(--radius-sm) !important;
             overflow: hidden !important;
             min-height: 280px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            border: 1px solid #30363d !important;
+            border: var(--line-w) solid var(--line) !important;
         }
 
         .video-feed {
@@ -186,7 +123,7 @@
             height: auto !important;
             max-height: 480px !important;
             object-fit: contain !important;
-            display: block !important;
+            display: block; /* sans !important : le JS masque l'image via style.display */
             cursor: zoom-in !important;
             background: #000 !important;
         }
@@ -466,7 +403,7 @@
                 <div id="zenithale-placeholder" class="video-placeholder">
                     <div class="placeholder-icon">📹</div>
                     <div id="zenithale-placeholder-text">En attente du flux de la caméra USB...</div>
-                    <button onclick="startVisionWorker()" class="btn-flash" style="margin-top:10px; background:#00d2ff; color:#0d1117; font-weight:bold;">
+                    <button onclick="startVisionWorker()" class="btn btn-primary" style="margin-top:10px;">
                         Lancer le flux USB
                     </button>
                 </div>
