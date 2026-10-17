@@ -114,8 +114,9 @@ window.socket.on('state_update', (state) => {
     if (sysInfoEl) {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'robot') {
-            const config = state.config || {};
-            const stratName = state.strat_id || config.static_strat || 'Aucune';
+            // La télémétrie 10 Hz n'embarque pas la config : on prend le dernier état complet connu (common.js)
+            const config = state.config || window.localConfig || {};
+            const stratName = state.strat_id || localState.strat_id || config.static_strat || 'Aucune';
             let voltStr = '--.-V';
             if (state.telemetry && typeof state.telemetry.voltage === 'number') {
                 voltStr = typeof formatVoltage === 'function' ? formatVoltage(state.telemetry.voltage) : state.telemetry.voltage.toFixed(1) + 'V';
