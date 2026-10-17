@@ -19,6 +19,12 @@ les refontes sont acceptées.
   `static/icons/sprite.svg`, `icon('nom')` en JS) à la place des emojis.
 - Menus déroulants thémés dans tous les navigateurs (composant de `theme.js`, le `<select>` natif
   reste la source de vérité).
+- Windows 95 : boutons réduire/agrandir/fermer (décoratifs) sur les barres de titre et l'en-tête ;
+  accueil = explorateur de fichiers (C:\EIRBOT, dossiers) ; page Sons = lecteur multimédia façon
+  Windows Media Player (écran + visualiseur, barre de position, lecture/pause/arrêt, préc./suiv.).
+  Clippy (`static/js/clippy.js`, toutes les pages, Win95 seulement, pas sur l'écran robot) : blagues,
+  piques par page et sur les toasts d'erreur, sons synthétisés en Web Audio ; « Ferme-la » = muet pour l'onglet.
+  `playPrev()` / `playNext()` (appelées par la page Sons) n'existaient pas : ajoutées.
 - Affichage téléphone ; mode test (pas d'arrêt à 100 s) ; notifications (`toast()`) ; pastille
   « Robot hors ligne » ; versions du code dans Debug.
 

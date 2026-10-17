@@ -537,6 +537,160 @@ html[data-theme="win95"] #tab-audio .panel-left {
     padding: 0;
 }
 
+/* --- WINDOWS 95 : lecteur multimédia à la place du lecteur natif --- */
+.wmp {
+    display: none;
+}
+
+html[data-theme="win95"] .wmp {
+    display: block;
+    text-align: left;
+    margin-bottom: 10px;
+}
+
+html[data-theme="win95"] .player-box .now-playing,
+html[data-theme="win95"] .player-box .audio-preview,
+html[data-theme="win95"] .player-box .player-controls {
+    display: none;
+}
+
+.wmp-menu {
+    display: flex;
+    gap: 12px;
+    padding: 0 4px 4px;
+    font-size: 0.85rem;
+}
+
+.wmp-screen {
+    position: relative;
+    height: 150px;
+    background: #000;
+    border: 2px solid;
+    border-color: var(--w95-sunken-color);
+    box-shadow: var(--w95-sunken-shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.wmp-logo {
+    color: #c0c0c0;
+    font-weight: 700;
+    font-size: 1.1rem;
+    font-style: italic;
+}
+
+/* Barres de visualisation, animées seulement pendant la lecture */
+.wmp-viz {
+    position: absolute;
+    inset: 12px 12px 10px;
+    display: none;
+    align-items: flex-end;
+    gap: 3px;
+}
+
+.wmp-viz i {
+    flex: 1;
+    height: 20%;
+    background: linear-gradient(0deg, #00c000, #ffff00 70%, #ff0000);
+    animation: wmp-bar 0.9s ease-in-out infinite alternate;
+}
+
+.wmp-viz i:nth-child(3n)   { animation-duration: 0.6s; }
+.wmp-viz i:nth-child(3n+1) { animation-duration: 1.1s; animation-delay: -0.3s; }
+.wmp-viz i:nth-child(4n)   { animation-duration: 0.75s; animation-delay: -0.5s; }
+.wmp-viz i:nth-child(5n)   { animation-duration: 1.3s; animation-delay: -0.2s; }
+
+@keyframes wmp-bar {
+    from { height: 8%; }
+    to   { height: 95%; }
+}
+
+.wmp-screen.is-playing .wmp-viz { display: flex; }
+.wmp-screen.is-playing .wmp-logo { display: none; }
+
+html[data-theme="win95"] .wmp-seek {
+    display: block;
+    width: 100%;
+    margin: 8px 0 4px;
+    accent-color: #000080;
+}
+
+.wmp-transport {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.wmp-btn {
+    width: 28px;
+    height: 24px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #c0c0c0;
+    color: #000;
+    border: 2px solid;
+    border-color: var(--w95-raised-color);
+    box-shadow: var(--w95-raised-shadow);
+    cursor: pointer;
+}
+
+.wmp-btn:active {
+    border-color: #000 #fff #fff #000;
+    box-shadow: inset 1px 1px #808080;
+}
+
+.wmp-btn svg,
+.wmp-vol svg {
+    width: 11px;
+    height: 11px;
+    fill: currentColor;
+}
+
+.wmp-sep {
+    width: 2px;
+    height: 20px;
+    margin: 0 4px;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #fff;
+}
+
+.wmp-vol {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.wmp-vol input {
+    width: 80px;
+    accent-color: #000080;
+}
+
+.wmp-status {
+    display: flex;
+    gap: 3px;
+    margin-top: 6px;
+    font-size: 0.8rem;
+}
+
+.wmp-status span {
+    padding: 1px 6px;
+    border: 1px solid;
+    border-color: #808080 #fff #fff #808080;
+    white-space: nowrap;
+}
+
+.wmp-status #wmp-track {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* --- TÉLÉPHONE --- */
 @media (max-width: 800px) {
     .media-page {

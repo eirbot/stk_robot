@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialisation du Drag & Drop
     setupDragAndDrop();
 
+    // Lecteur multimédia (thème Windows 95)
+    setupWmp();
+
     // Initialisation LED Grid
     generateLedGrid();
 
@@ -257,6 +260,65 @@ function playPreview(filename) {
     audioPlayer.src = url;
     audioPlayer.play();
     document.getElementById('now-playing-text').innerText = filename;
+    document.getElementById('wmp-track').innerText = filename;
+}
+
+// Piste précédente / suivante de la liste (boucle aux extrémités)
+function playStep(step) {
+    if (audioList.length === 0) return;
+    const i = audioList.indexOf(currentFile);
+    const next = i < 0 ? 0 : (i + step + audioList.length) % audioList.length;
+    playPreview(audioList[next]);
+}
+
+function playPrev() { playStep(-1); }
+function playNext() { playStep(1); }
+
+// --- LECTEUR MULTIMÉDIA (thème Windows 95, pilote le même <audio>) ---
+function wmpPlay() {
+    if (audioPlayer.getAttribute('src')) audioPlayer.play();
+    else if (currentFile || audioList.length) playPreview(currentFile || audioList[0]);
+}
+
+function wmpStop() {
+    audioPlayer.pause();
+    audioPlayer.currentTime = 0;
+}
+
+function setupWmp() {
+    const seek = document.getElementById('wmp-seek');
+    const state = document.getElementById('wmp-state');
+    const time = document.getElementById('wmp-time');
+    const screen = document.getElementById('wmp-screen');
+    let seeking = false;
+
+    const fmt = (t) => {
+        if (!isFinite(t)) t = 0;
+        return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+    };
+
+    const refresh = () => {
+        const d = audioPlayer.duration;
+        const t = audioPlayer.currentTime;
+        if (!seeking) seek.value = d ? (t / d) * 1000 : 0;
+        time.innerText = fmt(t) + ' / ' + fmt(d);
+        const playing = !audioPlayer.paused && !audioPlayer.ended;
+        state.innerText = playing ? 'Lecture' : (t > 0 && !audioPlayer.ended ? 'Pause' : 'Arrêté');
+        screen.classList.toggle('is-playing', playing);
+    };
+
+    ['timeupdate', 'play', 'pause', 'ended', 'loadedmetadata', 'emptied'].forEach(ev =>
+        audioPlayer.addEventListener(ev, refresh));
+
+    seek.addEventListener('input', () => { seeking = true; });
+    seek.addEventListener('change', () => {
+        if (audioPlayer.duration) audioPlayer.currentTime = (seek.value / 1000) * audioPlayer.duration;
+        seeking = false;
+    });
+
+    document.getElementById('wmp-vol').addEventListener('input', (e) => {
+        audioPlayer.volume = e.target.value / 100;
+    });
 }
 
 function playOnRobot() {

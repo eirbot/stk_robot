@@ -6,11 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>EIRBOT - MEDIA STUDIO</title>
     <script src="/static/js/theme.js?v=5"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=6.5">
-    <link rel="stylesheet" href="/static/css/media.css?v=2.1">
+    <link rel="stylesheet" href="/static/css/common.css?v=6.7">
+    <link rel="stylesheet" href="/static/css/media.css?v=2.2">
 
     <script src="/static/js/common.js?v=2.8" defer></script>
-    <script src="/static/js/media.js?v=2.1" defer></script>
+    <script src="/static/js/clippy.js?v=1" defer></script>
+    <script src="/static/js/media.js?v=2.2" defer></script>
 </head>
 
 <body>
@@ -41,6 +42,25 @@
                 <div class="player-box card">
                     <h3 class="card-title">Lecteur</h3>
                     <div class="now-playing" id="now-playing-text">Aucune lecture</div>
+                    <!-- Lecteur multimédia : remplace le lecteur natif en thème Windows 95 -->
+                    <div class="wmp">
+                        <div class="wmp-menu"><span><u>F</u>ichier</span><span><u>A</u>ffichage</span><span><u>L</u>ecture</span><span>F<u>a</u>voris</span><span><u>?</u></span></div>
+                        <div class="wmp-screen" id="wmp-screen">
+                            <div class="wmp-viz"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                            <div class="wmp-logo">Lecteur multimédia</div>
+                        </div>
+                        <input type="range" class="wmp-seek" id="wmp-seek" min="0" max="1000" value="0" aria-label="Position">
+                        <div class="wmp-transport">
+                            <button class="wmp-btn" onclick="wmpPlay()" title="Lecture" aria-label="Lecture"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1l7 5-7 5z"/></svg></button>
+                            <button class="wmp-btn" onclick="audioPlayer.pause()" title="Pause" aria-label="Pause"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1h3v10H2zM7 1h3v10H7z"/></svg></button>
+                            <button class="wmp-btn" onclick="wmpStop()" title="Arrêt" aria-label="Arrêt"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2h8v8H2z"/></svg></button>
+                            <span class="wmp-sep"></span>
+                            <button class="wmp-btn" onclick="playPrev()" title="Précédent" aria-label="Précédent"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1h2v10H1zM11 1v10L4 6z"/></svg></button>
+                            <button class="wmp-btn" onclick="playNext()" title="Suivant" aria-label="Suivant"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9 1h2v10H9zM1 1v10l7-5z"/></svg></button>
+                            <span class="wmp-vol"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1 4h3l4-3v10L4 8H1z"/></svg><input type="range" id="wmp-vol" min="0" max="100" value="100" aria-label="Volume de la pré-écoute"></span>
+                        </div>
+                        <div class="wmp-status"><span id="wmp-state">Arrêté</span><span id="wmp-track">Aucune lecture</span><span id="wmp-time">00:00 / 00:00</span></div>
+                    </div>
                     <audio id="audio-preview" class="audio-preview" controls></audio>
                     <div class="player-controls">
                         <button class="btn btn-ctrl" onclick="playPrev()" title="Précédent" aria-label="Précédent"><svg class="icon"><use href="/static/icons/sprite.svg#i-skip-back"></use></svg></button>
