@@ -3,12 +3,12 @@
 // -----------------------------------------------------------------------------
 // GESTION DU REPÈRE DE COORDONNÉES (ORIGINE EN HAUT À GAUCHE) :
 // -----------------------------------------------------------------------------
-// Repère Eurobot physique (Monde) :
-// - Axe X (Longueur) : -1500 à 1500 mm (de gauche à droite, center=0).
-// - Axe Y (Largeur) : 0 à 2000 mm (du haut vers le bas).
-// - Theta (Orientation) : Angle en radians.
-//   - 0 = vers l'est/X+ (droite).
-//   - PI/2 = vers le sud/Y+ (bas, car Y croît vers le bas).
+// Repère robot (cf. Rasp/strat/actions.py, la symétrie JAUNE se fait sur Y) :
+// - Axe X (Largeur) : 0 à 2000 mm (du haut vers le bas).
+// - Axe Y (Longueur) : -1500 à 1500 mm (de gauche à droite, center=0).
+// - Theta (Orientation) : Angle en degrés.
+//   - 0 = X+ (vers le bas).
+//   - 90 = Y+ (vers la droite).
 //
 // Repère Three.js :
 // - La table de 3000x2000 mm est centrée à l'origine (0, 0, 0) de la scène 3D.
@@ -16,15 +16,23 @@
 // - L'axe X de Three.js correspond à la Longueur (de -1500 à +1500 mm).
 // - L'axe Y de Three.js correspond à la Largeur (de -1000 à +1000 mm, où +1000 est le haut et -1000 est le bas).
 //
-// Formules de conversion (Robot -> Scène 3D) :
-// - X_three = X_robot
-// - Y_three = 1000 - Y_robot  (car Y=0 est en haut à +1000, et Y=2000 est en bas à -1000)
+// Formules de conversion (Robot -> Scène 3D), cf. robotToThree / threeToRobot :
+// - X_three = Y_robot
+// - Y_three = 1000 - X_robot  (car X=0 est en haut à +1000, et X=2000 est en bas à -1000)
 // - Z_three = 0
-// - Rotation Z_three = -Theta_robot (signe négatif car l'inversion de l'axe Y inverse le sens trigonométrique)
+// - Rotation Z_three = Theta_robot - 90° (rotation pure, pas d'inversion de sens)
 // -----------------------------------------------------------------------------
 
 const TABLE_L_MM = 3000; // Longueur de la table (axe X Three.js)
 const TABLE_W_MM = 2000; // Largeur de la table (axe Y Three.js)
+
+function robotToThree(x, y) {
+    return { x: y, y: 1000 - x };
+}
+
+function threeToRobot(pt) {
+    return { x: 1000 - pt.y, y: pt.x };
+}
 
 let scene, camera, renderer, controls;
 let robotGroup, lidarGroup, visionGroup, lidarScanGroup;
@@ -32,7 +40,7 @@ let robotMaterial, lidarMaterial, visionMaterial;
 let beacons = [];
 let targetSphere = null;
 
-let robotPos = { x: 0, y: 1000, theta: 0 }; // theta en degrés
+let robotPos = { x: 1000, y: 0, theta: 0 }; // theta en degrés
 let lidarPos = null;                         // theta en degrés
 let visionPos = null;                        // theta en degrés
 let currentTeam = "BLEUE";
@@ -335,7 +343,8 @@ async function loadBeacons() {
             // Dans l'API, les coordonnées des balises sont :
             // - bx = Largeur robot (0 à 2000) -> Y_three = 1000 - bx
             // - by = Longueur robot (-1500 à 1500) -> X_three = by
-            beaconGroup.position.set(by, 1000 - bx, 0);
+            const bp = robotToThree(bx, by);
+            beaconGroup.position.set(bp.x, bp.y, 0);
             scene.add(beaconGroup);
         });
     } catch (e) {
@@ -535,16 +544,14 @@ function setupWebSocket() {
 function updateRobotMeshPosition(group, pos) {
     if (!group || !pos) return;
 
-    // Translation du repère :
-    // X_three = Robot X (déjà de -1500 à 1500)
-    // Y_three = 1000 - Robot Y (car Y=0 est en haut, Y=2000 est en bas)
-    group.position.x = pos.x;
-    group.position.y = 1000 - pos.y;
+    const p = robotToThree(pos.x, pos.y);
+    group.position.x = p.x;
+    group.position.y = p.y;
 
-    // Rotation autour de Z (inversée car l'axe Y est inversé)
     // pos.theta est en DEGRÉS, Three.js attend des RADIANS
+    // theta = 0 (X robot) pointe vers -Y_three, d'où le décalage de -90°
     const thetaRad = ((pos.theta || 0) * Math.PI) / 180;
-    group.rotation.z = -thetaRad;
+    group.rotation.z = thetaRad - Math.PI / 2;
 }
 
 function updateTeamColor() {
@@ -646,10 +653,7 @@ function onTableDoubleClick(event) {
             const pt = intersects[i].point;
 
             // Conversion inverse : Three.js -> Repère Robot
-            // pt.x = targetX (Longueur -1500 à 1500)
-            // pt.y = 1000 - targetY => targetY = 1000 - pt.y (Largeur 0 à 2000)
-            const targetX = pt.x;
-            const targetY = 1000 - pt.y;
+            const { x: targetX, y: targetY } = threeToRobot(pt);
             const targetTheta = robotPos.theta; // On conserve l'orientation actuelle
 
             console.log(`[MAP 3D] Clic sur table -> Goto X: ${targetX.toFixed(0)}, Y: ${targetY.toFixed(0)}`);
@@ -686,8 +690,7 @@ function onTableMouseMove(event) {
             const pt = intersects[i].point;
 
             // Conversion inverse : Three.js -> Repère Robot
-            const targetX = pt.x;
-            const targetY = 1000 - pt.y;
+            const { x: targetX, y: targetY } = threeToRobot(pt);
 
             // Mettre à jour et positionner le tooltip
             const tooltip = document.getElementById('coord-tooltip');
@@ -836,10 +839,7 @@ function updateLidarFrame(data) {
         const globalX = currentRobotPos.x + relDistMm * Math.cos(globalAngleRad);
         const globalY = currentRobotPos.y + relDistMm * Math.sin(globalAngleRad);
         
-        return {
-            x: globalX,
-            y: 1000 - globalY // Axe Y de Three.js inversé
-        };
+        return robotToThree(globalX, globalY);
     }
 
     // 1. Tracer l'obstacle le plus proche
@@ -876,8 +876,9 @@ function updateLidarFrame(data) {
                 lidarScanGroup.add(bMesh);
 
                 // Ligne fine reliant le robot à la balise détectée
+                const rp = robotToThree(currentRobotPos.x, currentRobotPos.y);
                 const points = [
-                    new THREE.Vector3(currentRobotPos.x, 1000 - currentRobotPos.y, 15),
+                    new THREE.Vector3(rp.x, rp.y, 15),
                     new THREE.Vector3(pt.x, pt.y, 15)
                 ];
                 const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
