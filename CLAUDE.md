@@ -2,12 +2,21 @@
 
 Répondre en français. Réponses courtes : le résultat, pas le récit des étapes.
 
+## Suivi (obligatoire)
+- En début de session : lire `SUIVI.md` (ce qui est fait, ce qui reste, état du déploiement).
+- En fin de tâche : mettre `SUIVI.md` à jour — ajouter ce qui a été fait dans « Fait », cocher ou
+  retirer les éléments terminés de « À faire », ajouter ce qui reste ou ce qu'on a découvert,
+  mettre à jour « État du dépôt » (commits poussés ou non, ce qui est déployé) et la date.
+- Ne pas y recopier l'historique git en détail : l'essentiel, pour reprendre le travail ailleurs.
+
 ## Carte du repo (ne pas réexplorer)
 - `Rasp/` : Python sur la Raspberry du robot. `main_robot.py`, `launcher.py`, `ihm/` (shared.py = état global, zmq_client.py = lien base), `strat/` (actions.py = primitives goto/set_pos/symétrie, `strategies/` = stratégies Blockly .xml/.py), `interface_deplacement/esp_motors.py`, `interface_actionneur/`, `LiDAR/` (lidar_udp.cpp + lidar_thread.py, évitement uniquement), `config.json`.
 - `src/`, `include/`, `platformio.ini` : firmware ESP32 (envs `Motor`, `Actionneurs`). Trame odométrie `T x y theta` (ComWithRasp.cpp).
 - `Base/Web/` : serveur Go (fiber + zmq4/cgo) -> binaire `Base/base_stk`, compilé par `Base/build.sh`, lancé depuis `Base/`. Pages `templates/*.html` + `static/js/*.js`.
 - `Base/Vision/` : `vision_deporte_worker.py` (caméra zénithale -> pose) + sous-module `vision_deporte/` (uv).
 - `docu/` : règles Eurobot (PDF), protocole LiDAR.
+- `Rasp/core/` : modules purs, testés sans robot : `match_state.py` (seul écrivain de l'état du match), `config_store.py` (config du robot), `frames.py` (repères).
+- `tools/` : `deploy.sh`, `run_tests.sh`, `robot_sim.py` (robot simulé), `check_strategy.py`. Tests dans `test/`.
 
 ## Repère et conventions
 - Repère robot : X = largeur 0..2000 mm, Y = longueur -1500..1500 mm, theta en degrés (0 = X+, 90 = Y+). Symétrie équipe JAUNE : y -> -y, theta -> -theta (`actions.py::_apply_sym`).
