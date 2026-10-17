@@ -59,7 +59,11 @@ def background_loop():
                  if state.get("bat_low", False):
                      print(f"[TASKS] Batterie rétablie ({volts}V).")
                      state["bat_low"] = False
-                     send_led_cmd("COLOR:0,255,0") # Retour au vert
+                     # Retour à la couleur d'équipe (les changements d'équipe sont ignorés pendant l'alerte)
+                     if state.get("team") == "JAUNE":
+                         send_led_cmd("COLOR:255,160,0")
+                     else:
+                         send_led_cmd("COLOR:0,0,255")
 
             ip = get_ip()
             send_sys_info({
