@@ -69,6 +69,11 @@ class ZmqClient(threading.Thread):
             if not cmd_type:
                 return
 
+            # Diagnostic du lien base <-> robot (Base/Web/robotping.go) : réponse immédiate, sans log
+            if cmd_type == "ping":
+                self.send_event("pong", payload)
+                return
+
             # cmd_vel (20 Hz) et vision_pose (cadence caméra) : ne pas les afficher (chaque print repart en new_log vers l'IHM)
             if cmd_type not in ("cmd_vel", "vision_pose"):
                 print(f"[ZMQ CLIENT] Commande reçue : {cmd_type} -> {payload}")
@@ -191,9 +196,12 @@ class ZmqClient(threading.Thread):
 
             elif cmd_type == "vision_pose":
                 try:
-                    shared.vision_poses.append((time.time(), float(payload["x"]), float(payload["y"]), float(payload["theta"])))
+                    mesure = (time.time(), float(payload["x"]), float(payload["y"]), float(payload["theta"]))
                 except (KeyError, TypeError, ValueError):
-                    pass
+                    mesure = None
+                if mesure:
+                    shared.vision_poses.append(mesure)
+                    self._fuse_camera(mesure)
 
             elif cmd_type == "set_robot_pos":
                 try:
@@ -202,11 +210,10 @@ class ZmqClient(threading.Thread):
                     theta = float(payload.get("theta", 0))
                     print(f"[ZMQ CLIENT] SET_POS command -> ({x}, {y}, {theta})")
                     from strat.actions import esp
-                    shared.robot_pos["x"] = x
-                    shared.robot_pos["y"] = y
-                    shared.robot_pos["theta"] = theta
                     if esp:
-                        esp.set_pos(x, y, theta)
+                        esp.set_pos(x, y, theta)  # remet aussi la fusion à zéro
+                    else:
+                        shared.set_known_pose(x, y, theta)
                 except Exception as e:
                     print(f"[ZMQ CLIENT] Erreur set_robot_pos : {e}")
 
@@ -232,6 +239,18 @@ class ZmqClient(threading.Thread):
 
         except Exception as e:
             print(f"[ZMQ CLIENT] Erreur traitement message : {e}")
+
+    def _fuse_camera(self, mesure):
+        """Pose caméra zénithale -> correction continue de la pose (core/localisation.py)."""
+        from core import frames
+        repere = shared.cfg.get("vision_odom", {}).get("repere", {})
+        x, y, theta = frames.apply_rigid(mesure[1], mesure[2], mesure[3], repere.get("dx", 0.0),
+                                         repere.get("dy", 0.0), repere.get("rotation_deg", 0.0))
+        shared.loc_log.write("c", mesure[0], x, y, theta)
+        if not shared.loc.enabled() or shared.loc.pose() is None:
+            return
+        if shared.loc.on_camera(mesure[0], x, y, theta)["ok"]:
+            shared.refresh_robot_pos()
 
     def _run_manual_goto(self, x, y, theta):
         try:

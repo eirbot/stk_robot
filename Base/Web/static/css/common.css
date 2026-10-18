@@ -22,6 +22,14 @@
     font-display: swap;
 }
 
+/* Police du thème Windows 95 : W95FA (Alina Sava, SIL OFL 1.1, fonts/W95FA-OFL.txt) */
+@font-face {
+    font-family: 'W95FA';
+    src: url('/static/fonts/w95fa.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+
 @font-face {
     font-family: 'Outfit';
     src: url('/static/fonts/outfit.woff2') format('woff2');
@@ -946,8 +954,8 @@ html[data-theme="win95"] {
     --header-text: #ffffff;
     --chip-text: #000000;
     --chip-muted: #404040;
-    --font-display: Tahoma, 'Microsoft Sans Serif', Arial, sans-serif;
-    --display-spacing: 0.3px;
+    --font-display: 'W95FA', 'MS Sans Serif', 'Microsoft Sans Serif', Tahoma, sans-serif;
+    --display-spacing: 0px;
     --page-bg: #008080;
     --page-bg-flat: #008080;
     --header-bg: linear-gradient(90deg, #000080, #1084d0);
@@ -991,8 +999,8 @@ html[data-theme="win95"] {
     --cyan: #000080;
     --timer: #00ff00;
 
-    --font: Tahoma, 'Microsoft Sans Serif', 'MS Sans Serif', Arial, sans-serif;
-    --font-mono: 'Courier New', Courier, monospace;
+    --font: 'W95FA', 'MS Sans Serif', 'Microsoft Sans Serif', Tahoma, sans-serif;
+    --font-mono: 'W95FA', 'MS Sans Serif', Tahoma, sans-serif;
     --font-weight-title: 700;
     --radius: 0px;
     --radius-sm: 0px;
@@ -1002,6 +1010,31 @@ html[data-theme="win95"] {
     --w95-sunken-color: #808080 #ffffff #ffffff #808080;
     --w95-sunken-shadow: inset 1px 1px #000000, inset -1px -1px #dfdfdf;
 }
+
+/* --- Police Win95 partout (sauf dessins SVG) ; consoles et journaux en Courier New --- */
+html[data-theme="win95"] body,
+html[data-theme="win95"] body *:not(svg):not(svg *),
+html[data-theme="win95"] input,
+html[data-theme="win95"] select,
+html[data-theme="win95"] button,
+html[data-theme="win95"] textarea {
+    font-family: var(--font) !important;
+    letter-spacing: 0 !important;
+    -webkit-text-stroke: 0 !important;
+    text-shadow: none;
+}
+
+html[data-theme="win95"] .log-box,
+html[data-theme="win95"] .log-box *,
+html[data-theme="win95"] pre,
+html[data-theme="win95"] code {
+    font-family: 'Courier New', Courier, monospace !important;
+}
+
+/* Éléments propres au thème Win95 (.w95-only) ou masqués en Win95 (.w95-hide) */
+.w95-only { display: none !important; }
+html[data-theme="win95"] .w95-hide { display: none !important; }
+html[data-theme="win95"] span.w95-only { display: inline !important; }
 
 /* --- Fenêtres et boutons en relief --- */
 html[data-theme="win95"] .card,
@@ -1201,6 +1234,748 @@ html[data-theme="win95"] .header::after {
 
 html[data-theme="win95"] .header::after { top: 8px; right: 10px; transform: none; }
 
+/* --- Icône des barres de titre (win95.js) : remplace les icônes du thème --- */
+.w95-title-ico { display: none; }
+
+html[data-theme="win95"] .w95-title-ico {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 2px;
+    vertical-align: -2px;
+}
+
+html[data-theme="win95"] .header > .page-title .w95-title-ico,
+html[data-theme="win95"] .header > .brand .w95-title-ico {
+    width: 32px;
+    height: 32px;
+    vertical-align: middle;
+}
+
+html[data-theme="win95"] .card-title > .icon,
+html[data-theme="win95"] .header > .brand .brand-dot { display: none; }
+
+/* --- Icônes des boutons (win95.js) : icône colorée ou rien --- */
+.w95-swap { display: none; }
+html[data-theme="win95"] body.w95-has-taskbar svg.icon:not(.w95-keep) { display: none; }
+html[data-theme="win95"] body.w95-has-taskbar .w95-swap { display: inline-block; width: 16px; height: 16px; flex: none; }
+html[data-theme="win95"] body.w95-has-taskbar .btn-lg .w95-swap { width: 32px; height: 32px; }
+
+/* --- Applications Win95 (win95.js : buildApp) ---
+   Chaque page = fenêtre d'application agrandie : en-tête = barre de titre, barre de menus,
+   contenu qui défile dans la fenêtre, barre d'état ; les cartes deviennent des cadres de groupe. */
+html[data-theme="win95"] body.w95-app {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: #c0c0c0;
+}
+
+html[data-theme="win95"] body.w95-app .w95-appframe:not(body) {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+html[data-theme="win95"] .w95-appframe > :is(main, .main-content, #simu3d-container, #main-container) {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+html[data-theme="win95"] .w95-appframe > .header,
+html[data-theme="win95"] .w95-appframe > .w95-menubar,
+html[data-theme="win95"] .w95-appframe > .w95-statusbar {
+    flex: none;
+}
+
+/* Barre de titre : ni bouton Accueil (menu Fichier > Fermer, menu Démarrer) ni choix du thème */
+html[data-theme="win95"] body.w95-app .header .btn-back,
+html[data-theme="win95"] body.w95-app .header .theme-select,
+html[data-theme="win95"] body.w95-app .header .ui-select {
+    display: none !important;
+}
+
+html[data-theme="win95"] body.w95-app .header {
+    padding-top: 6px;
+    padding-bottom: 6px;
+    min-height: 0;
+}
+
+html[data-theme="win95"] body.w95-app .header .page-title {
+    font-size: 17px;
+    margin: 0 auto 0 0 !important;   /* titre à gauche, après l'icône, comme une vraie barre de titre */
+    text-align: left;
+}
+
+html[data-theme="win95"] body.w95-app .header {
+    justify-content: flex-start;
+    padding-left: 6px;
+}
+
+html[data-theme="win95"] body.w95-app .header .page-title .w95-title-ico,
+html[data-theme="win95"] body.w95-app .header .brand .w95-title-ico {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+}
+
+/* Pas de capitales forcées, pas d'espacement de lettres */
+html[data-theme="win95"] body.w95-app * {
+    text-transform: none !important;
+}
+
+/* Contrôle : liaison et manette sont dans la barre d'état */
+html[data-theme="win95"] body.w95-app .header :is(.badge-conn, .badge-gamepad) {
+    display: none !important;
+}
+
+/* Cadres de groupe : bordure gravée, titre posé sur la bordure */
+html[data-theme="win95"] body.w95-app .card:not(.pin-card):not(.w95-about) {
+    background: transparent !important;
+    border: 1px solid #808080 !important;
+    box-shadow: inset 1px 1px #fff, 1px 1px #fff !important;
+    border-radius: 0 !important;
+    padding: 18px 12px 12px !important;
+    margin-top: 10px !important;
+    position: relative;
+}
+
+html[data-theme="win95"] body.w95-app .card:not(.pin-card):not(.w95-about) .card-title {
+    position: absolute;
+    top: -9px;
+    left: 8px;
+    width: auto;
+    max-width: calc(100% - 16px);
+    height: auto;
+    margin: 0 !important;
+    padding: 0 4px !important;
+    background: #c0c0c0 !important;
+    color: #000 !important;
+    font-size: 15px;
+    font-weight: 400;
+    border: 0;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 1;
+}
+
+html[data-theme="win95"] body.w95-app .card:not(.pin-card):not(.w95-about) .card-title::after,
+html[data-theme="win95"] body.w95-app .card:not(.pin-card):not(.w95-about) .card-title .w95-title-ico {
+    display: none;
+}
+
+/* Feuille de propriétés à onglets (Debug) */
+html[data-theme="win95"] .w95-tabs {
+    display: flex !important;
+    flex-wrap: wrap;
+    padding: 0 6px;
+    margin-top: 4px;
+    position: relative;
+    z-index: 1;
+}
+
+.w95-tab {
+    position: relative;
+    top: 2px;
+    margin-top: 2px;
+    padding: 3px 12px 2px;
+    background: #c0c0c0;
+    color: #000;
+    font-size: 15px;
+    border: 2px solid;
+    border-bottom: 0;
+    border-color: #fff #000 transparent #fff;
+    border-radius: 3px 3px 0 0;
+    box-shadow: inset -1px 0 #808080;
+    cursor: pointer;
+}
+
+.w95-tab.is-active {
+    margin: 0 -2px;
+    padding: 4px 14px 5px;
+    z-index: 2;
+    background: #c0c0c0;
+}
+
+.w95-tab:focus-visible {
+    outline: 1px dotted #000;
+    outline-offset: -4px;
+}
+
+html[data-theme="win95"] .w95-tabpanel {
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #fff #000 #000 #fff;
+    box-shadow: inset -1px -1px #808080;
+    padding: 10px 12px 14px;
+    margin: 0 4px;
+}
+
+html[data-theme="win95"] .w95-tab-hidden {
+    display: none !important;
+}
+
+html[data-theme="win95"] .w95-propsheet-buttons {
+    display: flex !important;
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 10px 6px 6px;
+}
+
+.w95-propsheet-buttons button {
+    min-width: 75px;
+    height: 23px;
+    background: #c0c0c0;
+    color: #000;
+    font-size: 15px;
+    border: 2px solid;
+    border-color: #fff #000 #000 #fff;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf;
+    cursor: pointer;
+}
+
+.w95-propsheet-buttons button:first-child {
+    box-shadow: 0 0 0 1px #000, inset -1px -1px #808080, inset 1px 1px #dfdfdf;
+}
+
+.w95-propsheet-buttons button:disabled {
+    color: #808080;
+    text-shadow: 1px 1px #fff;
+    cursor: default;
+}
+
+/* Barre de menus */
+html[data-theme="win95"] .w95-menubar {
+    display: flex !important;
+    gap: 0;
+    padding: 2px 4px;
+    background: #c0c0c0;
+    border-bottom: 1px solid #808080;
+    box-shadow: 0 1px #fff;
+    position: relative;
+    z-index: 1000;   /* au-dessus de la boîte à outils Blockly */
+    text-align: left;
+}
+
+.w95-mb-item {
+    position: relative;
+}
+
+.w95-mb-item > button {
+    background: none;
+    border: 1px solid transparent;
+    padding: 2px 8px;
+    color: #000;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.w95-mb-item > button:hover {
+    border-color: #fff #808080 #808080 #fff;
+}
+
+.w95-mb-item.is-open > button {
+    border-color: #808080 #fff #fff #808080;
+}
+
+.w95-mb-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 220px;
+    padding: 2px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #dfdfdf #000 #000 #dfdfdf;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #fff, 2px 2px 0 rgba(0, 0, 0, 0.25);
+    z-index: 1001;
+}
+
+.w95-mb-item.is-open > .w95-mb-menu {
+    display: block;
+}
+
+.w95-mb-menu button {
+    display: block;
+    width: 100%;
+    padding: 4px 24px;
+    background: none;
+    border: 0;
+    text-align: left;
+    color: #000;
+    font-size: 15px;
+    cursor: pointer;
+    position: relative;
+}
+
+.w95-mb-menu button:hover {
+    background: #000080;
+    color: #fff;
+}
+
+.w95-mb-menu button.is-checked::before {
+    content: '✓';
+    position: absolute;
+    left: 8px;
+}
+
+.w95-mb-menu hr {
+    margin: 3px 2px;
+    border: 0;
+    border-top: 1px solid #808080;
+    border-bottom: 1px solid #fff;
+}
+
+/* Barre d'état */
+html[data-theme="win95"] .w95-statusbar {
+    display: flex !important;
+    gap: 3px;
+    padding: 2px 3px;
+    background: #c0c0c0;
+    font-size: 14px;
+    text-align: left;
+    flex-shrink: 0;
+}
+
+.w95-statusbar > span {
+    padding: 1px 6px;
+    border: 1px solid;
+    border-color: #808080 #fff #fff #808080;
+    white-space: nowrap;
+}
+
+.w95-statusbar #sbMsg,
+.w95-statusbar .w95-sb-main {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* --- Boîtes de dialogue (MessageBox, win95.js) --- */
+.w95-msgbox-shield {
+    position: fixed;
+    inset: 0;
+    z-index: 100020;
+    background: transparent;
+}
+
+.w95-msgbox {
+    position: absolute;
+    min-width: 260px;
+    max-width: min(480px, calc(100vw - 16px));
+    padding: 3px;
+    background: #c0c0c0;
+    color: #000;
+    border: 2px solid;
+    border-color: #dfdfdf #000 #000 #dfdfdf;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #fff;
+    text-align: left;
+    font-size: 15px;
+}
+
+.w95-msgbox-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    height: 20px;
+    padding: 0 2px 0 4px;
+    background: linear-gradient(90deg, #000080, #1084d0);
+    color: #fff;
+    font-weight: 700;
+    cursor: default;
+    user-select: none;
+    touch-action: none;
+}
+
+.w95-msgbox-title span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Bouton fermer : seul bouton de la barre d'une boîte de dialogue */
+.w95-msgbox-close {
+    flex: none;
+    width: 16px;
+    height: 14px;
+    padding: 0;
+    border: 0;
+    background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='14' shape-rendering='crispEdges'><rect width='16' height='14' fill='%23000'/><rect width='15' height='13' fill='%23fff'/><rect x='1' y='1' width='14' height='12' fill='%23808080'/><rect x='1' y='1' width='13' height='11' fill='%23dfdfdf'/><rect x='2' y='2' width='12' height='10' fill='%23c0c0c0'/><path d='M4 3h2v1h1v1h2V4h1V3h2v1h-1v1h-1v1h-1v1h1v1h1v1h1v1h-2V9h-1V8H7v1H6v1H4V9h1V8h1V7h1V6H6V5H5V4H4z' fill='%23000'/></svg>") no-repeat;
+    cursor: pointer;
+}
+
+.w95-msgbox-close:active { filter: brightness(0.9); }
+
+.w95-msgbox-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 14px 14px;
+}
+
+.w95-msgbox .w95-msgbox-ico {
+    width: 32px;
+    height: 32px;
+    flex: none;
+}
+
+.w95-msgbox-body p {
+    margin: 8px 0 0;
+    white-space: pre-line;   /* les \n des messages */
+    overflow-wrap: anywhere;
+}
+
+.w95-msgbox-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 10px 10px;
+}
+
+.w95-msgbox-buttons button {
+    min-width: 75px;
+    height: 23px;
+    padding: 0 10px;
+    background: #c0c0c0;
+    color: #000;
+    font-size: 15px;
+    border: 2px solid;
+    border-color: #fff #000 #000 #fff;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf;
+    cursor: pointer;
+}
+
+/* Bouton par défaut : cadre noir en plus ; bouton actif : rectangle en pointillés */
+.w95-msgbox-buttons button.is-default {
+    box-shadow: 0 0 0 1px #000, inset -1px -1px #808080, inset 1px 1px #dfdfdf;
+}
+
+.w95-msgbox-buttons button:focus {
+    outline: 1px dotted #000;
+    outline-offset: -5px;
+}
+
+.w95-msgbox-buttons button:active {
+    border-color: #000 #fff #fff #000;
+    box-shadow: inset 1px 1px #808080;
+    padding: 1px 9px 0 11px;
+}
+
+/* --- Barre des tâches, menu Démarrer (win95.js) --- */
+body.w95-has-taskbar { padding-bottom: 34px; }
+body.w95-has-taskbar .header > .page-title { margin: 0 auto; }  /* infos système parties dans la barre */
+body.w95-has-taskbar .clippy { bottom: 44px; }
+body.w95-has-taskbar #toast-box { bottom: 48px; }
+
+.w95-taskbar,
+.w95-taskbar *,
+.w95-menu,
+.w95-menu * {
+    box-sizing: border-box;
+}
+
+.w95-taskbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100003;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 3px;
+    background: #c0c0c0;
+    border-top: 1px solid #dfdfdf;
+    box-shadow: inset 0 1px #fff;
+    font-family: 'W95FA', Tahoma, 'Microsoft Sans Serif', Arial, sans-serif;
+    font-size: 0.8rem;
+    color: #000;
+    text-align: left;
+}
+
+.w95-taskbar[hidden] { display: none; }
+
+.w95-start,
+.w95-task,
+.w95-menu button,
+.w95-menu a {
+    font: inherit;
+    color: #000;
+}
+
+.w95-start,
+.w95-task {
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 6px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #fff #000 #000 #fff;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.w95-start b { font-weight: 700; }
+
+.w95-start.is-pressed,
+.w95-task.is-active {
+    border-color: #000 #fff #fff #000;
+    box-shadow: inset 1px 1px #808080;
+}
+
+/* Fenêtre active : fond tramé comme sous Windows 95 */
+.w95-task.is-active {
+    background: repeating-conic-gradient(#fff 0 25%, #c0c0c0 0 50%) 0 0 / 2px 2px;
+    font-weight: 700;
+}
+
+/* Drapeau de Windows, en 4 carreaux */
+.w95-flag {
+    display: grid;
+    grid-template-columns: 7px 7px;
+    gap: 1px;
+    transform: skewY(-8deg);
+}
+
+.w95-flag i { width: 7px; height: 6px; }
+.w95-flag i:nth-child(1) { background: #ff0000; }
+.w95-flag i:nth-child(2) { background: #00a000; }
+.w95-flag i:nth-child(3) { background: #0000ff; }
+.w95-flag i:nth-child(4) { background: #ffd800; }
+
+.w95-tasks {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    gap: 3px;
+    padding-left: 4px;
+    border-left: 1px solid #808080;
+    box-shadow: inset 1px 0 #fff;
+}
+
+.w95-task {
+    flex: 0 1 170px;
+    min-width: 0;
+}
+
+.w95-task span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.w95-ico {
+    width: 16px;
+    height: 16px;
+    flex: none;
+}
+
+/* Menu Démarrer : grandes icônes 32 px, comme sous Windows 95 */
+.w95-menu-items > a .w95-ico,
+.w95-menu-items > button .w95-ico,
+.w95-sub > button .w95-ico {
+    width: 32px;
+    height: 32px;
+}
+
+.w95-menu-items > a,
+.w95-menu-items > button,
+.w95-sub > button {
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+}
+
+/* Zone de notification : infos système + horloge */
+.w95-tray {
+    height: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+    border: 1px solid;
+    border-color: #808080 #fff #fff #808080;
+    white-space: nowrap;
+}
+
+.w95-tray .sys-info {
+    display: flex;
+    gap: 8px;
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: 0;
+    box-shadow: none;
+    font-size: inherit;
+    color: #000;
+    width: auto;
+}
+
+html[data-theme="win95"] .w95-tray .sys-info-item {
+    border: 0 !important;
+    box-shadow: none !important;
+    background: none !important;
+    padding: 0;
+    color: #000;
+    font: inherit;
+}
+
+html[data-theme="win95"] .w95-tray .sys-info-offline { color: #c00000 !important; font-weight: 700; }
+.w95-tray .sys-info-sep { color: #808080; }
+
+/* Menu Démarrer */
+.w95-menu {
+    position: fixed;
+    left: 2px;
+    bottom: 30px;
+    z-index: 100004;
+    display: flex;
+    min-width: 210px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #dfdfdf #000 #000 #dfdfdf;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #fff;
+    font-family: 'W95FA', Tahoma, 'Microsoft Sans Serif', Arial, sans-serif;
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+.w95-menu[hidden] { display: none; }
+
+.w95-menu-banner {
+    width: 26px;
+    padding: 6px 0;
+    background: linear-gradient(0deg, #000080, #1084d0);
+    color: #c0c0c0;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 1.25rem;
+    letter-spacing: 1px;
+}
+
+.w95-menu-banner b { color: #fff; }
+
+.w95-menu-items {
+    flex: 1;
+    padding: 2px;
+    display: flex;
+    flex-direction: column;
+}
+
+.w95-menu a,
+.w95-menu button {
+    box-sizing: border-box;  /* sinon le surlignage bleu déborde du menu */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 6px 10px 6px 6px;
+    background: none;
+    border: 0;
+    text-decoration: none;
+    text-align: left;
+    cursor: pointer;
+}
+
+.w95-menu a:hover,
+.w95-menu button:hover,
+.w95-menu a:focus-visible,
+.w95-menu button:focus-visible,
+.w95-sub.is-open > button {
+    background: #000080;
+    color: #fff;
+    outline: none;
+}
+
+.w95-menu a.is-current span { font-weight: 700; }
+
+.w95-menu hr {
+    margin: 3px 2px;
+    border: 0;
+    border-top: 1px solid #808080;
+    border-bottom: 1px solid #fff;
+}
+
+.w95-sub { position: relative; }
+.w95-arrow { margin-left: auto; font-style: normal; }
+
+.w95-submenu {
+    display: none;
+    position: absolute;
+    left: 100%;
+    bottom: 0;
+    min-width: 150px;
+    padding: 2px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #dfdfdf #000 #000 #dfdfdf;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #fff;
+}
+
+.w95-sub:hover > .w95-submenu,
+.w95-sub.is-open > .w95-submenu { display: block; }
+.w95-submenu button { padding-left: 22px; }
+.w95-submenu button.is-current::before { content: '•'; position: absolute; margin-left: -14px; }
+
+/* « Il est maintenant possible d'éteindre votre ordinateur » */
+.w95-shutdown {
+    position: fixed;
+    inset: 0;
+    z-index: 100010;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    color: #ff8000;
+    font-family: 'W95FA', Tahoma, Arial, sans-serif;
+    font-size: clamp(1.1rem, 4vw, 2rem);
+    text-align: center;
+}
+
+
+
+/* Ascenseurs façon Windows 95 (Chrome / Edge / Safari) */
+html[data-theme="win95"] ::-webkit-scrollbar { width: 16px; height: 16px; background: repeating-conic-gradient(#fff 0 25%, #c0c0c0 0 50%) 0 0 / 2px 2px; }
+html[data-theme="win95"] ::-webkit-scrollbar-thumb {
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #dfdfdf #000 #000 #dfdfdf;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #fff;
+}
+html[data-theme="win95"] ::-webkit-scrollbar-button:single-button {
+    display: block;
+    width: 16px;
+    height: 16px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #dfdfdf #000 #000 #dfdfdf;
+}
+html[data-theme="win95"] ::-webkit-scrollbar-corner { background: #c0c0c0; }
+
+@media (max-width: 600px) {
+    body.w95-has-taskbar .clippy { transform: scale(0.65); transform-origin: bottom right; right: 8px; }
+    .w95-task { flex: 0 0 auto; }
+    .w95-task:not(.is-active) span { display: none; }
+    .w95-tray .sys-info-item:first-child,
+    .w95-tray .sys-info-item:first-child + .sys-info-sep,
+    .w95-clock { display: none; }
+}
+
 /* --- Clippy (clippy.js, thème Windows 95 uniquement) --- */
 .clippy {
     position: fixed;
@@ -1241,7 +2016,7 @@ html[data-theme="win95"] .header::after { top: 8px; right: 10px; transform: none
     color: #000;
     border: 1px solid #000;
     border-radius: 10px;
-    font-family: Tahoma, 'Microsoft Sans Serif', Arial, sans-serif;
+    font-family: 'W95FA', Tahoma, 'Microsoft Sans Serif', Arial, sans-serif;
     font-size: 0.85rem;
     text-align: left;
     box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);

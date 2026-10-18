@@ -7,6 +7,8 @@ from collections import deque
 from utils import LedStrip, AudioManager
 from core.config_store import ConfigError, ConfigStore
 from core.match_state import MatchError, MatchState, TEAM_COLORS
+from core.localisation import Localisation
+from utils.loc_recorder import LocRecorder
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR) 
@@ -80,6 +82,27 @@ robot_pos = {'x': 1500, 'y': 1000, 'theta': 0}
 
 # Dernières poses de la caméra zénithale (base) : (heure de réception Rasp, x, y, theta en degrés)
 vision_poses = deque(maxlen=60)
+
+# Fusion odométrie ESP + caméra : robot_pos est la pose fusionnée (repère table),
+# l'ESP garde son propre repère (cf. core/localisation.py)
+loc = Localisation(lambda: config_store.data.get("vision_odom", {}))
+# Odométrie brute + caméra, pour régler la fusion (tools/regler_fusion.py)
+loc_log = LocRecorder(enabled=cfg.get("vision_odom", {}).get("enregistrer", True))
+
+
+def refresh_robot_pos():
+    """Recopie la pose fusionnée dans robot_pos (après une correction caméra)."""
+    pose = loc.pose()
+    if pose:
+        robot_pos.update({'x': pose[0], 'y': pose[1], 'theta': pose[2]})
+
+
+def set_known_pose(x, y, theta, odo_pose=None):
+    """Pose connue (set_pos) : remet la fusion à zéro et met à jour robot_pos."""
+    t = time.time()
+    loc.reset((x, y, theta), odo_pose, t=t)
+    loc_log.write("s", t, *(odo_pose if odo_pose is not None else (x, y, theta)))
+    robot_pos.update({'x': x, 'y': y, 'theta': theta})
 
 def send_led_cmd(cmd):
     if not state["leds_enabled"]: return

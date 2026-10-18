@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Studio Stratégie - Robot 2026</title>
     <script src="/static/js/theme.js?v=5"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=6.7">
-    <link rel="stylesheet" href="/static/css/blockly.css?v=2.1">
+    <link rel="stylesheet" href="/static/css/common.css?v=8.0">
+    <link rel="stylesheet" href="/static/css/blockly.css?v=2.8">
+    <link rel="stylesheet" href="/static/css/win95-icons.css?v=3">
 
     <script src="/static/js/vendor/blockly_compressed.js" defer></script>
     <script src="/static/js/vendor/blocks_compressed.js" defer></script>
@@ -19,9 +20,51 @@
 
     <div class="header">
         <a href="/" class="btn-back"><svg class="icon"><use href="/static/icons/sprite.svg#i-arrow-left"></use></svg> Accueil</a>
-        <div class="page-title">STRAT STUDIO</div>
+        <div class="page-title"><span class="w95-hide">STRAT STUDIO</span><span class="w95-only"><span class="doc-name">nouvelle_strat</span> - Strat Studio</span></div>
         <div class="sys-info" id="sys-info">...</div>
     </div>
+
+    <!-- Barre de menus façon Windows 95 (thème win95 seulement, actions dans blockly.js) -->
+    <nav class="w95-menubar w95-only" id="w95Menubar">
+        <div class="w95-mb-item">
+            <button type="button"><u>F</u>ichier</button>
+            <div class="w95-mb-menu">
+                <button type="button" data-click="loadBtn">Ouvrir la stratégie choisie</button>
+                <button type="button" data-click="saveBtn">Enregistrer</button>
+                <hr>
+                <button type="button" data-action="quit">Quitter</button>
+            </div>
+        </div>
+        <div class="w95-mb-item">
+            <button type="button"><u>É</u>dition</button>
+            <div class="w95-mb-menu">
+                <button type="button" data-action="undo">Annuler</button>
+                <button type="button" data-action="redo">Rétablir</button>
+                <hr>
+                <button type="button" data-action="cleanup">Ranger les blocs</button>
+                <button type="button" data-action="clear">Tout effacer…</button>
+            </div>
+        </div>
+        <div class="w95-mb-item">
+            <button type="button"><u>A</u>ffichage</button>
+            <div class="w95-mb-menu">
+                <button type="button" data-action="sym" class="w95-mb-check">Symétrie (équipe jaune)</button>
+            </div>
+        </div>
+        <div class="w95-mb-item">
+            <button type="button">E<u>x</u>écuter</button>
+            <div class="w95-mb-menu">
+                <button type="button" data-click="previewBtn">Voir le trajet</button>
+                <button type="button" data-click="simuBtn">Simuler</button>
+            </div>
+        </div>
+        <div class="w95-mb-item">
+            <button type="button"><u>?</u></button>
+            <div class="w95-mb-menu">
+                <button type="button" data-action="about">À propos de Strat Studio</button>
+            </div>
+        </div>
+    </nav>
 
     <div id="controls" class="studio-toolbar">
         <div class="toolbar-group">
@@ -53,29 +96,38 @@
 
     <div id="main-container">
         <div id="blocklyArea">
+            <div class="card-title w95-only w95-winbar">Éditeur - <span class="doc-name">nouvelle_strat</span></div>
             <div id="blocklyDiv"></div>
         </div>
         <div id="simuArea">
-            <h4 class="simu-title">Simulation (3000x2000 mm)</h4>
+            <div class="card-title w95-only w95-winbar">Simulation (3000 x 2000 mm)</div>
+            <h4 class="simu-title w95-hide">Simulation (3000x2000 mm)</h4>
             <canvas id="simCanvas" width="600" height="400"></canvas>
+            <div class="card-title w95-only w95-winbar w95-dos-bar">Invite MS-DOS - Console</div>
             <div id="simConsole" class="log-box">
                 > Console de simulation prête...
             </div>
         </div>
     </div>
 
+    <div class="w95-statusbar w95-only">
+        <span id="sbMsg">Prêt</span>
+        <span id="sbBlocks">0 bloc</span>
+        <span id="sbTeam">Équipe bleue</span>
+    </div>
+
     <xml xmlns="https://developers.google.com/blockly/xml" id="toolbox" style="display: none">
-        <category name="Configuration" colour="#a55b80">
+        <category name="Configuration" css-icon="blocklyToolboxCategoryIcon w95i w95i-gear" colour="#a55b80">
             <block type="robot_start"></block>
         </category>
-        <category name="Mouvements" colour="#5C81A6">
+        <category name="Mouvements" css-icon="blocklyToolboxCategoryIcon w95i w95i-map" colour="#5C81A6">
             <block type="robot_goto"></block>
             <block type="robot_stop"></block>
             <block type="robot_gobase_at"></block>
             <block type="robot_attendre"></block>
             <block type="robot_recalage_camera"></block>
         </category>
-        <category name="Actionneurs" colour="#5CA65C">
+        <category name="Actionneurs" css-icon="blocklyToolboxCategoryIcon w95i w95i-robot" colour="#5CA65C">
             <block type="prendre_kapla"></block>
             <block type="robot_approche_kapla"></block>
             <block type="robot_si_approche_reussie"></block>
@@ -84,11 +136,11 @@
             <block type="pousse_kapla"></block>
             <block type="robot_thermometre"></block>
         </category>
-        <category name="Sons & Lumières" colour="#9b59b6">
+        <category name="Sons & Lumières" css-icon="blocklyToolboxCategoryIcon w95i w95i-sound" colour="#9b59b6">
             <block type="play_animation"></block>
             <block type="play_sound"></block>
         </category>
-        <category name="Logique" colour="%{BKY_LOGIC_HUE}">
+        <category name="Logique" css-icon="blocklyToolboxCategoryIcon w95i w95i-puzzle" colour="%{BKY_LOGIC_HUE}">
             <block type="controls_repeat_ext"></block>
             <block type="math_number"></block>
         </category>
@@ -97,10 +149,11 @@
     <img id="imgTable" src="/static/img/table_coupe_2026.png" style="display: none;">
     <img id="imgRobot" src="/static/img/robot.png" style="display: none;">
 
-    <script src="/static/js/common.js"></script>
-    <script src="/static/js/clippy.js?v=1" defer></script>
+    <script src="/static/js/common.js?v=2.9"></script>
+    <script src="/static/js/clippy.js?v=2" defer></script>
+    <script src="/static/js/win95.js?v=11" defer></script>
     <script src="/static/js/frames.js?v=1"></script>
-    <script src="/static/js/blockly.js?v=2.3"></script>
+    <script src="/static/js/blockly.js?v=2.7"></script>
 </body>
 
 </html>

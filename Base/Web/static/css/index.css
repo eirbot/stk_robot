@@ -608,24 +608,33 @@ html[data-theme="win95"] .explorer .tile:active {
     color: #000;
 }
 
-/* Dossier jaune, l'icône de la page posée dessus */
+/* Icône pixel art 32x32 (static/icons/win95.svg) à la place de l'icône du thème */
+.tile-icon .w95-ico {
+    display: none;
+}
+
 html[data-theme="win95"] .explorer .tile-icon {
-    position: relative;
-    width: 48px;
-    height: 48px;
+    width: 32px;
+    height: 32px;
+    margin: 4px 0 2px;
     border: 0;
-    background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' shape-rendering='crispEdges'><path d='M1.5 6.5h10l2 3h17v19h-29z' fill='%23c8a000' stroke='%23000'/><path d='M1.5 12.5h29v16h-29z' fill='%23ffe680' stroke='%23000'/><path d='M2 13h28M2 13v15' stroke='%23fff'/></svg>") center / 48px 48px no-repeat;
-    color: var(--tile);
+    background: none;
 }
 
 html[data-theme="win95"] .explorer .tile-icon .icon {
-    position: absolute;
-    left: 50%;
-    top: 58%;
-    transform: translate(-50%, -50%);
-    width: 20px;
-    height: 20px;
-    stroke-width: 2.5;
+    display: none;
+}
+
+html[data-theme="win95"] .explorer .tile-icon .w95-ico {
+    display: block;
+    width: 32px;
+    height: 32px;
+}
+
+/* Icône sélectionnée : teintée de bleu comme sous Windows */
+html[data-theme="win95"] .explorer .tile:hover .w95-ico,
+html[data-theme="win95"] .explorer .tile:focus-visible .w95-ico {
+    filter: brightness(0.6) sepia(1) hue-rotate(190deg) saturate(4);
 }
 
 html[data-theme="win95"] .explorer .tile-label {

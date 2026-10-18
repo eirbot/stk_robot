@@ -172,6 +172,8 @@ func pipelineReceptionRobot() {
 
 					globalHub.Broadcast(packet)
 				}
+			} else if msgObj.Type == "pong" {
+				handlePong(msgObj.Data) // diagnostic du lien (robotping.go)
 			} else if msgObj.Type == "robot_state" {
 				// Instantané complet publié par le robot (source de vérité) : appliqué tel quel
 				var snap RobotSnapshot

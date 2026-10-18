@@ -15,13 +15,13 @@ Répondre en français. Réponses courtes : le résultat, pas le récit des éta
 - `Base/Web/` : serveur Go (fiber + zmq4/cgo) -> binaire `Base/base_stk`, compilé par `Base/build.sh`, lancé depuis `Base/`. Pages `templates/*.html` + `static/js/*.js`.
 - `Base/Vision/` : `vision_deporte_worker.py` (caméra zénithale -> pose) + sous-module `vision_deporte/` (uv).
 - `docu/` : règles Eurobot (PDF), protocole LiDAR.
-- `Rasp/core/` : modules purs, testés sans robot : `match_state.py` (seul écrivain de l'état du match), `config_store.py` (config du robot), `frames.py` (repères).
-- `tools/` : `deploy.sh`, `run_tests.sh`, `robot_sim.py` (robot simulé), `check_strategy.py`. Tests dans `test/`.
+- `Rasp/core/` : modules purs, testés sans robot : `match_state.py` (seul écrivain de l'état du match), `config_store.py` (config du robot), `frames.py` (repères), `localisation.py` (fusion odométrie + caméra).
+- `tools/` : `deploy.sh`, `run_tests.sh`, `robot_sim.py` (robot simulé), `check_strategy.py`, `regler_fusion.py` (réglage de la fusion depuis un enregistrement), `win95_icons.py` (génère `static/icons/win95.svg`, ne pas éditer le SVG à la main). Tests dans `test/`.
 
 ## Repère et conventions
 - Repère robot : X = largeur 0..2000 mm, Y = longueur -1500..1500 mm, theta en degrés (0 = X+, 90 = Y+). Symétrie équipe JAUNE : y -> -y, theta -> -theta (`actions.py::_apply_sym`).
 - map.js : conversions uniquement via `robotToThree` / `threeToRobot`.
-- Localisation = odométrie ESP + recalage ponctuel caméra (`actions.py`). Pas d'EKF, pas de localisation LiDAR.
+- Localisation = fusion odométrie ESP + caméra zénithale (`Rasp/core/localisation.py`, Kalman simple avec compensation de latence). L'ESP garde son repère odo ; la Rasp tient la transformation odo -> table (`shared.loc`), `robot_pos` = pose fusionnée, les GoTo sont convertis (`esp_motors.goto`). Pas de localisation LiDAR.
 - Après modif d'un JS/CSS : incrémenter `?v=` dans le template qui le charge (cache navigateur).
 
 ## Machines

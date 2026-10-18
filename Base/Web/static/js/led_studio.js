@@ -1,3 +1,7 @@
+// Confirmation : askConfirm() de common.js (pas chargé ici) -> boîte Win95 ou confirm() du navigateur
+const ask = window.askConfirm
+    || ((text) => (window.w95Confirm && window.w95Confirm(text)) || Promise.resolve(window.confirm(text)));
+
 document.addEventListener("DOMContentLoaded", () => {
     // CONSTANTS
     const LED_COUNT = 288;
@@ -168,8 +172,8 @@ document.addEventListener("DOMContentLoaded", () => {
         selectStep(currentSequence.steps.length - 1);
     });
 
-    window.deleteStep = (index) => {
-        if (confirm("Supprimer l'étape ?")) {
+    window.deleteStep = async (index) => {
+        if (await ask("Supprimer l'étape ?")) {
             currentSequence.steps.splice(index, 1);
             if (currentSequence.steps.length === 0) currentStepIndex = -1;
             else selectStep(Math.max(0, index - 1));
@@ -288,7 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("btnDelete").addEventListener("click", async () => {
         if (!currentAnimName) return;
-        if (!confirm(`Supprimer ${currentAnimName} ?`)) return;
+        if (!await ask(`Supprimer ${currentAnimName} ?`)) return;
 
         delete animations[currentAnimName];
         await fetch(API_URL, {

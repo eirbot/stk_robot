@@ -458,7 +458,10 @@ func setupRoutes(app *fiber.App) {
 		return c.SendStatus(200)
 	})
 
-	app.Get("/api/speedtest/download", func(c *fiber.Ctx) error {
+	// Lien base <-> robot (allers-retours ZMQ) ; tests réseau refusés pendant un match
+	app.Get("/api/robot_ping", refuseDuringMatch, handleRobotPing)
+
+	app.Get("/api/speedtest/download", refuseDuringMatch, func(c *fiber.Ctx) error {
 		c.Set("Content-Type", "application/octet-stream")
 		c.Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 		c.Set("Content-Encoding", "identity")
@@ -484,7 +487,7 @@ func setupRoutes(app *fiber.App) {
 		return nil
 	})
 
-	app.Post("/api/speedtest/upload", func(c *fiber.Ctx) error {
+	app.Post("/api/speedtest/upload", refuseDuringMatch, func(c *fiber.Ctx) error {
 		body := c.Body()
 		return c.JSON(fiber.Map{
 			"status": "ok",

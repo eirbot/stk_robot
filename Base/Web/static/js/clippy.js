@@ -196,20 +196,20 @@
         }
     }
 
-    // Pique sur les notifications d'erreur de toast() (common.js)
-    function hookToast() {
-        if (typeof window.toast !== 'function') return;
-        const orig = window.toast;
-        window.toast = function (msg, type) {
-            orig.apply(this, arguments);
-            if (type === 'err' && active() && root) {
-                setTimeout(() => say(ERROR_TAUNTS[Math.floor(Math.random() * ERROR_TAUNTS.length)], 'error'), 600);
+    // Pique sur les erreurs (toast() de common.js, boîtes d'erreur Win95)
+    function hookErrors() {
+        document.addEventListener('stk:error', () => {
+            if (active() && root) {
+                setTimeout(() => say(ERROR_TAUNTS[Math.floor(Math.random() * ERROR_TAUNTS.length)]), 900);
             }
-        };
+        });
     }
 
+    // Sons partagés avec les boîtes de dialogue Win95 (win95.js)
+    window.w95Sound = play;
+
     function init() {
-        hookToast();
+        hookErrors();
         sync();
         new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
         // Les navigateurs bloquent le son avant une première interaction

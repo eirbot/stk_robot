@@ -31,8 +31,9 @@ RASP = os.path.join(ROOT, "Rasp")
 # ---------------------------------------------------------------------------
 # Faux matériel
 class FakeESPMotors:
-    """ESP moteurs simulé : déplacements en ligne droite à vitesse constante (SIM_SPEED mm/s),
-    la position est écrite dans shared.robot_pos comme le ferait la trame odométrie « T »."""
+    """ESP moteurs simulé : déplacements en ligne droite à vitesse constante (SIM_SPEED mm/s).
+    Comme le vrai : odométrie dans son propre repère, GoTo converti par shared.loc.to_odom,
+    trames « T » passées à shared.loc.on_odom (pose fusionnée dans shared.robot_pos)."""
     speed_mm_s = float(os.environ.get("SIM_SPEED", "600"))
 
     def __init__(self, *a, **k):
@@ -40,36 +41,52 @@ class FakeESPMotors:
         self._stop = threading.Event()
         self.watchdog_count = 0
         self.watchdog_tripped = False
+        self.last_motion_time = time.time()
+        self._odo = None
 
     def start(self):
         pass
 
-    def _pos(self):
+    def _shared(self):
         import ihm.shared as shared
-        return shared.robot_pos
+        return shared
+
+    def _publish(self, x, y, theta):
+        """Trame odométrie « T »."""
+        shared = self._shared()
+        self._odo = (x, y, theta)
+        self.last_motion_time = time.time()
+        tx, ty, tt = shared.loc.on_odom(time.time(), x, y, theta)
+        shared.robot_pos.update({"x": tx, "y": ty, "theta": tt})
 
     def set_pos(self, x, y, theta):
         self.calls.append(("set_pos", round(x, 3), round(y, 3), round(theta, 3)))
-        self._pos().update({"x": x, "y": y, "theta": theta})
+        self._shared().set_known_pose(x, y, theta)
+        self._publish(x, y, theta)
 
     def goto(self, x, y, theta, manual=False):
         self.calls.append(("goto", round(x, 3), round(y, 3), round(theta, 3)))
         self._stop.clear()
-        pos = self._pos()
-        x0, y0 = pos.get("x", 0.0), pos.get("y", 0.0)
+        shared = self._shared()
+        if self._odo is None:
+            pos = shared.robot_pos
+            shared.set_known_pose(pos["x"], pos["y"], pos["theta"])
+            self._odo = (pos["x"], pos["y"], pos["theta"])
+        x, y, theta = shared.loc.to_odom(x, y, theta)
+        x0, y0, th = self._odo
         dist = math.hypot(x - x0, y - y0)
         duration = dist / self.speed_mm_s if self.speed_mm_s > 0 else 0.0
         steps = max(1, int(duration / 0.05))
         if dist > 1:
-            pos["theta"] = math.degrees(math.atan2(y - y0, x - x0))
+            th = math.degrees(math.atan2(y - y0, x - x0))
         for i in range(1, steps + 1):
             if self._stop.is_set():
                 return True
             f = i / steps
-            pos.update({"x": x0 + (x - x0) * f, "y": y0 + (y - y0) * f})
+            self._publish(x0 + (x - x0) * f, y0 + (y - y0) * f, th)
             if duration > 0:
                 time.sleep(duration / steps)
-        pos["theta"] = theta
+        self._publish(x, y, theta)
         return True
 
     def set_speed(self, vx, vtheta):
@@ -134,7 +151,8 @@ def prepare_config(server, source=None):
     with open(path, encoding="utf-8") as f:
         cfg = json.load(f)
     cfg.update({"server_ip": server, "lidar_mode": "OFF", "music_enabled": False,
-                "camera": {**cfg.get("camera", {}), "enabled": False}})
+                "camera": {**cfg.get("camera", {}), "enabled": False},
+                "vision_odom": {**cfg.get("vision_odom", {}), "enregistrer": False}})
     with open(path, "w", encoding="utf-8") as f:
         json.dump(cfg, f, indent=4)
     return path

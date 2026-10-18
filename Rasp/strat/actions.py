@@ -86,14 +86,13 @@ class RobotActions:
         # 1. Calcul de la position réelle (Symétrie équipe)
         real_x, real_y, real_theta = self._apply_sym(x, y, theta)
         
-        # 2. Mise à jour Interface Web (Shared)
-        shared.robot_pos.update({'x': real_x, 'y': real_y, 'theta': real_theta})
         print(f"[ACTION] SET_POS -> ({real_x}, {real_y}, {real_theta}°)")
 
-        # 3. Envoi à l'ESP32 (Reset Odométrie)
+        # 2. Envoi à l'ESP32 (Reset Odométrie) + remise à zéro de la fusion caméra
         if esp:
             esp.set_pos(real_x, real_y, real_theta)
         else:
+            shared.set_known_pose(real_x, real_y, real_theta)
             print("[SIMU] SET_POS virtuel (Pas de com)")
 
 
@@ -123,9 +122,33 @@ class RobotActions:
                 self._check_abort(manual=manual)
                 time.sleep(0.5)
                 success = esp.goto(real_x, real_y, real_theta, manual=manual)
+            if success:
+                self._rattrapage(real_x, real_y, real_theta, manual)
         else:
             print("[SIMU] GOTO virtuel (Pas de com)")
         
+    def _rattrapage(self, x, y, theta, manual):
+        """Fin de GoTo : l'ESP a visé la cible dans SON repère, calculé au départ. Si la caméra
+        a corrigé la pose pendant le trajet, le robot n'est pas où on voulait : petit GoTo
+        de rattrapage (l'ESP ignore une nouvelle consigne pendant un mouvement)."""
+        cfg = shared.cfg.get("vision_odom", {})
+        if not shared.loc.enabled():
+            return
+        tol_mm = cfg.get("rattrapage_mm", 25)
+        tol_deg = cfg.get("rattrapage_deg", 3)
+        for _ in range(int(cfg.get("rattrapages_max", 1))):
+            pose = shared.loc.pose()
+            if pose is None:
+                return
+            ecart = math.hypot(x - pose[0], y - pose[1])
+            ecart_theta = frames.angle_diff_deg(theta, pose[2])
+            if ecart < tol_mm and abs(ecart_theta) < tol_deg:
+                return
+            self._check_abort(manual=manual)
+            print(f"[ACTION] Rattrapage caméra : {ecart:.0f} mm, {ecart_theta:+.1f}° de la cible")
+            if not esp.goto(x, y, theta, manual=manual):
+                return
+
     def set_speed(self, vx, vtheta):
         """Consigne de vitesse pour contrôle joystick."""
         if esp:
@@ -256,9 +279,8 @@ class RobotActions:
 
     def recalage_camera(self, attente_max=1.0):
         """
-        Recale l'odométrie de l'ESP sur la pose vue par la caméra zénithale de la base.
-        À appeler robot immobile (entre deux goto) : GoToPosition planifie chaque
-        déplacement depuis sa pose interne, un recalage en mouvement serait faussé.
+        Recalage franc sur la caméra zénithale, robot immobile (médiane de plusieurs images).
+        En plus de la fusion continue (vision_odom.fusion), utile après un choc ou au départ.
         Retourne True si la pose a été corrigée.
         """
         self._check_abort()
@@ -307,23 +329,18 @@ class RobotActions:
                                                      repere.get("dx", 0.0), repere.get("dy", 0.0),
                                                      repere.get("rotation_deg", 0.0))
 
-        # 4. Garde-fou : un écart énorme = mauvaise détection ou repère mal réglé
-        x_odo, y_odo, theta_odo = shared.robot_pos['x'], shared.robot_pos['y'], shared.robot_pos['theta']
-        ecart = math.hypot(x_cam - x_odo, y_cam - y_odo)
-        ecart_theta = _angle_diff(theta_cam, theta_odo)
-        if ecart > cfg.get("ecart_max_mm", 300) or abs(ecart_theta) > cfg.get("ecart_max_deg", 30):
-            print(f"[VISION] Recalage refusé : écart trop grand ({ecart:.0f} mm, {ecart_theta:+.1f}°)")
+        # 4. Application via la fusion (gain forcé, robot immobile) : garde-fou écart_max_mm /
+        #    ecart_max_deg ; l'ESP garde son repère, plus de « S » arrondi au degré
+        avant = shared.loc.pose()
+        res = shared.loc.on_camera(time.time(), x_cam, y_cam, theta_cam, gain=cfg.get("gain", 1.0))
+        if not res["ok"]:
+            print(f"[VISION] Recalage refusé : {res['raison']}")
             return False
-
-        # 5. Application (gain < 1 : correction partielle, plus douce si la caméra est bruitée)
-        gain = cfg.get("gain", 1.0)
-        x_new = x_odo + gain * (x_cam - x_odo)
-        y_new = y_odo + gain * (y_cam - y_odo)
-        theta_new = _angle_diff(theta_odo + gain * ecart_theta, 0.0)
-        print(f"[VISION] Recalage : ({x_odo:.0f}, {y_odo:.0f}, {theta_odo:.1f}°) -> "
-              f"({x_new:.0f}, {y_new:.0f}, {theta_new:.1f}°) [écart {ecart:.0f} mm, {ecart_theta:+.1f}°]")
-        esp.set_pos(x_new, y_new, theta_new)
-        shared.robot_pos.update({'x': x_new, 'y': y_new, 'theta': theta_new})
+        shared.refresh_robot_pos()
+        apres = shared.loc.pose()
+        print(f"[VISION] Recalage : ({avant[0]:.0f}, {avant[1]:.0f}, {avant[2]:.1f}°) -> "
+              f"({apres[0]:.0f}, {apres[1]:.0f}, {apres[2]:.1f}°) "
+              f"[écart {res['ecart_mm']:.0f} mm, {res['ecart_deg']:+.1f}°]")
         return True
 
     def prendreKapla(self):

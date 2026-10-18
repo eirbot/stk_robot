@@ -54,7 +54,9 @@ class FakeSerial:
 
 
 def load_module():
-    """Importe esp_motors.py avec des faux modules `serial` et `ihm.shared`."""
+    """Importe esp_motors.py avec des faux modules `serial` et `ihm.shared`
+    (remis en place ensuite : les autres tests importent les vrais)."""
+    saved = {k: sys.modules.get(k) for k in ("serial", "ihm", "ihm.shared")}
     fake_serial = types.ModuleType("serial")
     fake_serial.Serial = FakeSerial
     fake_serial.SerialException = type("SerialException", (Exception,), {})
@@ -64,13 +66,30 @@ def load_module():
     shared = types.ModuleType("ihm.shared")
     shared.state = {"match_running": True}
     shared.robot_pos = {"x": 0.0, "y": 0.0, "theta": 0.0}
+    sys.path.insert(0, os.path.join(ROOT, "Rasp"))
+    from core.localisation import Localisation
+    shared.loc = Localisation()
+
+    def set_known_pose(x, y, theta, odo_pose=None):
+        shared.loc.reset((x, y, theta), odo_pose, t=time.time())
+        shared.robot_pos.update({"x": x, "y": y, "theta": theta})
+
+    shared.set_known_pose = set_known_pose
+    shared.loc_log = types.SimpleNamespace(write=lambda *a: None)
     ihm.shared = shared
     sys.modules["ihm"] = ihm
     sys.modules["ihm.shared"] = shared
 
     spec = importlib.util.spec_from_file_location("esp_motors_test", ESP_MOTORS_PATH)
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    try:
+        spec.loader.exec_module(mod)
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
     return mod, shared
 
 
@@ -164,8 +183,44 @@ def test_trame_watchdog_et_trames_existantes():
         esp.stop()
 
 
+def test_fusion_goto_et_odometrie():
+    """GoTo converti dans le repère odo de l'ESP ; trames T -> pose fusionnée (repère table)."""
+    mod, shared = load_module()
+    esp = mod.ESPMotors()
+    esp.start()
+    try:
+        # « S » arrondi à l'entier, la fusion garde la valeur exacte
+        esp.set_pos(1000.4, 0.0, 10.4)
+        assert ("S 1000 0 10" in [l for _, l in esp.ser.sent()])
+        esp.ser.rx.put("T 1000.00 0.00 10.00")
+        assert wait_for(lambda: abs(shared.robot_pos["theta"] - 10.4) < 1e-6)
+        assert abs(shared.robot_pos["x"] - 1000.4) < 1e-6
+
+        # La caméra voit le robot 50 mm plus loin en X (correction forcée, robot immobile)
+        shared.loc.on_camera(time.time(), 1050.4, 0.0, 10.4, gain=1.0)
+        result = {}
+        th = threading.Thread(target=lambda: result.update(ok=esp.goto(1050.4, 0.0, 10.4)), daemon=True)
+        th.start()
+        # Cible table = pose actuelle : l'ESP reçoit sa propre pose odo
+        assert wait_for(lambda: "G 1000 0 10" in [l for _, l in esp.ser.sent()])
+        esp.ser.rx.put("D")
+        th.join(2)
+        assert result.get("ok") is True
+    finally:
+        esp.stop()
+
+
+class TestESPMotors(__import__("unittest").TestCase):
+    """Rend ces tests visibles par `unittest discover` (tools/run_tests.sh)."""
+
+
+for _name, _fn in list(globals().items()):
+    if _name.startswith("test_") and callable(_fn):
+        setattr(TestESPMotors, _name, (lambda f: lambda self: f())(_fn))
+
+
 if __name__ == "__main__":
-    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
+    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v) and not isinstance(v, type)]
     for t in tests:
         t()
         print(f"OK  {t.__name__}")

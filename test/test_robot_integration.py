@@ -101,7 +101,8 @@ class TestIntegrationRobot(unittest.TestCase):
         with open(os.path.join(RASP, "config.json"), encoding="utf-8") as f:
             cfg = json.load(f)
         cfg.update({"team": "BLEUE", "strat_mode": "STATIC", "static_strat": "test_integration",
-                    "test_mode": False, "music_enabled": False})
+                    "test_mode": False, "music_enabled": False,
+                    "vision_odom": {**cfg.get("vision_odom", {}), "enregistrer": False}})
         with open(cfg_path, "w", encoding="utf-8") as f:
             json.dump(cfg, f)
         os.environ["ROBOT_CONFIG"] = cfg_path

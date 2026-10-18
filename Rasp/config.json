@@ -51,17 +51,31 @@
     "vision_odom": {
         "attente_auto_s": 0.5,
         "auto": false,
+        "cam_sigma_deg": 2.0,
+        "cam_sigma_mm": 15.0,
         "dispersion_max_mm": 30,
         "ecart_max_deg": 30,
         "ecart_max_mm": 300,
+        "enregistrer": true,
+        "fusion": true,
         "gain": 1.0,
         "latence_s": 0.3,
+        "latence_sigma_s": 0.05,
         "nb_mesures": 5,
+        "odo_sigma_deg_par_m": 1.0,
+        "odo_sigma_deg_par_tour": 3.0,
+        "odo_sigma_mm_par_m": 20.0,
+        "porte_sigma": 4.0,
+        "rattrapage_deg": 3,
+        "rattrapage_mm": 25,
+        "rattrapages_max": 1,
         "repere": {
             "dx": 0.0,
             "dy": 0.0,
             "rotation_deg": 0.0
-        }
+        },
+        "sigma_init_deg": 1.0,
+        "sigma_init_mm": 10.0
     },
     "ui": {
         "height": 480,

@@ -84,9 +84,11 @@ class ESPMotors:
     # --- Fonctions simplifiées pour tes autres threads ---
     
     def goto(self, x, y, theta, manual=False):
+        """GoTo en repère table : converti dans le repère odométrie de l'ESP (fusion caméra)."""
         self.cmd_done_event.clear()
         self.cmd_aborted = False
-        self.send(f"G {x} {y} {theta}")
+        ox, oy, otheta = shared.loc.to_odom(x, y, theta)
+        self.send(f"G {round(ox)} {round(oy)} {round(otheta)}")
         
         # On attend la fin, mais on vérifie régulièrement si le match est fini ou si un arrêt est demandé
         while not self.cmd_done_event.wait(0.2):
@@ -120,8 +122,12 @@ class ESPMotors:
         self.send("H")
 
     def set_pos(self, x, y, theta):
-        # L'ESP parse des entiers (toInt) : on arrondit plutôt que tronquer
-        self.send(f"S {round(x)} {round(y)} {round(theta)}")
+        """Pose connue en repère table. L'ESP parse des entiers (toInt) : la fusion
+        rattrape l'arrondi (repère odo = ce que l'ESP a reçu)."""
+        odo = (round(x), round(y), round(theta))
+        self._last_pose = None
+        shared.set_known_pose(x, y, theta, odo_pose=odo)
+        self.send(f"S {odo[0]} {odo[1]} {odo[2]}")
         
     def set_lidar_state(self, val):
         self.send(f"L {val}")
@@ -169,11 +175,11 @@ class ESPMotors:
                     if last is None or abs(x - last[0]) > 0.5 or abs(y - last[1]) > 0.5 or abs(theta - last[2]) > 0.2:
                         self.last_motion_time = time.time()
                     self._last_pose = (x, y, theta)
-                    # On met à jour directement ton dictionnaire global "shared"
-                    # Ainsi ton IHM et ta Strat ont toujours la position en temps réel
-                    shared.robot_pos['x'] = x
-                    shared.robot_pos['y'] = y
-                    shared.robot_pos['theta'] = theta
+                    # Pose fusionnée (repère table) pour l'IHM et la stratégie
+                    t = time.time()
+                    shared.loc_log.write("o", t, x, y, theta)
+                    tx, ty, ttheta = shared.loc.on_odom(t, x, y, theta)
+                    shared.robot_pos.update({'x': tx, 'y': ty, 'theta': ttheta})
             except ValueError:
                 print(f"[MOTORS] ⚠️ Erreur de parsing Odométrie : {msg}")
         elif msg == "D":

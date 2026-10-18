@@ -120,7 +120,12 @@ function sendAction(act) {
 }
 
 // --- NOTIFICATIONS ---
+// Erreur : événement « stk:error » (Clippy) ; en thème Win95, boîte de dialogue au lieu du bandeau
 function toast(msg, type) {
+    if (type === 'err') {
+        document.dispatchEvent(new CustomEvent('stk:error', { detail: msg }));
+        if (window.w95Alert && window.w95Alert(msg, 'error')) return;
+    }
     let box = document.getElementById('toast-box');
     if (!box) {
         box = document.createElement('div');
@@ -133,6 +138,12 @@ function toast(msg, type) {
     box.appendChild(el);
     setTimeout(() => el.classList.add('toast-out'), 3500);
     setTimeout(() => el.remove(), 4000);
+}
+
+// Confirmation Oui / Non -> Promise<bool> : boîte Win95 en thème win95, confirm() du navigateur sinon
+function askConfirm(text) {
+    const box = window.w95Confirm && window.w95Confirm(text);
+    return box || Promise.resolve(window.confirm(text));
 }
 
 // --- CODE PIN (actions sensibles, cf. Base/Web/auth.go) ---

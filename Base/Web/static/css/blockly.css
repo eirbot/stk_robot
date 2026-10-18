@@ -1,7 +1,7 @@
 /* =======================================================
    STRAT STUDIO (Blockly) — thèmes via common.css
-   L'intérieur de l'éditeur Blockly et le canvas de simulation
-   ne sont pas thémés : seulement ce qui les entoure.
+   L'éditeur Blockly suit le thème (variables --bk-* plus bas, lues par blockly.js) ;
+   le canvas de simulation n'est pas thémé.
    ======================================================= */
 
 html,
@@ -201,44 +201,369 @@ html[data-theme="win95"] #simCanvas {
 }
 
 /* =============================================================================
-   PERSONNALISATION DE LA TOOLBOX BLOCKLY (AMÉLIORATION DU CONTRASTE)
+   ÉDITEUR BLOCKLY AUX COULEURS DU THÈME
+   Ces variables sont lues par blockly.js (thème Blockly : fond, volet des blocs,
+   ascenseurs) ; la boîte à outils et la grille sont stylées ici.
    ============================================================================= */
-
-/* Fond sombre de la colonne de la Toolbox (remplace le gris clair par défaut) */
-.blocklyToolbox {
-    background-color: #1e293b !important; /* Bleu ardoise très sombre */
-    color: #f8fafc !important; /* Texte de base blanc */
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+:root {
+    --bk-workspace: #f4f4f6;
+    --bk-grid: #d6d6dc;
+    --bk-toolbox: var(--surface-2);
+    --bk-toolbox-text: var(--text);
+    --bk-flyout: #c2c2c8;
+    --bk-scrollbar: #8a8a92;
 }
 
-/* Style de chaque ligne/catégorie de la Toolbox */
+html[data-theme="nuit"] {
+    --bk-workspace: #1a0e44;
+    --bk-grid: #2f1a72;
+    --bk-flyout: #2f1a72;
+    --bk-scrollbar: #3ee0ff;
+}
+
+html[data-theme="sombre"] {
+    --bk-workspace: #0d1117;
+    --bk-grid: #1c232c;
+    --bk-toolbox: var(--surface);
+    --bk-flyout: #1c232c;
+    --bk-scrollbar: #4b5563;
+}
+
+html[data-theme="win95"] {
+    --bk-workspace: #ffffff;
+    --bk-grid: #ffffff;   /* pas de grille : page blanche comme une appli Win95 */
+    --bk-toolbox: #ffffff;
+    --bk-flyout: #dfdfdf;
+    --bk-scrollbar: #808080;
+}
+
+.blocklyGridPattern line {
+    stroke: var(--bk-grid);
+}
+
+.blocklyToolbox {
+    background-color: var(--bk-toolbox) !important;
+    color: var(--bk-toolbox-text) !important;
+    border-right: var(--line-w) solid var(--line);
+}
+
 .blocklyToolboxCategory {
     padding: 8px 12px !important;
     margin: 4px 6px !important;
-    border-radius: 6px !important;
+    border-radius: var(--radius-sm) !important;
     background-color: transparent !important;
     transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
-/* Couleur et style du texte des catégories */
 .blocklyToolboxCategoryLabel {
-    color: #f8fafc !important; /* Contraste maximal (blanc) */
-    font-weight: 600 !important;
+    color: var(--bk-toolbox-text) !important;
+    font-weight: var(--font-weight-title, 700) !important;
     font-size: 0.95em !important;
-    font-family: 'Segoe UI', sans-serif !important;
+    font-family: var(--font) !important;
 }
 
-/* Survol des catégories (effet hover discret) */
 .blocklyToolboxCategory:hover {
-    background-color: rgba(255, 255, 255, 0.08) !important;
+    background-color: var(--surface-3) !important;
     transform: translateX(2px);
 }
 
-/* Catégorie active / sélectionnée */
 .blocklyToolboxCategory.blocklyToolboxSelected {
-    background-color: #007bff !important; /* Fond bleu de sélection */
+    background-color: var(--accent) !important;
 }
 
 .blocklyToolboxCategory.blocklyToolboxSelected .blocklyToolboxCategoryLabel {
-    color: #ffffff !important;
+    color: var(--accent-text) !important;
+}
+
+/* Windows 95 : liste à sélection bleue, zone de travail creusée */
+html[data-theme="win95"] .blocklyToolbox {
+    border-right: 0;
+    box-shadow: inset -1px 0 #808080, inset -2px 0 #000;
+}
+
+html[data-theme="win95"] .blocklyToolboxCategory {
+    margin: 1px 4px !important;
+    padding: 5px 8px !important;
+    transform: none !important;
+}
+
+html[data-theme="win95"] .blocklyToolboxCategory:hover {
+    background-color: transparent !important;
+    outline: 1px dotted #000;
+}
+
+html[data-theme="win95"] .blocklyToolboxCategoryLabel {
+    font-weight: 400 !important;
+}
+
+html[data-theme="win95"] #blocklyArea {
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    box-shadow: inset 1px 1px #000;
+}
+
+/* Windows 95 : boîte à outils en arborescence (icônes .w95i, static/css/win95-icons.css) */
+html[data-theme="win95"] .blocklyToolboxCategory {
+    border-left: 0 !important;
+}
+
+html[data-theme="win95"] .blocklyToolboxCategoryIcon.w95i {
+    display: inline-block;
+    visibility: visible;  /* Blockly masque les icônes de catégorie par défaut */
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+html[data-theme="win95"] .blocklyTreeRowContentContainer {
+    display: flex;
+    align-items: center;
+}
+
+html[data-theme="win95"] .blocklyToolboxCategory.blocklyToolboxSelected {
+    background-color: transparent !important;
+}
+
+html[data-theme="win95"] .blocklyToolboxCategory.blocklyToolboxSelected .blocklyToolboxCategoryLabel {
+    background: #000080;
+    color: #fff !important;
+    padding: 0 3px;
+    outline: 1px dotted #ffff80;
+}
+
+html[data-theme="win95"] .blocklyToolboxCategoryLabel {
+    color: #000 !important;
+}
+
+/* Champs des blocs : cases blanches à bord noir */
+html[data-theme="win95"] .blocklyFieldRect:not(.blocklyDropdownRect) {
+    stroke: #000;
+    stroke-width: 1px;
+}
+
+/* Menus des blocs (listes déroulantes) et clic droit : menus Windows 95 */
+html[data-theme="win95"] .blocklyDropDownDiv,
+html[data-theme="win95"] .blocklyWidgetDiv .blocklyMenu,
+html[data-theme="win95"] .blocklyContextMenu {
+    background: #c0c0c0 !important;
+    border: 2px solid !important;
+    border-color: #dfdfdf #000 #000 #dfdfdf !important;
+    border-radius: 0 !important;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #fff !important;
+    padding: 2px !important;
+    font-family: 'W95FA', Tahoma, 'Microsoft Sans Serif', Arial, sans-serif !important;
+}
+
+html[data-theme="win95"] .blocklyDropDownArrow {
+    display: none !important;
+}
+
+html[data-theme="win95"] .blocklyDropDownDiv .blocklyMenu {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="win95"] .blocklyMenuItem {
+    border-radius: 0 !important;
+    color: #000 !important;
+    font-family: 'W95FA', Tahoma, 'Microsoft Sans Serif', Arial, sans-serif !important;
+    font-size: 13px !important;
+    padding: 4px 24px !important;
+}
+
+html[data-theme="win95"] .blocklyMenuItemHighlight {
+    background: #000080 !important;
+    color: #fff !important;
+}
+
+html[data-theme="win95"] .blocklyMenuItemDisabled {
+    color: #808080 !important;
+    text-shadow: 1px 1px #fff;
+}
+
+html[data-theme="win95"] .blocklyMenuItemDisabled.blocklyMenuItemHighlight {
+    background: transparent !important;
+}
+
+/* Infobulles jaunes */
+html[data-theme="win95"] .blocklyTooltipDiv {
+    background: #ffffe1 !important;
+    color: #000 !important;
+    border: 1px solid #000 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    font-family: 'W95FA', Tahoma, Arial, sans-serif !important;
+}
+
+/* =============================================================================
+   WINDOWS 95 : Strat Studio en application Win95
+   barre de menus, barre d'outils plate, fenêtres (éditeur, simulation, console
+   MS-DOS) dans une zone grise, barre d'état
+   ============================================================================= */
+/* Barre d'outils : boutons plats, relief au survol (comme Office 95) */
+html[data-theme="win95"] #controls.studio-toolbar {
+    padding: 4px 6px;
+    gap: 4px 10px;
+    background: #c0c0c0;
+    border-bottom: 1px solid #808080;
+    box-shadow: 0 1px #fff;
+}
+
+html[data-theme="win95"] #controls .btn {
+    border-color: transparent !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 3px 8px;
+    min-height: 0;
+    font-weight: 400;
+    color: #000 !important;
+}
+
+html[data-theme="win95"] #controls .btn:hover {
+    border-color: #fff #808080 #808080 #fff !important;
+}
+
+html[data-theme="win95"] #controls .btn:active {
+    border-color: #808080 #fff #fff #808080 !important;
+}
+
+html[data-theme="win95"] .toolbar-sep {
+    width: 0;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #fff;
+    background: none;
+}
+
+html[data-theme="win95"] #status {
+    display: none;   /* message repris dans la barre d'état */
+}
+
+/* Zone de travail grise (MDI) avec les fenêtres */
+html[data-theme="win95"] #main-container {
+    background: #808080;
+    padding: 4px;
+    gap: 4px;
+}
+
+html[data-theme="win95"] #blocklyArea,
+html[data-theme="win95"] #simuArea {
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #dfdfdf #000 #000 #dfdfdf;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #fff;
+    padding: 3px;
+}
+
+html[data-theme="win95"] .w95-winbar {
+    display: flex !important;
+    margin: 0 !important;
+    flex-shrink: 0;
+    font-size: 15px;
+}
+
+html[data-theme="win95"] #blocklyDiv {
+    inset: 28px 3px 3px 3px;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+}
+
+html[data-theme="win95"] #simuArea {
+    align-items: stretch;
+    gap: 4px;
+}
+
+html[data-theme="win95"] #simCanvas {
+    align-self: center;
+    margin: 6px 0;
+}
+
+/* Console : Invite MS-DOS */
+html[data-theme="win95"] .w95-dos-bar {
+    margin-top: 6px !important;
+}
+
+html[data-theme="win95"] #simConsole {
+    margin-top: 0;
+    flex: 1;
+    min-height: 120px;
+    background: #000 !important;
+    color: #c0c0c0 !important;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080 !important;
+    box-shadow: none !important;
+}
+
+/* Éditeur : pas de corbeille Blockly (glisser un bloc sur la boîte à outils le supprime),
+   ascenseurs gris en relief, boîte à outils en arborescence blanche */
+html[data-theme="win95"] .blocklyMainBackground {
+    fill: #ffffff !important;   /* pas de grille */
+}
+
+html[data-theme="win95"] .blocklyTrash {
+    display: none;
+}
+
+html[data-theme="win95"] .blocklyScrollbarHandle {
+    fill: #c0c0c0;
+    stroke: #000;
+    stroke-width: 1px;
+    rx: 0;
+    ry: 0;
+    fill-opacity: 1;
+}
+
+html[data-theme="win95"] .blocklyScrollbarBackground {
+    fill: #dfdfdf;
+}
+
+html[data-theme="win95"] .blocklyToolbox {
+    box-shadow: inset -1px 0 #808080;
+}
+
+html[data-theme="win95"] .blocklyFlyoutBackground {
+    fill: #c0c0c0;
+    fill-opacity: 1;
+    stroke: #808080;
+}
+
+html[data-theme="win95"] .blocklySelected > .blocklyPath {
+    stroke: #000 !important;
+    stroke-width: 1px !important;
+    stroke-dasharray: 2 2;
+}
+
+/* Boîte « À propos » */
+.w95-about {
+    width: min(380px, 100%);
+    margin: 0;
+    text-align: left;
+}
+
+.w95-about-body {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin: 6px 0 14px;
+    font-size: 15px;
+}
+
+.w95-about-ico {
+    width: 32px;
+    height: 32px;
+    flex: none;
+}
+
+.w95-about .row {
+    justify-content: center;
+}
+
+.w95-about .btn {
+    min-width: 90px;
+}
+
+@media (max-width: 800px) {
+    html[data-theme="win95"] .w95-mb-menu { min-width: 180px; }
+    html[data-theme="win95"] #blocklyArea { height: 65vh; }
 }

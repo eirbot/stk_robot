@@ -6,13 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DEBUG & CONFIG</title>
     <script src="/static/js/theme.js?v=5"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=6.7">
-    <link rel="stylesheet" href="/static/css/debug.css?v=3.3">
+    <link rel="stylesheet" href="/static/css/common.css?v=8.0">
+    <link rel="stylesheet" href="/static/css/debug.css?v=3.4">
 
     <script src="/static/js/chart.js" defer></script>
-    <script src="/static/js/common.js?v=2.8" defer></script>
-    <script src="/static/js/clippy.js?v=1" defer></script>
-    <script src="/static/js/debug.js?v=3.2" defer></script>
+    <script src="/static/js/common.js?v=2.9" defer></script>
+    <script src="/static/js/clippy.js?v=2" defer></script>
+    <script src="/static/js/win95.js?v=11" defer></script>
+    <script src="/static/js/debug.js?v=3.4" defer></script>
 </head>
 
 <body class="mode-BLEUE">
@@ -25,7 +26,7 @@
     <main class="page debug-page">
 
         <!-- ===================== LIGNE 1 : ÉTAT / STRAT / POSITION ===================== -->
-        <section class="debug-row debug-row-3">
+        <section data-task="Robot" data-icon="robot" class="debug-row debug-row-3">
 
             <div class="card">
                 <h2 class="card-title">Périphériques</h2>
@@ -110,7 +111,7 @@
         </section>
 
         <!-- ===================== LIGNE 2 : CAMÉRAS ===================== -->
-        <section class="debug-row debug-row-2">
+        <section data-task="Caméras" data-icon="camera" class="debug-row debug-row-2">
 
             <!-- FLUX VIDÉO 1 : Caméra Zénithale USB (PC) -->
             <div class="card video-card" id="card-video-zenithale">
@@ -196,7 +197,7 @@
         </section>
 
         <!-- ===================== LIGNE 3 : CONSOMMATION / LOGS ===================== -->
-        <section class="debug-row debug-row-2">
+        <section data-task="Conso &amp; logs" data-icon="chart" class="debug-row debug-row-2">
             <div class="card">
                 <h2 class="card-title">Consommation (A)</h2>
                 <div class="chart-container">
@@ -213,7 +214,7 @@
         </section>
 
         <!-- ===================== LIGNE 4 : SYSTÈME / DIAGNOSTIC ===================== -->
-        <section class="debug-row debug-row-2">
+        <section data-task="Système" data-icon="gear" class="debug-row">
             <div class="card">
                 <h2 class="card-title">Système &amp; outils</h2>
                 <div class="stack">
@@ -251,12 +252,21 @@
                 </div>
             </div>
 
+        </section>
+
+        <!-- ===================== RÉSEAU : DIAGNOSTIC ===================== -->
+        <section data-task="Réseau" data-icon="radar" class="debug-row">
             <div class="card">
                 <h2 class="card-title">Diagnostic réseau</h2>
                 <div class="stack">
                     <div class="test-grid">
                         <div class="test-stat-box">
-                            <div class="test-stat-title">Latence</div>
+                            <div class="test-stat-title">Base ↔ robot</div>
+                            <div id="test-robot" class="test-stat-value">-- <span>ms</span></div>
+                            <div id="test-robot-status" class="test-stat-status">-</div>
+                        </div>
+                        <div class="test-stat-box">
+                            <div class="test-stat-title">Navigateur ↔ base</div>
                             <div id="test-latency" class="test-stat-value">-- <span>ms</span></div>
                             <div id="test-latency-status" class="test-stat-status">-</div>
                         </div>
@@ -276,7 +286,7 @@
                         <div class="progress-bar-fill" id="test-progress-bar"></div>
                     </div>
 
-                    <span id="test-status-msg" class="test-status-msg">Prêt pour le diagnostic.</span>
+                    <span id="test-status-msg" class="test-status-msg">Prêt. Le lien base ↔ robot transporte les commandes : c'est lui qui compte pour le match (latence p95 et pertes). Test impossible pendant un match.</span>
 
                     <button id="btn-run-speedtest" onclick="runDiagnosticTest()" class="btn btn-primary">Lancer le test de connexion</button>
                 </div>

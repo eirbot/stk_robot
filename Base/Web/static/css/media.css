@@ -476,7 +476,58 @@ html[data-theme="win95"] .tab-btn {
 html[data-theme="win95"] .tab-btn.active {
     background: #c0c0c0;
     color: #000;
-    text-decoration: underline;
+}
+
+/* Vrais onglets Win95 : petits, l'onglet actif dépasse et se fond dans la page */
+html[data-theme="win95"] .tabs-container {
+    gap: 0;
+    padding: 0 6px;
+    margin-bottom: 0;
+    border-bottom: 0;
+    position: relative;
+    z-index: 1;
+}
+
+html[data-theme="win95"] .tab-btn {
+    position: relative;
+    top: 2px;
+    margin-top: 2px;
+    padding: 3px 12px 2px;
+    font-size: 15px;
+    font-weight: 400;
+    border-radius: 3px 3px 0 0;
+    box-shadow: inset -1px 0 #808080;
+}
+
+html[data-theme="win95"] .tab-btn.active {
+    margin: 0 -2px;
+    padding: 4px 14px 5px;
+    z-index: 2;
+}
+
+html[data-theme="win95"] .tab-btn .w95-swap {
+    display: none;
+}
+
+html[data-theme="win95"] .media-container {
+    border: 2px solid;
+    border-color: #fff #000 #000 #fff;
+    box-shadow: inset -1px -1px #808080;
+    padding: 10px 12px 12px;
+    margin: 0 4px;
+    height: auto;
+    min-height: calc(100% - 40px);
+}
+
+/* Cadre « Fichiers audio » : le titre posé sur la bordure ne doit pas être coupé */
+html[data-theme="win95"] #tab-audio .panel-left {
+    overflow: visible;
+}
+
+html[data-theme="win95"] .panel-header {
+    background: transparent;
+    border-bottom: 0;
+    padding: 0 0 8px;
 }
 
 html[data-theme="win95"] .context-menu {

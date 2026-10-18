@@ -101,9 +101,19 @@ class TestBaseRobot(unittest.TestCase):
         s = wait_state(lambda s: s.get("team") == "JAUNE" and s.get("strat_id") == STRAT_NAME)
         self.assertEqual(s["config"]["team"], "JAUNE")  # config du robot recopiée par la base
 
+    def test_1b_ping_base_robot(self):
+        code, s = api("/api/robot_ping?n=10")
+        self.assertEqual(code, 200)
+        self.assertEqual(s["sent"], 10)
+        self.assertGreaterEqual(s["received"], 8)
+        self.assertLess(s["max_ms"], 500)
+
     def test_2_match_et_symetrie(self):
         self.assertEqual(api("/api/action/start", {})[0], 200)
         wait_state(lambda s: s.get("fsm_state") == "RUNNING")
+        # Tests réseau refusés pendant le match (ils saturent le Wi-Fi)
+        self.assertEqual(api("/api/robot_ping?n=1")[0], 409)
+        self.assertEqual(api("/api/speedtest/upload", {})[0], 409)
         # La stratégie (écrite côté BLEUE) s'exécute en JAUNE : y -> -y, remonté par la télémétrie
         wait_state(lambda s: abs(s["telemetry"]["x"] - 700) < 1 and abs(s["telemetry"]["y"] + 1250) < 1)
         # Équipe refusée pendant le match (par le robot)
