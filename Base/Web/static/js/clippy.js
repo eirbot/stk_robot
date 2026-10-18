@@ -39,6 +39,7 @@
         '/blockly': "Une stratégie en blocs ? Comme au CP, mais en plus stressant.",
         '/led_studio': "Plus de LEDs = plus de points. C'est la règle. (Ce n'est pas la règle.)",
         '/replay': "Revoir le match ? Courage.",
+        '/regles': "On dirait que vous lisez le règlement. C'est rare. Voulez-vous que je résume ? La porte, c'est 20 points.",
     };
 
     const ERROR_TAUNTS = [

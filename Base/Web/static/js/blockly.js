@@ -1094,7 +1094,7 @@ document.addEventListener("DOMContentLoaded", function () {
             '<div class="card w95-about">' +
             '<h2 class="card-title">À propos de Strat Studio</h2>' +
             '<div class="w95-about-body">' +
-            '<svg class="w95-about-ico"><use href="/static/icons/win95.svg?v=4#w95-puzzle"></use></svg>' +
+            '<svg class="w95-about-ico"><use href="/static/icons/win95.svg?v=5#w95-puzzle"></use></svg>' +
             '<div><b>Strat Studio pour Windows 95</b><br>Eirbot — Coupe de France de robotique<br><br>' +
             'Ce logiciel est fourni « tel quel ».<br>Le robot aussi.</div></div>' +
             '<div class="row"><button type="button" class="btn">OK</button></div></div>';

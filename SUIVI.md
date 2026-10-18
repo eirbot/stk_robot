@@ -1,6 +1,6 @@
 # Suivi du projet — à lire en début de session, à mettre à jour en fin de tâche
 
-Dernière mise à jour : 2026-10-18. Compétition dans plus de 200 jours (pas avant ~mai 2027) :
+Dernière mise à jour : 2026-10-19. Compétition dans plus de 200 jours (pas avant ~mai 2027) :
 les refontes sont acceptées.
 
 ## État du dépôt
@@ -8,6 +8,8 @@ les refontes sont acceptées.
 - Branche `base_deporte` poussée jusqu'au commit Clippy ; fusion odométrie + caméra **non commitée**.
 - **Rien n'a été déployé** sur la base ni sur le robot depuis ces commits ; aucun test sur le vrai matériel.
 - Tests : `tools/run_tests.sh` (tout passe : 67 Python, 4 JS, Go). `--rapide` saute test_strategies (~70 s).
+- Page Règlement / Internet Explorer (2026-10-19) **non commitée**, rien de déployé.
+- Sur ce PC, `test_robot_integration` échoue faute de `numpy` dans le Python système (environnement, pas le code).
 
 ## Fait (récent, du plus ancien au plus récent)
 
@@ -56,6 +58,16 @@ les refontes sont acceptées.
   `playPrev()` / `playNext()` (appelées par la page Sons) n'existaient pas : ajoutées.
 - Affichage téléphone ; mode test (pas d'arrêt à 100 s) ; notifications (`toast()`) ; pastille
   « Robot hors ligne » ; versions du code dans Debug.
+
+### Règlement 2027 / Internet Explorer (2026-10-19)
+- Nouvelles règles dans `docu/` (non suivies par git) : `Eurobot2027_Rules_FR.pdf` (thème Camelot) et
+  règles générales 1.4 (`Eurobot_General_Rules_SR_FR.pdf`).
+- Page `/regles` (`templates/regles.html`, `static/js/regles.js`, `static/css/regles.css`) : règlement 2027
+  résumé, règles générales, barème, plan, calculateur de score, liens vers les PDF (route `/docu/<x>.pdf`).
+  Navigation par ancre (`#jeu/points`). En Win95 : Internet Explorer (barres d'outils / adresse / liens,
+  logo animé, volet Favoris, menus dans `APPS`, page « Impossible d'afficher la page »), contenu en Times.
+- Images extraites du PDF dans `static/img/regles/` (~480 Ko). Icônes Win95 `ie` et `calc`, Lucide
+  `book-open`, `calculator`, `arrow-right` ajoutées. Tuile sur l'accueil (« Internet Explorer » en Win95).
 
 ### Diagnostic réseau (2026-10-18)
 - Nouveau test du lien base ↔ robot : allers-retours ZMQ ping / pong (`Base/Web/robotping.go`,
@@ -118,6 +130,11 @@ les refontes sont acceptées.
 - [ ] IP en dur restantes côté Python : `Rasp/main_robot.py` et `Rasp/ihm/__init__.py`
       (`server_ip` par défaut), `Rasp/utils/system_info.py` (cible de ping).
 - [ ] Menu contextuel de la page Sons : peut dépasser l'écran sur téléphone.
+- [ ] **Carte 2027** : redessiner la table dans map.js (carrières, remparts, douves, écuries, salles du
+      trône) d'après `static/img/regles/plan.jpg` (plan : x 0..2000, y 0..3000, jaune en bas).
+- [ ] Règles 2027 à prendre en compte côté robot : évitement des **PAMI** (le LiDAR voit-il un objet de
+      150 mm ?), **support de balise obligatoire** (sommet à 430 mm), phase d'attaque à 85 s (chrono).
+- [ ] Calculateur : nombres maxi de murs / tours / douves devinés d'après le plan (4 tours, 3 douves) : à vérifier.
 - [ ] Pas d'icônes pause / flèches haut-bas dans le sprite (ajouter des symboles Lucide si besoin).
 - [ ] `Rasp/stop.sh` arrête encore un ancien `robot.service` ; `Rasp/exec.sh` écrit dans `/var/log/ihm.log`.
 

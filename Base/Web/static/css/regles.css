@@ -1,0 +1,447 @@
+/* Page Règlement : documents en cartes (thèmes STK), Internet Explorer (thème Windows 95) */
+
+.regles-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+/* --- Onglets des documents --- */
+.regles-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.regles-tabs a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: var(--line-w) solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--font-display);
+    letter-spacing: var(--display-spacing);
+    text-decoration: none;
+    box-shadow: 0 3px 0 var(--ink);
+}
+
+.regles-tabs a.is-active {
+    background: var(--accent);
+    color: var(--accent-text);
+}
+
+.ie-body { position: relative; }
+
+/* --- Documents --- */
+.ie-doc {
+    background: var(--gloss-soft), var(--surface);
+    border: var(--line-w) solid var(--line);
+    box-shadow: var(--panel-highlight), 0 var(--depth) 0 var(--ink), var(--soft-shadow);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    color: var(--text);
+    line-height: 1.5;
+    text-align: left;
+}
+
+.ie-doc[hidden] { display: none; }
+
+.ie-doc h1 {
+    font-family: var(--font-display);
+    font-weight: var(--font-weight-title);
+    letter-spacing: var(--display-spacing);
+    font-size: 1.6rem;
+    margin: 0 0 4px;
+}
+
+.ie-doc h2 {
+    font-family: var(--font-display);
+    font-weight: var(--font-weight-title);
+    letter-spacing: var(--display-spacing);
+    font-size: 1.2rem;
+    margin: 26px 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 2px dashed var(--border);
+    scroll-margin-top: 12px;
+}
+
+.ie-doc h3 { font-size: 1.05rem; margin: 18px 0 6px; }
+.ie-doc a { color: var(--accent); font-weight: 600; }
+.ie-doc ul, .ie-doc ol { padding-left: 22px; }
+.ie-doc li { margin: 4px 0; }
+.ie-meta { color: var(--text-muted); font-size: .9rem; margin: 0 0 12px; }
+
+.ie-toc {
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin: 12px 0;
+}
+
+.ie-toc b { display: block; margin-bottom: 4px; }
+
+.ie-banner {
+    background: var(--header-bg);
+    color: var(--header-text);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+    margin-bottom: 14px;
+}
+
+.ie-banner-title { font-family: var(--font-display); font-size: 1.5rem; letter-spacing: var(--display-spacing); }
+.ie-banner-title em { color: var(--accent); font-style: normal; }
+.ie-banner-sub { opacity: .8; margin-top: 4px; }
+
+.ie-home-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin: 14px 0;
+}
+
+.ie-home-link {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 2px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    text-decoration: none;
+}
+
+.ie-home-link span { color: var(--text-muted); font-weight: 400; font-size: .9rem; }
+
+/* Images du règlement */
+.regles-fig { margin: 12px 0; text-align: center; }
+.regles-fig img { max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 0 auto; }
+.regles-fig figcaption { font-size: .85rem; color: var(--text-muted); margin-top: 6px; }
+.regles-fig-wide img { width: 100%; }
+.regles-fig-plan img { max-height: 80vh; width: auto; }
+
+.regles-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    align-items: end;
+}
+
+.regles-row .regles-fig img { max-height: 220px; width: auto; }
+
+.regles-pts {
+    background: var(--chip-bg);
+    color: var(--chip-text);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-weight: 600;
+}
+
+.regles-dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; }
+.regles-dl dt { font-weight: 700; }
+.regles-dl dd { margin: 0; }
+
+.regles-table { width: 100%; box-sizing: border-box; border-collapse: collapse; margin: 10px 0; font-size: .95rem; }
+.regles-table th, .regles-table td { border: 1px solid var(--border-strong); padding: 6px 8px; text-align: left; vertical-align: top; }
+.regles-table thead th { background: var(--surface-3); }
+.regles-table td:last-child { white-space: nowrap; }
+.regles-swatch { display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; border: 1px solid #000; }
+
+/* Calculateur */
+.score-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.score-form fieldset { border: 2px solid var(--border-strong); border-radius: var(--radius-sm); padding: 8px 12px 12px; margin: 0; min-width: 0; }
+.score-form legend { font-weight: 700; padding: 0 6px; }
+.score-form label { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 6px 0; }
+.score-form label.score-check { justify-content: flex-start; }
+.score-form input[type="number"] { width: 70px; padding: 4px 6px; }
+.score-form select { max-width: 60%; padding: 4px; }
+.score-result { margin-top: 16px; }
+.score-total { font-size: 1.4rem; margin: 10px 0; }
+.score-total b { font-family: var(--font-display); font-size: 2rem; color: var(--accent); }
+.score-warn { color: var(--danger); font-weight: 600; min-height: 1.2em; margin-bottom: 8px; }
+
+.ie-files li { margin: 6px 0; }
+.ie-error h1 { color: var(--danger); }
+
+/* Favoris : invisibles hors Win95 (les onglets suffisent) */
+.ie-favs { display: none; }
+
+@media (max-width: 640px) {
+    .regles-page { padding: 10px; }
+    .ie-doc { padding: 14px; }
+    .regles-dl { grid-template-columns: 1fr; }
+    .regles-dl dd { margin-bottom: 6px; }
+}
+
+/* =======================================================
+   THÈME WINDOWS 95 : Internet Explorer
+   ======================================================= */
+html[data-theme="win95"] .w95-appframe > main.regles-page {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-width: none;
+    width: 100%;
+    padding: 0;
+}
+
+html[data-theme="win95"] .ie-chrome { display: block !important; flex: none; }
+
+html[data-theme="win95"] .ie-toolbar {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    padding: 2px 4px;
+    border-bottom: 1px solid #808080;
+    box-shadow: 0 1px 0 #fff;
+}
+
+html[data-theme="win95"] button.ie-tb {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 58px;
+    padding: 3px 4px;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    color: #000;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+html[data-theme="win95"] button.ie-tb svg { width: 24px; height: 24px; }
+html[data-theme="win95"] button.ie-tb:hover { border-color: #fff #808080 #808080 #fff !important; }
+html[data-theme="win95"] button.ie-tb:active,
+html[data-theme="win95"] button.ie-tb.is-on { border-color: #808080 #fff #fff #808080 !important; }
+html[data-theme="win95"] button.ie-tb:disabled { color: #808080; }
+html[data-theme="win95"] button.ie-tb:disabled svg { filter: grayscale(1) opacity(.5); }
+
+/* Dessins des boutons : gris tant qu'on ne survole pas, en couleur au survol (comme IE 3/4) */
+.ie-arrow { fill: #808080; stroke: #000; stroke-width: .8; }
+.ie-stop { fill: #c00000; }
+.ie-page { fill: #fff; stroke: #000; stroke-width: .8; }
+.ie-roof { fill: #ffff80; stroke: #000; stroke-width: .8; }
+.ie-folder { fill: #e0b060; stroke: #000; stroke-width: .8; }
+.ie-printer { fill: #c0c0c0; stroke: #000; stroke-width: .8; }
+html[data-theme="win95"] button.ie-tb:hover .ie-arrow { fill: #008000; }
+
+html[data-theme="win95"] .ie-tb-sep { width: 2px; margin: 2px 4px; border-left: 1px solid #808080; border-right: 1px solid #fff; }
+
+/* Logo animé en haut à droite */
+html[data-theme="win95"] .ie-throbber {
+    margin-left: auto;
+    width: 44px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    background: #000;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    flex: none;
+}
+
+html[data-theme="win95"] .ie-throbber .w95-ico { width: 32px; height: 32px; }
+html[data-theme="win95"] .ie-throbber.is-busy .w95-ico { animation: ie-spin 0.8s steps(8) infinite; }
+
+@keyframes ie-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+html[data-theme="win95"] .ie-address {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 4px;
+    border-bottom: 1px solid #808080;
+    box-shadow: 0 1px 0 #fff;
+}
+
+html[data-theme="win95"] .ie-address label { font-size: 12px; }
+
+html[data-theme="win95"] .ie-addr-box {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 3px;
+    background: #fff;
+    border: 2px solid;
+    border-color: var(--w95-sunken-color);
+    box-shadow: var(--w95-sunken-shadow);
+}
+
+html[data-theme="win95"] .ie-addr-box .w95-ico { width: 16px; height: 16px; flex: none; }
+
+html[data-theme="win95"] .ie-addr-box input#ie-url {
+    flex: 1;
+    min-width: 0;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 2px 0 !important;
+    background: #fff !important;
+    font-size: 13px;
+    outline: none;
+}
+
+html[data-theme="win95"] .ie-go { padding: 1px 10px; font-size: 12px; }
+
+/* Barre « Liens » */
+html[data-theme="win95"] .regles-tabs {
+    flex: none;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0;
+    margin: 0;
+    padding: 2px 4px;
+    align-items: center;
+    border-bottom: 1px solid #808080;
+}
+
+html[data-theme="win95"] .ie-links-label { font-size: 12px; padding: 0 8px 0 2px; border-right: 1px solid #808080; margin-right: 4px; }
+
+html[data-theme="win95"] .regles-tabs a {
+    border: 1px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 2px 8px;
+    font-size: 12px;
+    white-space: nowrap;
+    color: #000;
+}
+
+html[data-theme="win95"] .regles-tabs a:hover { border-color: #fff #808080 #808080 #fff; }
+html[data-theme="win95"] .regles-tabs a.is-active { background: transparent; color: #000; text-decoration: underline; }
+
+/* Corps : favoris à gauche, page web blanche qui défile */
+html[data-theme="win95"] .ie-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    margin: 2px;
+}
+
+html[data-theme="win95"] .ie-favs:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    width: 210px;
+    flex: none;
+    background: #fff;
+    border: 2px solid;
+    border-color: var(--w95-sunken-color);
+    box-shadow: var(--w95-sunken-shadow);
+    margin-right: 3px;
+    overflow: auto;
+}
+
+html[data-theme="win95"] .ie-favs-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #c0c0c0;
+    padding: 2px 4px;
+    font-size: 12px;
+    border-bottom: 1px solid #808080;
+}
+
+html[data-theme="win95"] .ie-favs-title button { padding: 0 5px; line-height: 1; }
+
+html[data-theme="win95"] .ie-favs a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 6px;
+    color: #000;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+html[data-theme="win95"] .ie-favs a:hover { background: #000080; color: #fff; }
+html[data-theme="win95"] .ie-favs .w95-ico { width: 16px; height: 16px; flex: none; }
+
+html[data-theme="win95"] .ie-view {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: auto;
+    background: #fff;
+    border: 2px solid;
+    border-color: var(--w95-sunken-color);
+    box-shadow: var(--w95-sunken-shadow);
+}
+
+/* La page web : Times, liens bleus soulignés, comme en 1997 */
+html[data-theme="win95"] .ie-view .ie-doc,
+html[data-theme="win95"] .ie-view .ie-doc *:not(svg):not(svg *) {
+    font-family: 'Times New Roman', Times, serif !important;
+}
+
+html[data-theme="win95"] .ie-doc {
+    background: #fff;
+    border: 0;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 12px 18px 24px;
+    color: #000;
+    font-size: 16px;
+    line-height: 1.35;
+}
+
+html[data-theme="win95"] .ie-doc h1 { font-size: 2em; font-weight: bold; letter-spacing: 0; }
+html[data-theme="win95"] .ie-doc h2 { font-size: 1.5em; font-weight: bold; letter-spacing: 0; border-bottom: 0; padding: 0; }
+html[data-theme="win95"] .ie-doc h3 { font-size: 1.17em; }
+html[data-theme="win95"] .ie-doc a { color: #0000ee; font-weight: normal; text-decoration: underline; }
+html[data-theme="win95"] .ie-doc a:visited { color: #551a8b; }
+html[data-theme="win95"] .ie-doc a:hover { color: #ff0000; }
+html[data-theme="win95"] .ie-meta { color: #555; font-style: italic; }
+html[data-theme="win95"] .ie-toc { background: #ffffcc; border: 1px solid #000; border-radius: 0; }
+
+html[data-theme="win95"] .ie-banner {
+    border-radius: 0;
+    background: linear-gradient(90deg, #000080, #1084d0);
+    color: #fff;
+}
+
+html[data-theme="win95"] .ie-banner-title { font-size: 1.8em; font-weight: bold; letter-spacing: 0; }
+html[data-theme="win95"] .ie-banner-title em { color: #ffff00; font-style: italic; }
+
+html[data-theme="win95"] .ie-home-link {
+    border: 2px solid;
+    border-color: #fff #808080 #808080 #fff;
+    border-radius: 0;
+    background: #c0c0c0;
+}
+
+html[data-theme="win95"] .ie-home-link span { color: #000; }
+html[data-theme="win95"] .regles-fig img { border-radius: 0; border: 1px solid #000; }
+html[data-theme="win95"] .regles-fig figcaption { color: #000; font-style: italic; }
+html[data-theme="win95"] .regles-pts { background: #ffffcc; color: #000; border: 1px dashed #000; border-radius: 0; font-weight: bold; }
+html[data-theme="win95"] .regles-table { border: 2px outset #c0c0c0; border-collapse: separate; border-spacing: 2px; }
+html[data-theme="win95"] .regles-table th,
+html[data-theme="win95"] .regles-table td { border: 1px inset #c0c0c0; }
+html[data-theme="win95"] .regles-table thead th { background: #c0c0c0; }
+html[data-theme="win95"] .score-form fieldset { border: 2px groove #fff; border-radius: 0; }
+html[data-theme="win95"] .score-total b { color: #000080; font-size: 1.6em; }
+html[data-theme="win95"] .score-warn { color: #ff0000; }
+html[data-theme="win95"] .ie-error h1 { color: #000; }
+
+/* Téléphone : boutons sans libellé, pas de favoris en panneau */
+@media (max-width: 640px) {
+    html[data-theme="win95"] button.ie-tb { min-width: 0; }
+    html[data-theme="win95"] button.ie-tb span { display: none; }
+    html[data-theme="win95"] .ie-favs:not([hidden]) { position: absolute; inset: 0 auto 0 0; z-index: 2; }
+    html[data-theme="win95"] .ie-doc { padding: 10px; font-size: 15px; }
+}
+
+/* Impression : seulement le document affiché */
+@media print {
+    .header, .ie-chrome, .regles-tabs, .ie-favs, .w95-menubar, .w95-statusbar, .w95-taskbar, .clippy { display: none !important; }
+    .ie-doc { border: 0; box-shadow: none; }
+    html[data-theme="win95"] body.w95-app, html[data-theme="win95"] .ie-view { height: auto; overflow: visible; }
+}

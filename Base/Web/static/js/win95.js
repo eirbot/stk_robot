@@ -17,6 +17,7 @@
         { href: '/led_studio', label: 'LED Studio', icon: 'bulb' },
         { href: '/media', label: 'Sons', icon: 'sound' },
         { href: '/replay', label: 'Replay', icon: 'film' },
+        { href: '/regles', label: 'Internet Explorer', icon: 'ie' },
     ];
 
     let bar = null, menu = null, tray = null, clock = null, sysInfoHome = null;
@@ -29,7 +30,7 @@
     }
 
     // Icônes pixel art 16x16 (static/icons/win95.svg, généré par tools/win95_icons.py)
-    const ico = (name) => `<svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=4#w95-${name}"></use></svg>`;
+    const ico = (name) => `<svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-${name}"></use></svg>`;
     const path = () => location.pathname.replace(/\/$/, '') || '/';
 
     // Icône de la barre de titre d'une fenêtre, d'après son titre (sinon celle de la page)
@@ -74,6 +75,7 @@
         'map': 'map', 'route': 'map', 'music': 'sound', 'volume-2': 'sound', 'lightbulb': 'bulb',
         'paintbrush': 'palette', 'joystick': 'joystick', 'gamepad-2': 'joystick', 'wrench': 'gear',
         'puzzle': 'puzzle', 'power': 'power', 'house': 'home', 'bot': 'robot',
+        'book-open': 'ie', 'calculator': 'calc',
     };
 
     function swapIcons(root) {
@@ -441,6 +443,40 @@
                 ['&?', [ABOUT]],
             ],
             status: [{ mirror: '#time-display', fmt: 'Temps : %' }, { mirror: '#val-state', fmt: 'État : %' }],
+        },
+        '/regles': {
+            title: 'Règlement Eurobot 2027 - Microsoft Internet Explorer',
+            menus: [
+                ['&Fichier', [{ label: 'Imprimer…', run: call('iePrint') }, '-', CLOSE]],
+                ['&Édition', [{ label: 'Tout sélectionner', run: () => {
+                    const doc = document.querySelector('.ie-doc:not([hidden])');
+                    if (doc) getSelection().selectAllChildren(doc);
+                } }]],
+                ['&Affichage', [
+                    { label: 'Actualiser', run: call('ieRefresh') },
+                    { label: 'Arrêter', run: call('ieStop') },
+                ]],
+                ['A&ller à', [
+                    { label: 'Précédente', run: call('ieBack') },
+                    { label: 'Suivante', run: call('ieForward') },
+                    '-',
+                    { label: 'Page de démarrage', run: call('ieGo', 'accueil') },
+                ]],
+                ['F&avoris', [
+                    { label: 'Règlement 2027', run: call('ieGo', 'jeu') },
+                    { label: 'Barème des points', run: call('ieGo', 'jeu/points') },
+                    { label: 'Plan de la table', run: call('ieGo', 'jeu/plan') },
+                    { label: 'Règles générales', run: call('ieGo', 'general') },
+                    { label: 'Pénalités', run: call('ieGo', 'general/penalites') },
+                    { label: 'Calculateur de score', run: call('ieGo', 'score') },
+                    '-',
+                    { label: 'Afficher le volet Favoris', run: call('ieFavorites') },
+                ]],
+                ['&?', [{ label: 'À propos d\'Internet Explorer', run: () => messageBox({
+                    title: 'À propos d\'Internet Explorer', icon: 'info',
+                    text: 'Internet Explorer pour EIRBOT\nVersion 2027 (règlement 1.0)\n\nNe se connecte qu\'à l\'intranet du robot. C\'est mieux comme ça.' }) }, ABOUT]],
+            ],
+            status: [{ mirror: '#ie-zone', fmt: '%' }],
         },
     };
 

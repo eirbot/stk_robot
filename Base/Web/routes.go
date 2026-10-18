@@ -288,6 +288,21 @@ func setupRoutes(app *fiber.App) {
 	app.Get("/replay", func(c *fiber.Ctx) error { return sendPage(c, "templates/replay.html") })
 	app.Get("/controle", func(c *fiber.Ctx) error { return sendPage(c, "templates/controle.html") })
 	app.Get("/control", func(c *fiber.Ctx) error { return c.Redirect("/controle") })
+	app.Get("/regles", func(c *fiber.Ctx) error { return sendPage(c, "templates/regles.html") })
+
+	// Règlements en PDF (dossier docu/ du dépôt) : seulement des .pdf, sans sous-dossier
+	app.Get("/docu/:name", func(c *fiber.Ctx) error {
+		name := filepath.Base(c.Params("name"))
+		if !strings.HasSuffix(strings.ToLower(name), ".pdf") {
+			return c.SendStatus(fiber.StatusNotFound)
+		}
+		path := filepath.Join(webDir, "..", "..", "docu", name)
+		if _, err := os.Stat(path); err != nil {
+			return c.SendStatus(fiber.StatusNotFound)
+		}
+		c.Set("Content-Type", "application/pdf")
+		return c.SendFile(path)
+	})
 
 	// API REST pour contrôle vitesse joystick
 	app.Post("/api/cmd_vel", func(c *fiber.Ctx) error {

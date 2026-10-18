@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EIRBOT - RÈGLEMENT 2027</title>
+    <script src="/static/js/theme.js?v=5"></script>
+    <link rel="stylesheet" href="/static/css/common.css?v=8.0">
+    <link rel="stylesheet" href="/static/css/regles.css?v=1">
+
+    <script src="/static/js/common.js?v=2.9" defer></script>
+    <script src="/static/js/clippy.js?v=3" defer></script>
+    <script src="/static/js/win95.js?v=12" defer></script>
+    <script src="/static/js/regles.js?v=1" defer></script>
+</head>
+
+<body>
+    <header class="header">
+        <a href="/" class="btn-back"><svg class="icon"><use href="/static/icons/sprite.svg#i-arrow-left"></use></svg> Accueil</a>
+        <h1 class="page-title">RÈGLEMENT 2027</h1>
+        <div class="sys-info" id="sys-info">...</div>
+    </header>
+
+    <main class="regles-page">
+        <!-- Barres d'Internet Explorer (thème Windows 95 seulement) -->
+        <div class="ie-chrome w95-only">
+            <div class="ie-toolbar">
+                <button type="button" class="ie-tb" id="ie-back" onclick="ieBack()" title="Précédente">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path class="ie-arrow" d="M2 10l7-7v4h9v6H9v4z"/></svg><span>Précédente</span></button>
+                <button type="button" class="ie-tb" id="ie-fwd" onclick="ieForward()" title="Suivante">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path class="ie-arrow" d="M18 10l-7-7v4H2v6h9v4z"/></svg><span>Suivante</span></button>
+                <button type="button" class="ie-tb" onclick="ieStop()" title="Arrêter">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path class="ie-stop" d="M6 1h8l5 5v8l-5 5H6l-5-5V6z"/><path d="M6 6l8 8M14 6l-8 8" stroke="#fff" stroke-width="2.4"/></svg><span>Arrêter</span></button>
+                <button type="button" class="ie-tb" onclick="ieRefresh()" title="Actualiser">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path class="ie-page" d="M3 1h10l4 4v14H3z"/><path d="M14 9a4 4 0 1 1-2-3.5M12 3v3h3" fill="none" stroke="#008000" stroke-width="2"/></svg><span>Actualiser</span></button>
+                <button type="button" class="ie-tb" onclick="ieGo('accueil')" title="Démarrage">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path class="ie-roof" d="M10 1l9 8h-3v10H4V9H1z"/><path d="M8 12h4v7H8z" fill="#800000"/></svg><span>Démarrage</span></button>
+                <span class="ie-tb-sep"></span>
+                <button type="button" class="ie-tb" id="ie-fav-btn" onclick="ieFavorites()" title="Favoris">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path class="ie-folder" d="M1 5h6l2 2h10v11H1z"/><path d="M13 8l1.5 3 3 .4-2.2 2 .6 3-2.9-1.5-2.9 1.5.6-3-2.2-2 3-.4z" fill="#ffff00" stroke="#000" stroke-width=".6"/></svg><span>Favoris</span></button>
+                <button type="button" class="ie-tb" onclick="iePrint()" title="Imprimer">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 1h10v6H5z" fill="#fff" stroke="#000"/><path class="ie-printer" d="M1 7h18v8h-3v-3H4v3H1z"/><path d="M4 12h12v7H4z" fill="#fff" stroke="#000"/></svg><span>Imprimer</span></button>
+                <div class="ie-throbber" id="ie-throbber" aria-hidden="true"><svg class="w95-ico"><use href="/static/icons/win95.svg?v=5#w95-ie"></use></svg></div>
+            </div>
+            <form class="ie-address" id="ie-address" autocomplete="off">
+                <label for="ie-url"><u>A</u>dresse</label>
+                <div class="ie-addr-box">
+                    <svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-ie"></use></svg>
+                    <input type="text" id="ie-url" spellcheck="false" value="http://intranet.eirbot/">
+                </div>
+                <button type="submit" class="ie-go">OK</button>
+            </form>
+        </div>
+
+        <!-- Onglets (thèmes STK) ; en Windows 95 : barre « Liens » -->
+        <nav class="regles-tabs" id="regles-tabs">
+            <span class="ie-links-label w95-only">Liens</span>
+            <a href="#accueil" data-doc="accueil"><svg class="icon"><use href="/static/icons/sprite.svg#i-house"></use></svg> Accueil</a>
+            <a href="#jeu" data-doc="jeu"><svg class="icon"><use href="/static/icons/sprite.svg#i-book-open"></use></svg> Règlement 2027</a>
+            <a href="#general" data-doc="general"><svg class="icon"><use href="/static/icons/sprite.svg#i-book-open"></use></svg> Règles générales</a>
+            <a href="#score" data-doc="score"><svg class="icon"><use href="/static/icons/sprite.svg#i-calculator"></use></svg> Calculateur</a>
+            <a href="#pdf" data-doc="pdf"><svg class="icon"><use href="/static/icons/sprite.svg#i-folder-open"></use></svg> PDF</a>
+        </nav>
+
+        <div class="ie-body">
+            <aside class="ie-favs" id="ie-favs" hidden>
+                <div class="ie-favs-title">Favoris <button type="button" onclick="ieFavorites()" aria-label="Fermer">×</button></div>
+                <a href="#accueil"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-ie"></use></svg> Page de démarrage</a>
+                <a href="#jeu"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-ie"></use></svg> Règlement 2027</a>
+                <a href="#jeu/points"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-ie"></use></svg> Barème des points</a>
+                <a href="#jeu/plan"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-map"></use></svg> Plan de la table</a>
+                <a href="#general"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-ie"></use></svg> Règles générales</a>
+                <a href="#general/penalites"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-warning"></use></svg> Pénalités</a>
+                <a href="#score"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-calc"></use></svg> Calculateur de score</a>
+                <a href="#pdf"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-folder"></use></svg> Documents PDF</a>
+            </aside>
+
+            <div class="ie-view" id="ie-view">
+
+                <!-- ===================== Page de démarrage ===================== -->
+                <article class="ie-doc" id="doc-accueil" data-url="http://intranet.eirbot/" data-title="Bienvenue sur l'intranet Eirbot">
+                    <div class="ie-banner">
+                        <div class="ie-banner-title">Eurobot 2027 : <em>The legend of Camelot</em></div>
+                        <div class="ie-banner-sub">34<sup>e</sup> édition — règlement officiel 1.0 · règles générales 1.4</div>
+                    </div>
+                    <figure class="regles-fig regles-fig-wide">
+                        <img src="/static/img/regles/vue-generale.jpg" alt="Vue générale de l'aire de jeu 2027" loading="lazy">
+                        <figcaption>Vue générale de l'aire de jeu</figcaption>
+                    </figure>
+                    <div class="ie-home-grid">
+                        <a class="ie-home-link" href="#jeu"><b>Règlement 2027</b><span>Table, éléments de jeu, les 4 actions et le barème.</span></a>
+                        <a class="ie-home-link" href="#general"><b>Règles générales</b><span>Dimensions, sécurité, PAMI, déroulement d'un match, pénalités.</span></a>
+                        <a class="ie-home-link" href="#score"><b>Calculateur de score</b><span>Combien rapporte une stratégie ? Compter les points en fin de match.</span></a>
+                        <a class="ie-home-link" href="#pdf"><b>Documents PDF</b><span>Les règlements officiels, à lire en entier.</span></a>
+                    </div>
+                    <h2>Ce qui compte pour nous</h2>
+                    <ul>
+                        <li><b>Match de 100 s</b>, préparation de 3 min max. <b>Phase d'attaque à partir de 85 s</b> : PAMI et boulets ne comptent qu'après.</li>
+                        <li><b>Pierres</b> : cartons de 320 × 110 × 110 mm (~90 g), ArUco 13 sur les 4 grandes faces, 30 sur la table, en piles de 3 dans les carrières.</li>
+                        <li>La <b>porte</b> (2 pierres debout + 1 couchée dessus) rapporte 20 points : c'est l'action la plus rentable, une seule par château.</li>
+                        <li>Le <b>Graal</b> (fait par nous, plus grand qu'un cube de 60 mm) : jusqu'à 25 points s'il finit sur le toit du robot (&gt; 30 cm).</li>
+                        <li>L'<b>évitement</b> doit maintenant détecter aussi les <b>PAMI adverses</b> (règles générales 1.4).</li>
+                        <li><b>PAMI</b> : plus grand qu'un cylindre de 80 mm × 150 mm, 175 mm de haut au maximum déployé.</li>
+                        <li><b>Support de balise</b> sur le robot (sommet à 430 mm) : maintenant obligatoire dans tous les cas.</li>
+                    </ul>
+                </article>
+
+                <!-- ===================== Règlement 2027 ===================== -->
+                <article class="ie-doc" id="doc-jeu" data-url="http://intranet.eirbot/regles/2027.htm" data-title="Règlement Eurobot 2027" hidden>
+                    <h1>Règlement Eurobot 2027</h1>
+                    <p class="ie-meta">Version officielle 1.0 — résumé fidèle du PDF ; en cas de doute, le PDF fait foi.</p>
+                    <div class="ie-toc">
+                        <b>Sommaire</b>
+                        <a href="#jeu/theme">Thème</a> · <a href="#jeu/table">L'aire de jeu</a> · <a href="#jeu/elements">Éléments de jeu</a> ·
+                        <a href="#jeu/camelot">Camelot</a> · <a href="#jeu/graal">Le Graal</a> · <a href="#jeu/retour">Retour du roi</a> ·
+                        <a href="#jeu/assaut">À l'assaut</a> · <a href="#jeu/points">Points</a> · <a href="#jeu/plan">Plan</a>
+                    </div>
+
+                    <h2 id="jeu-theme">Le thème</h2>
+                    <p>Le roi Arthur a trouvé le Graal ; un autre robot prétend être le vrai roi Arthur. Il faut mettre le Graal à l'abri
+                        derrière les remparts de Camelot. Quatre actions, <b>indépendantes, dans l'ordre qu'on veut, aucune obligatoire</b> :
+                        construire Camelot, élever le Graal, revenir dans la salle du trône, attaquer le château adverse.</p>
+
+                    <h2 id="jeu-table">L'aire de jeu</h2>
+                    <p>Plateau de <b>3000 × 2000 mm</b>, bordures de 70 mm de haut et 22 mm d'épaisseur, vinyle antidérapant imprimé.
+                        Jointures possibles entre morceaux, non contestables. L'organisation peut fixer des caméras sur les bordures non utiles.</p>
+                    <figure class="regles-fig regles-fig-wide">
+                        <img src="/static/img/regles/table.jpg" alt="Vue détaillée de l'aire de jeu, numérotée" loading="lazy">
+                        <figcaption>Vue depuis le public : 1. salle du trône (départ robot) · 2. cour du château · 3. écuries (départ PAMI) ·
+                            4. remparts · 5. douves · 6. carrières de pierre</figcaption>
+                    </figure>
+                    <h3>Zones de départ : les salles du trône</h3>
+                    <p>Une par équipe, <b>500 × 500 mm</b>, sur les côtés de la table, ligne de bordure comprise. À la fin de la préparation,
+                        la projection du robot doit tenir entièrement dans la zone (le bord de table accolé en fait partie).</p>
+                    <div class="regles-row">
+                        <figure class="regles-fig"><img src="/static/img/regles/depart-bleu.jpg" alt="Salle du trône bleue" loading="lazy"><figcaption>Équipe bleue</figcaption></figure>
+                        <figure class="regles-fig"><img src="/static/img/regles/depart-jaune.jpg" alt="Salle du trône jaune" loading="lazy"><figcaption>Équipe jaune</figcaption></figure>
+                    </div>
+
+                    <h2 id="jeu-elements">Les éléments de jeu</h2>
+                    <dl class="regles-dl">
+                        <dt>Pierres</dt><dd>Boîtes en carton 320 × 110 × 110 mm (~90 g, RAJA BLFA01). <b>30</b> pierres, ArUco <b>13</b> sur les 4 grandes faces.</dd>
+                        <dt>Carrières</dt><dd>Zones réparties sur la table, chacune avec 3 pierres couchées empilées.</dd>
+                        <dt>Remparts</dt><dd>Zones de construction réservées à chaque équipe : <b>murs</b> (rectangles 200 × 400 mm) et <b>tours</b> (cercles Ø 200 mm).</dd>
+                        <dt>Cour du château</dt><dd>Entourée par les remparts, contient la salle du trône.</dd>
+                        <dt>Douves</dt><dd>Zones autour des remparts, ligne comprise.</dd>
+                        <dt>Chevaliers (PAMI)</dt><dd>Faits par l'équipe, partent des <b>écuries</b> (200 × 300 mm). Design et couleurs proches du robot souhaités.</dd>
+                        <dt>Graal</dt><dd>Fait par l'équipe, posé dans la salle du trône avant le match.</dd>
+                        <dt>Boulets</dt><dd>Balles en mousse compressibles Ø 45 mm, <b>10 par équipe</b>.</dd>
+                    </dl>
+                    <div class="regles-row">
+                        <figure class="regles-fig"><img src="/static/img/regles/pierres.jpg" alt="Pierres avec tags ArUco" loading="lazy"><figcaption>Pierres</figcaption></figure>
+                        <figure class="regles-fig"><img src="/static/img/regles/boulets-bleus.jpg" alt="Boulets bleus" loading="lazy"><figcaption>Boulets bleus</figcaption></figure>
+                        <figure class="regles-fig"><img src="/static/img/regles/boulets-jaunes.jpg" alt="Boulets jaunes" loading="lazy"><figcaption>Boulets jaunes</figcaption></figure>
+                    </div>
+
+                    <h2 id="jeu-camelot">1. Construction de la glorieuse Camelot</h2>
+                    <p>Ramasser les pierres et les déposer dans les remparts en respectant les plans : murs, tours et porte.</p>
+                    <ul>
+                        <li><b>Mur</b> : 3 pierres couchées empilées, dans une zone rectangulaire de mur.</li>
+                        <li><b>Tour</b> : 1 pierre debout, dans une zone circulaire de tour.</li>
+                        <li><b>Porte</b> : 2 pierres debout surmontées d'une pierre couchée, dans une zone rectangulaire de mur. <b>Une seule porte par château.</b></li>
+                        <li>Une pierre compte dans une zone si tout ou partie de sa projection y est, ou si elle est sur une pierre déjà valide pour la zone.</li>
+                        <li>Une construction par zone ; une construction en trop ne rapporte pas son bonus, mais ses pierres comptent. Une pierre ne compte que pour une construction.</li>
+                        <li>Les éléments peuvent dépasser la limite de hauteur, seulement dans les zones de construction et le château ; les actionneurs, jamais.</li>
+                        <li>Un élément encore contrôlé par un robot à la fin ne compte pas.</li>
+                        <li>On peut stocker jusqu'à <b>3 pierres dans la cour</b> pendant le match.</li>
+                        <li>Voler des pierres du château adverse : seulement quand <b>toutes les carrières sont vides</b>, sans détruire le château. Sinon pénalité d'au moins 50 points.</li>
+                    </ul>
+                    <p class="regles-pts">1 pt par pierre posée dans une zone de construction · +5 par mur · +5 par tour · +20 par porte</p>
+                    <figure class="regles-fig regles-fig-wide">
+                        <img src="/static/img/regles/chateau.jpg" alt="Plan détaillé du château" loading="lazy">
+                        <figcaption>Le château vu depuis le centre de la table</figcaption>
+                    </figure>
+                    <div class="regles-row">
+                        <figure class="regles-fig"><img src="/static/img/regles/mur.jpg" alt="Mur de 3 pierres" loading="lazy"><figcaption>Mur</figcaption></figure>
+                        <figure class="regles-fig"><img src="/static/img/regles/tour.jpg" alt="Tour d'une pierre debout" loading="lazy"><figcaption>Tour</figcaption></figure>
+                        <figure class="regles-fig"><img src="/static/img/regles/porte.jpg" alt="Porte de 3 pierres" loading="lazy"><figcaption>Porte</figcaption></figure>
+                    </div>
+
+                    <h2 id="jeu-graal">2. Il n'y en a qu'un, et c'est le mien !</h2>
+                    <ul>
+                        <li>Pendant la préparation, le Graal est posé dans la salle du trône, entièrement dedans, <b>pas tenu par le robot</b>.</li>
+                        <li>Mêmes contraintes de construction qu'un PAMI, sauf la taille minimale : <b>plus grand qu'un cube de 60 mm</b>.</li>
+                        <li>Pendant le match, le robot le prend et le pose sur un support (pierre, construction ou robot). Niveau en fin de match :
+                            <b>1</b> = 1 pierre couchée · <b>2</b> = 2 pierres couchées · <b>3</b> = 3 couchées ou 1 debout ·
+                            <b>4</b> = sur le toit du robot (&gt; 30 cm), libre de tout actionneur et fixation.</li>
+                        <li>Le Graal ne doit jamais quitter la cour et les remparts (sinon retiré de la table). Interdit de toucher au Graal adverse.</li>
+                        <li>Encore tenu par un actionneur à la fin : ne compte pas.</li>
+                    </ul>
+                    <p class="regles-pts">5 pts si le Graal est dans le château · +5 par niveau d'élévation</p>
+
+                    <h2 id="jeu-retour">3. Le retour du roi</h2>
+                    <p>À la fin du match, le robot principal (pas les PAMI) doit être arrêté dans sa salle du trône.</p>
+                    <p class="regles-pts">5 pts si partiellement dans la zone · 10 pts si entièrement</p>
+
+                    <h2 id="jeu-assaut">4. À l'assaut !</h2>
+                    <ul>
+                        <li>La <b>phase d'attaque va de la 85<sup>e</sup> seconde à la fin du match</b> ; ce qui est fait avant ne compte pas.</li>
+                        <li>Un PAMI qui sort des écuries avant la phase d'attaque est retiré du match.</li>
+                        <li>PAMI validé dans une douve adverse si tout ou partie de sa projection y est en fin de match.</li>
+                        <li>PAMI qui attaque un PAMI adverse : un actionneur de couleur distincte le touche en fin de match, sans l'abîmer, et seul cet actionneur le touche.</li>
+                        <li>Boulets chargés pendant la préparation dans le robot et les PAMI (1 boulet par PAMI maximum). Boulet validé si sa projection est dans la cour du château adverse en fin de match.
+                            Interdit d'influencer les boulets adverses. Pas de limite de hauteur pour un boulet en vol.</li>
+                    </ul>
+                    <p class="regles-pts">5 pts par douve occupée · 5 pts si un PAMI attaque un PAMI adverse · 5 pts si un boulet est dans le château adverse · +15 si au moins 3 boulets</p>
+
+                    <h2 id="jeu-points">Barème complet</h2>
+                    <p>Le décompte se fait toujours à l'avantage de l'équipe. Les points « supplémentaires » ne comptent que si les précédents de l'action sont validés.</p>
+                    <table class="regles-table">
+                        <thead><tr><th>Action</th><th>Condition</th><th>Points</th></tr></thead>
+                        <tbody>
+                            <tr><td rowspan="4">Camelot</td><td>Pierre posée dans une zone de construction</td><td>1 / pierre</td></tr>
+                            <tr><td>Mur construit (3 pierres couchées)</td><td>5</td></tr>
+                            <tr><td>Tour construite (1 pierre debout)</td><td>5</td></tr>
+                            <tr><td>Porte construite (une seule par château)</td><td>20</td></tr>
+                            <tr><td rowspan="2">Graal</td><td>Présent dans le château</td><td>5</td></tr>
+                            <tr><td>Par niveau d'élévation (1 à 4)</td><td>5 / niveau</td></tr>
+                            <tr><td rowspan="2">Retour du roi</td><td>Robot partiellement dans sa salle du trône</td><td>5</td></tr>
+                            <tr><td>Robot entièrement dans sa salle du trône</td><td>10</td></tr>
+                            <tr><td rowspan="4">Assaut</td><td>Par douve adverse occupée par un PAMI</td><td>5 / douve</td></tr>
+                            <tr><td>Au moins un PAMI attaque un PAMI adverse</td><td>5</td></tr>
+                            <tr><td>Au moins 1 boulet dans le château adverse</td><td>5</td></tr>
+                            <tr><td>Au moins 3 boulets (supplémentaire)</td><td>+15</td></tr>
+                        </tbody>
+                    </table>
+                    <p><a href="#score">Calculer un score →</a></p>
+
+                    <h2 id="jeu-plan">Plan de la table</h2>
+                    <p>Vue du dessus. Repère du plan : x de 0 à 2000 (largeur), y de 0 à 3000 (longueur). Équipe jaune en bas, bleue en haut.</p>
+                    <figure class="regles-fig regles-fig-plan">
+                        <a href="/static/img/regles/plan.jpg" target="_blank" rel="noopener"><img src="/static/img/regles/plan.jpg" alt="Plan coté de la table de jeu" loading="lazy"></a>
+                        <figcaption>Plan coté (cliquer pour agrandir)</figcaption>
+                    </figure>
+                    <h3>Couleurs</h3>
+                    <table class="regles-table">
+                        <thead><tr><th>Élément</th><th>RAL</th><th>RVB</th></tr></thead>
+                        <tbody>
+                            <tr><td><span class="regles-swatch" style="background:rgb(0,91,140)"></span>Équipe bleue</td><td>5017 mat</td><td>0, 91, 140</td></tr>
+                            <tr><td><span class="regles-swatch" style="background:rgb(247,181,0)"></span>Équipe jaune</td><td>1023 mat</td><td>247, 181, 0</td></tr>
+                            <tr><td><span class="regles-swatch" style="background:rgb(181,176,161)"></span>Bordures, éléments non colorés</td><td>7032 mat</td><td>181, 176, 161</td></tr>
+                        </tbody>
+                    </table>
+                </article>
+
+                <!-- ===================== Règles générales ===================== -->
+                <article class="ie-doc" id="doc-general" data-url="http://intranet.eirbot/regles/general.htm" data-title="Règles générales Eurobot" hidden>
+                    <h1>Règles générales Eurobot</h1>
+                    <p class="ie-meta">Version officielle 1.4 — l'essentiel pour notre robot. Le PDF complet fait 34 pages.</p>
+                    <div class="ie-toc">
+                        <b>Sommaire</b>
+                        <a href="#general/nouveau">Nouveautés 1.4</a> · <a href="#general/robot">Le robot</a> · <a href="#general/pami">PAMI</a> ·
+                        <a href="#general/deporte">Calcul déporté</a> · <a href="#general/match">Le match</a> · <a href="#general/penalites">Pénalités</a>
+                    </div>
+
+                    <h2 id="general-nouveau">Ce qui change entre 1.2 et 1.4</h2>
+                    <ul>
+                        <li><b>Évitement</b> : le robot doit détecter les robots <b>et les PAMI</b> adverses. La tolérance « ne pas éviter un PAMI » disparaît.</li>
+                        <li><b>PAMI</b> : plus grand qu'un <b>cylindre Ø 80 mm × 150 mm</b> (avant : cube de 60 mm), altitude maximale <b>175 mm</b> (avant : 350 mm).</li>
+                        <li><b>Support de balise pour l'adversaire</b> : devient obligatoire pour tous (avant : seulement si l'adversaire le demandait).</li>
+                        <li><b>Après la préparation</b>, interdit de toucher la table et les éléments de jeu (en plus des robots).</li>
+                        <li><b>Batteries</b> : les organisateurs peuvent demander la fiche technique d'une batterie mal identifiée, et la refuser.</li>
+                    </ul>
+
+                    <h2 id="general-robot">Le robot</h2>
+                    <table class="regles-table">
+                        <tbody>
+                            <tr><th>Périmètre</th><td>≤ 1200 mm au départ, ≤ 1400 mm déployé (enveloppe convexe de la projection au sol)</td></tr>
+                            <tr><th>Hauteur</th><td>≤ 350 mm à tout instant, objets manipulés compris (le bouton d'arrêt d'urgence peut dépasser)</td></tr>
+                            <tr><th>Arrêt d'urgence</th><td>Bouton rouge Ø ≥ 20 mm, visible, accessible aux arbitres. Appui par l'équipe pendant le match = forfait</td></tr>
+                            <tr><th>Démarrage</th><td>Cordon d'au moins 500 mm, tiré par un membre de l'équipe, qui ne reste pas attaché</td></tr>
+                            <tr><th>Évitement</th><td>Obligatoire, vérifié à l'homologation. Non fonctionnel : −30 pts. Désactivé volontairement : disqualification</td></tr>
+                            <tr><th>Support de balise</th><td><b>Obligatoire</b> (pour la balise adverse) : sommet plan à 430 ± 5 mm, Velcro crochets dessus,
+                                entre Ø 70 mm et un carré de 100 mm, dans un cercle de 20 cm autour du centre du robot, plein et opaque, tient 400 g</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h2 id="general-pami">PAMI</h2>
+                    <ul>
+                        <li>Plus grand qu'un cylindre de 80 mm de diamètre et 150 mm de haut ; ne monte pas au-delà de 175 mm.</li>
+                        <li>Périmètre ≤ 600 mm au départ, ≤ 700 mm déployé.</li>
+                        <li>Lancé par un cordon de 50 cm en début de match ou par le robot pendant le match ; aucune commande extérieure à la table.</li>
+                    </ul>
+
+                    <h2 id="general-deporte">Dispositif de calcul et d'observation déporté</h2>
+                    <p>Notre caméra zénithale. Posée sur la partie de la plateforme de la couleur de l'équipe, au plus <b>1,6 m</b> au-dessus de la plateforme,
+                        pas en dessous de sa face inférieure (22 mm). Doit résister aux vibrations.</p>
+
+                    <h2 id="general-match">Déroulement d'un match</h2>
+                    <ol>
+                        <li><b>Préparation : 3 minutes maximum</b> pour installer robots, balises, PAMI, Graal, boulets. Robot pas prêt = forfait possible.</li>
+                        <li>L'arbitre demande si tout le monde est prêt et place le marqueur de zone de départ : plus le droit de toucher robots, table ni éléments.
+                            On peut appuyer sur l'arrêt d'urgence pour économiser la batterie en attendant.</li>
+                        <li>Au signal, <b>100 secondes</b> de match. Personne ne touche à rien sauf l'arbitre ; l'équipe reste derrière la table.</li>
+                        <li>À la fin des 100 s, le robot s'arrête et coupe tous ses actionneurs (les afficheurs peuvent rester allumés).</li>
+                        <li>Les arbitres comptent les points ; les équipes signent la feuille de match.</li>
+                    </ol>
+
+                    <h2 id="general-penalites">Pénalités</h2>
+                    <p>Une seule pénalité par match (la plus forte). Un score forfait ou négatif est ramené à 0. En séries, un avertissement d'abord.</p>
+                    <table class="regles-table">
+                        <thead><tr><th>Faute</th><th>Sanction</th></tr></thead>
+                        <tbody>
+                            <tr><td>Perte d'une pièce du robot sur la table</td><td>−20</td></tr>
+                            <tr><td>Dégradation de la table ou d'un élément</td><td>−30</td></tr>
+                            <tr><td>Système d'évitement non fonctionnel</td><td>−30</td></tr>
+                            <tr><td>Faux départ · robot qui bouge après la fin · préparation trop longue · changement de zone de départ après 3 min</td><td>−50</td></tr>
+                            <tr><td>Non fair-play, anti-jeu, décision de l'arbitrage ou de l'organisation</td><td>−50 à −100</td></tr>
+                            <tr><td>Aucun robot ni PAMI ne sort de sa zone · intervention sur la table ou le robot · dimensions non respectées · faux départ répété · fixer ou faire vibrer la table</td><td>Forfait</td></tr>
+                            <tr><td>Désactiver volontairement l'évitement · robot copié sur une autre équipe · abîmer volontairement un autre robot</td><td>Disqualification</td></tr>
+                        </tbody>
+                    </table>
+                    <p>En cas d'égalité, on compare les scores sans les points bonus.</p>
+                </article>
+
+                <!-- ===================== Calculateur ===================== -->
+                <article class="ie-doc" id="doc-score" data-url="http://intranet.eirbot/regles/score.htm" data-title="Calculateur de score 2027" hidden>
+                    <h1>Calculateur de score</h1>
+                    <p class="ie-meta">Barème 2027. Les pierres des constructions sont comptées automatiquement (3 par mur, 1 par tour, 3 pour la porte).</p>
+                    <form class="score-form" id="score-form" autocomplete="off">
+                        <fieldset>
+                            <legend>Camelot</legend>
+                            <label>Murs <input type="number" name="murs" min="0" max="10" value="0"></label>
+                            <label>Tours <input type="number" name="tours" min="0" max="4" value="0"></label>
+                            <label class="score-check"><input type="checkbox" name="porte"> Porte</label>
+                            <label>Autres pierres posées dans une zone <input type="number" name="pierres" min="0" max="30" value="0"></label>
+                        </fieldset>
+                        <fieldset>
+                            <legend>Graal</legend>
+                            <label class="score-check"><input type="checkbox" name="graal"> Dans le château</label>
+                            <label>Niveau
+                                <select name="niveau">
+                                    <option value="0">Au sol</option>
+                                    <option value="1">1 : une pierre couchée</option>
+                                    <option value="2">2 : deux pierres couchées</option>
+                                    <option value="3">3 : trois couchées ou une debout</option>
+                                    <option value="4">4 : sur le toit du robot</option>
+                                </select>
+                            </label>
+                        </fieldset>
+                        <fieldset>
+                            <legend>Retour du roi</legend>
+                            <label class="score-check"><input type="radio" name="retour" value="0" checked> Hors zone</label>
+                            <label class="score-check"><input type="radio" name="retour" value="5"> Partiellement</label>
+                            <label class="score-check"><input type="radio" name="retour" value="10"> Entièrement</label>
+                        </fieldset>
+                        <fieldset>
+                            <legend>À l'assaut (après 85 s)</legend>
+                            <label>Douves adverses occupées <input type="number" name="douves" min="0" max="3" value="0"></label>
+                            <label class="score-check"><input type="checkbox" name="attaque"> Un PAMI attaque un PAMI adverse</label>
+                            <label>Boulets dans le château adverse <input type="number" name="boulets" min="0" max="10" value="0"></label>
+                        </fieldset>
+                        <fieldset>
+                            <legend>Pénalité</legend>
+                            <label>Points retirés
+                                <select name="penalite">
+                                    <option value="0">Aucune</option>
+                                    <option value="20">−20 : pièce perdue</option>
+                                    <option value="30">−30 : dégradation / évitement</option>
+                                    <option value="50">−50 : faux départ, retard…</option>
+                                    <option value="100">−100 : anti-jeu grave</option>
+                                </select>
+                            </label>
+                        </fieldset>
+                    </form>
+                    <div class="score-result">
+                        <table class="regles-table score-detail" id="score-detail"></table>
+                        <div class="score-total">Total : <b id="score-total">0</b> points</div>
+                        <div class="score-warn" id="score-warn"></div>
+                        <button type="button" class="btn" id="score-reset">Remettre à zéro</button>
+                    </div>
+                </article>
+
+                <!-- ===================== PDF ===================== -->
+                <article class="ie-doc" id="doc-pdf" data-url="http://intranet.eirbot/docu/" data-title="Index of /docu" hidden>
+                    <h1>Index of /docu</h1>
+                    <ul class="ie-files">
+                        <li><a href="/docu/Eurobot2027_Rules_FR.pdf" target="_blank" rel="noopener">Eurobot2027_Rules_FR.pdf</a> — règlement 2027, version 1.0 (18 pages)</li>
+                        <li><a href="/docu/Eurobot_General_Rules_SR_FR.pdf" target="_blank" rel="noopener">Eurobot_General_Rules_SR_FR.pdf</a> — règles générales, version 1.4 (34 pages)</li>
+                        <li><a href="/docu/Eurobot2026_Rules_1.0_FR.pdf" target="_blank" rel="noopener">Eurobot2026_Rules_1.0_FR.pdf</a> — ancien règlement 2026</li>
+                        <li><a href="/docu/RPLiDAR_C1M1_protocole_com.pdf" target="_blank" rel="noopener">RPLiDAR_C1M1_protocole_com.pdf</a> — protocole du LiDAR</li>
+                    </ul>
+                    <p>Sites officiels (il faut Internet) : <a href="https://www.eurobot.org/" target="_blank" rel="noopener">eurobot.org</a> ·
+                        <a href="https://www.eurobot.org/faq/" target="_blank" rel="noopener">FAQ</a> ·
+                        <a href="https://www.coupederobotique.fr/" target="_blank" rel="noopener">coupederobotique.fr</a></p>
+                    <hr>
+                    <address>Serveur base_stk sur intranet.eirbot, port 80</address>
+                </article>
+
+                <!-- ===================== Page introuvable ===================== -->
+                <article class="ie-doc ie-error" id="doc-erreur" data-url="" data-title="Impossible d'afficher la page" hidden>
+                    <h1>Impossible d'afficher la page</h1>
+                    <p>La page que vous recherchez n'est pas disponible. Le site Web rencontre peut-être des difficultés techniques,
+                        ou le robot a encore débranché le câble Ethernet.</p>
+                    <hr>
+                    <p>Essayez ce qui suit :</p>
+                    <ul>
+                        <li>Cliquez sur le bouton <a href="#" onclick="ieBack(); return false;">Précédente</a>.</li>
+                        <li>Ouvrez la <a href="#accueil">page de démarrage</a>.</li>
+                        <li>Vérifiez que la base est allumée.</li>
+                    </ul>
+                    <p class="ie-meta">Erreur HTTP 404 — Fichier introuvable<br>Internet Explorer</p>
+                </article>
+            </div>
+        </div>
+        <span id="ie-zone" hidden>Zone Internet</span>
+    </main>
+</body>
+
+</html>
