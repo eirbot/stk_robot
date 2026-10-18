@@ -1,0 +1,175 @@
+/* Page Mises à jour (« Windows Update ») */
+
+.update-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+.wu-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--header-bg);
+    color: var(--header-text);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-bottom: 14px;
+}
+
+.wu-logo { width: 48px; height: 48px; flex: none; }
+.wu-banner-title { font-family: var(--font-display); font-size: 1.6rem; letter-spacing: var(--display-spacing); }
+.wu-banner-sub { opacity: .8; }
+
+.wu-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 14px;
+    align-items: start;
+}
+
+.wu-facts { text-align: left; display: grid; grid-template-columns: 1fr; gap: 2px; margin: 0 0 14px; }
+.wu-facts dt { font-size: .8rem; color: var(--text-muted); margin-top: 6px; }
+.wu-facts dd { margin: 0; font-family: var(--font-mono); font-size: .9rem; word-break: break-word; }
+.wu-side .btn { width: 100%; }
+
+.wu-note { padding: 8px 10px; border-radius: var(--radius-sm); margin-bottom: 8px; font-size: .9rem; }
+.wu-note-warn { background: color-mix(in srgb, var(--warning) 22%, transparent); }
+.wu-note-info { background: var(--surface-2); }
+
+.wu-list { text-align: left; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+
+.wu-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border: 2px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    cursor: pointer;
+}
+
+.wu-item input { margin-top: 4px; width: 18px; height: 18px; flex: none; }
+.wu-item-body { display: flex; flex-direction: column; gap: 3px; }
+.wu-item-title { font-weight: 700; }
+.wu-item-desc { color: var(--text-muted); font-size: .9rem; }
+.wu-level { font-size: .75rem; font-weight: 700; padding: 1px 6px; border-radius: 6px; margin-left: 6px; vertical-align: 1px; }
+.wu-level-critique { background: var(--danger); color: #fff; }
+.wu-level-recommandee { background: var(--blue); color: #fff; }
+.wu-uptodate { font-weight: 700; color: var(--success-strong); }
+.wu-searching { color: var(--text-muted); }
+
+.wu-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+.wu-progress { margin-top: 14px; }
+.wu-progress-label { font-weight: 700; margin-bottom: 6px; }
+
+/* Barre de progression : blocs qui défilent pendant le travail */
+.wu-bar {
+    height: 20px;
+    border: 2px solid var(--border-strong);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--surface-2);
+    position: relative;
+}
+
+.wu-bar span {
+    position: absolute;
+    inset: 2px auto 2px 2px;
+    width: 0;
+    background: repeating-linear-gradient(90deg, var(--accent) 0 12px, transparent 12px 15px);
+}
+
+.wu-bar.is-busy span { width: 35%; animation: wu-slide 1.6s linear infinite; }
+
+@keyframes wu-slide {
+    from { left: -35%; }
+    to { left: 100%; }
+}
+
+.wu-log { max-height: 260px; overflow: auto; margin-top: 8px; white-space: pre-wrap; }
+
+.wu-commits { margin-top: 16px; text-align: left; }
+.wu-commits summary { cursor: pointer; font-weight: 700; }
+.wu-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: .88rem; }
+.wu-table th, .wu-table td { border-bottom: 1px solid var(--border); padding: 5px 6px; text-align: left; vertical-align: top; }
+.wu-table td:nth-child(3) { white-space: nowrap; }
+
+@media (max-width: 760px) {
+    .update-page { padding: 10px; }
+    .wu-layout { grid-template-columns: 1fr; }
+    .wu-table td:nth-child(2), .wu-table th:nth-child(2) { display: none; }
+}
+
+/* =======================================================
+   THÈME WINDOWS 95 : le site Windows Update de 1998
+   ======================================================= */
+html[data-theme="win95"] .w95-appframe > main.update-page { max-width: none; width: 100%; padding: 0; background: #fff; }
+
+html[data-theme="win95"] .wu-banner {
+    border-radius: 0;
+    margin: 0;
+    background: linear-gradient(90deg, #000080 0%, #1084d0 70%, #ffffff 100%);
+    color: #fff;
+}
+
+html[data-theme="win95"] .wu-banner-title, html[data-theme="win95"] .wu-banner-title * { font-family: 'Times New Roman', Times, serif !important; font-style: italic; font-weight: bold; font-size: 2rem; }
+
+html[data-theme="win95"] .wu-layout { grid-template-columns: 230px 1fr; gap: 0; min-height: 100%; }
+
+/* Colonne de gauche bleu nuit, comme le site */
+html[data-theme="win95"] body.w95-app .wu-side.card:not(.pin-card):not(.w95-about) {
+    background: #000080 !important;
+    color: #fff;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 12px !important;
+    margin: 0 !important;
+    min-height: 100%;
+}
+
+html[data-theme="win95"] body.w95-app .wu-side.card:not(.pin-card):not(.w95-about) .card-title { color: #ffff00 !important; background: transparent !important; }
+html[data-theme="win95"] .wu-facts dt { color: #c0c0ff; }
+html[data-theme="win95"] .wu-facts dd { color: #fff; }
+
+html[data-theme="win95"] body.w95-app .wu-main.card:not(.pin-card):not(.w95-about) {
+    background: #fff !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 12px 18px !important;
+}
+
+html[data-theme="win95"] .wu-item {
+    border: 0;
+    border-bottom: 1px dotted #808080;
+    border-radius: 0;
+    background: transparent;
+}
+
+html[data-theme="win95"] .wu-item-title { color: #000080; }
+html[data-theme="win95"] .wu-item-desc { color: #000; }
+html[data-theme="win95"] .wu-level { border-radius: 0; }
+html[data-theme="win95"] .wu-level-critique { background: #c00000; }
+html[data-theme="win95"] .wu-level-recommandee { background: #000080; }
+html[data-theme="win95"] .wu-note { border-radius: 0; border: 1px solid #000; background: #ffffcc; }
+html[data-theme="win95"] .wu-uptodate { color: #008000; }
+
+html[data-theme="win95"] .wu-bar {
+    border-radius: 0;
+    background: #fff;
+    border: 2px solid;
+    border-color: var(--w95-sunken-color);
+    box-shadow: var(--w95-sunken-shadow);
+}
+
+html[data-theme="win95"] .wu-bar span { background: repeating-linear-gradient(90deg, #000080 0 10px, transparent 10px 12px); }
+html[data-theme="win95"] .wu-table th { background: #c0c0c0; }
+html[data-theme="win95"] .wu-commits summary { color: #0000ee; text-decoration: underline; font-weight: normal; }
+
+@media (max-width: 760px) {
+    html[data-theme="win95"] .wu-layout { grid-template-columns: 1fr; }
+    html[data-theme="win95"] body.w95-app .wu-side.card:not(.pin-card):not(.w95-about) { min-height: 0; }
+}

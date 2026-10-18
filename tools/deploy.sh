@@ -28,7 +28,7 @@ usage() {
 Usage : tools/deploy.sh [options] <commande>
 
 Commandes :
-  base          Sur la base : git pull --ff-only, ./Base/build.sh, redémarrage du service base_stk
+  base          Sur la base : git pull --ff-only --no-rebase, ./Base/build.sh, redémarrage du service base_stk
   robot         rsync de Rasp/ vers le robot, écriture de VERSION, redémarrage de robot_launcher
   esp motors    Compile (pio -e Motor), fusionne et flashe l'ESP moteurs (/dev/esp_motors) via la Rasp
   esp arms      Idem pour l'ESP actionneurs (pio -e Actionneurs, /dev/esp_action)
@@ -109,7 +109,7 @@ version_file() {
 
 cmd_base() {
     log "Base ($BASE) : git pull, compilation, redémarrage de base_stk"
-    ssh_base "cd ~/$BASE_REPO && git pull --ff-only && ./Base/build.sh --restart"
+    ssh_base "cd ~/$BASE_REPO && git pull --ff-only --no-rebase && ./Base/build.sh --restart"
 }
 
 cmd_robot() {
@@ -117,7 +117,7 @@ cmd_robot() {
         log "Robot depuis la base ($BASE) : git pull puis tools/deploy.sh robot"
         # Depuis la base : clé ssh par défaut (ROBOT_KEY vide)
         local remote
-        remote="cd ~/$BASE_REPO && { git pull --ff-only || echo '[DEPLOY] git pull a échoué : déploiement du code présent sur la base'; }"
+        remote="cd ~/$BASE_REPO && { git pull --ff-only --no-rebase || echo '[DEPLOY] git pull a échoué : déploiement du code présent sur la base'; }"
         remote+=" && ROBOT_HOST=$(printf '%q' "$ROBOT_HOST") ROBOT_USER=$(printf '%q' "$ROBOT_USER")"
         remote+=" ROBOT_DIR=$(printf '%q' "$ROBOT_DIR") ROBOT_KEY= tools/deploy.sh robot"
         ssh_base "$remote"

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EIRBOT - DÉMINEUR</title>
+    <script src="/static/js/theme.js?v=5"></script>
+    <link rel="stylesheet" href="/static/css/common.css?v=8.1">
+    <link rel="stylesheet" href="/static/css/demineur.css?v=1">
+
+    <script src="/static/js/common.js?v=2.9" defer></script>
+    <script src="/static/js/clippy.js?v=5" defer></script>
+    <script src="/static/js/win95.js?v=14" defer></script>
+    <script src="/static/js/tux.js?v=1" defer></script>
+    <script src="/static/js/demineur.js?v=1" defer></script>
+</head>
+
+<body>
+    <header class="header">
+        <a href="/" class="btn-back"><svg class="icon"><use href="/static/icons/sprite.svg#i-arrow-left"></use></svg> Accueil</a>
+        <h1 class="page-title">DÉMINEUR</h1>
+        <div class="sys-info" id="sys-info">...</div>
+    </header>
+
+    <main class="mine-page">
+        <!-- Niveaux (thèmes STK ; en Windows 95 : menu Partie) -->
+        <div class="mine-levels w95-hide" id="mine-levels">
+            <button type="button" class="btn btn-sm" data-level="debutant">Débutant</button>
+            <button type="button" class="btn btn-sm" data-level="intermediaire">Intermédiaire</button>
+            <button type="button" class="btn btn-sm" data-level="expert">Expert</button>
+        </div>
+
+        <div class="mine-frame">
+            <div class="mine-top">
+                <div class="mine-led" id="mine-left" aria-label="Mines restantes">010</div>
+                <button type="button" class="mine-face" id="mine-face" aria-label="Nouvelle partie"></button>
+                <div class="mine-led" id="mine-time" aria-label="Temps">000</div>
+            </div>
+            <div class="mine-grid-wrap">
+                <div class="mine-grid" id="mine-grid" role="grid" aria-label="Champ de mines"></div>
+            </div>
+        </div>
+
+        <div class="mine-help">
+            <button type="button" class="btn btn-sm mine-flag-mode" id="mine-flag-mode" aria-pressed="false">Mode drapeau : non</button>
+            <span class="muted">Clic : découvrir · clic droit ou appui long : drapeau · clic sur un chiffre : découvrir autour</span>
+        </div>
+    </main>
+</body>
+
+</html>

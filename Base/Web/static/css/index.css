@@ -286,6 +286,10 @@ html[data-theme="stk"] .tile {
     font-size: 0.8rem;
 }
 
+/* Mises à jour disponibles (index.js) */
+.tile-attention .tile-sub { color: var(--danger); font-weight: 700; }
+
+
 .robot-buttons-bar {
     display: none;
 }

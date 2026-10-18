@@ -289,6 +289,8 @@ func setupRoutes(app *fiber.App) {
 	app.Get("/controle", func(c *fiber.Ctx) error { return sendPage(c, "templates/controle.html") })
 	app.Get("/control", func(c *fiber.Ctx) error { return c.Redirect("/controle") })
 	app.Get("/regles", func(c *fiber.Ctx) error { return sendPage(c, "templates/regles.html") })
+	app.Get("/update", func(c *fiber.Ctx) error { return sendPage(c, "templates/update.html") })
+	app.Get("/demineur", func(c *fiber.Ctx) error { return sendPage(c, "templates/demineur.html") })
 
 	// Règlements en PDF (dossier docu/ du dépôt) : seulement des .pdf, sans sous-dossier
 	app.Get("/docu/:name", func(c *fiber.Ctx) error {
@@ -627,70 +629,15 @@ func setupRoutes(app *fiber.App) {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 
-		projectRoot := findProjectRoot()
-
-		// 1. git pull : un échec (pas d'accès internet, modifs locales) n'empêche pas le déploiement
-		warning := ""
-		pullCmd := exec.CommandContext(ctx, "git", "pull", "--ff-only")
-		pullCmd.Dir = projectRoot
-		if out, err := pullCmd.CombinedOutput(); err != nil {
-			warning = "git pull a échoué, déploiement du code présent sur la base : " + strings.TrimSpace(string(out))
-			fmt.Printf("[UPDATE RASP] %s\n", warning)
+		r := deployRaspCode(ctx, true, nil)
+		if r.Step != "" {
+			return c.JSON(fiber.Map{"status": "error", "step": r.Step, "msg": r.Msg, "output": r.Output})
 		}
-
-		// 2. rsync (config.json exclu : il porte les réglages runtime du robot)
-		raspIP := resolveRaspIP()
-		sshOpts := "ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5"
-		rsyncCmd := exec.CommandContext(ctx, "rsync", "-rc", "--out-format=%n",
-			"--exclude=.venv", "--exclude=__pycache__", "--exclude=*.pyc", "--exclude=*.log", "--exclude=config.json",
-			"--exclude=LiDAR/lidar_udp", // binaire compilé sur la Rasp (aarch64) par main_robot.py
-			"-e", sshOpts, projectRoot+"/Rasp/", robotTarget(raspIP)+":"+robotDir+"/")
-		rsyncOut, err := rsyncCmd.CombinedOutput()
-		if err != nil {
-			return c.JSON(fiber.Map{
-				"status": "error",
-				"step":   "rsync",
-				"msg":    fmt.Sprintf("Copie vers la Rasp (%s) impossible : %v", raspIP, err),
-				"output": string(rsyncOut),
-			})
-		}
-		var changed []string
-		for _, l := range strings.Split(strings.TrimSpace(string(rsyncOut)), "\n") {
-			if l != "" && !strings.HasSuffix(l, "/") {
-				changed = append(changed, l)
-			}
-		}
-
-		// 3. Fichier VERSION (même format que tools/deploy.sh), écrit à chaque déploiement
-		versionCmd := exec.CommandContext(ctx, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
-			robotTarget(raspIP), fmt.Sprintf("cat > %s/VERSION", robotDir))
-		versionCmd.Stdin = strings.NewReader(raspVersionFile(projectRoot))
-		if out, err := versionCmd.CombinedOutput(); err != nil {
-			warning = strings.TrimSpace(warning + " ; écriture de VERSION impossible : " + strings.TrimSpace(string(out)))
-			fmt.Printf("[UPDATE RASP] Écriture de VERSION impossible : %v %s\n", err, string(out))
-		}
-
-		// 4. Redémarrage du launcher seulement si quelque chose a changé
-		if len(changed) > 0 {
-			restartCmd := exec.CommandContext(ctx, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
-				robotTarget(raspIP), "sudo systemctl restart robot_launcher")
-			if out, err := restartCmd.CombinedOutput(); err != nil {
-				return c.JSON(fiber.Map{
-					"status": "error",
-					"step":   "restart",
-					"msg":    fmt.Sprintf("Code copié mais redémarrage du launcher impossible : %v", err),
-					"output": string(out),
-				})
-			}
-		}
-		fmt.Printf("[UPDATE RASP] %d fichier(s) mis à jour sur %s\n", len(changed), raspIP)
-
-		msg := "Code Rasp déjà à jour"
-		if len(changed) > 0 {
-			msg = fmt.Sprintf("%d fichier(s) mis à jour, launcher redémarré", len(changed))
-		}
-		return c.JSON(fiber.Map{"status": "ok", "msg": msg, "files": changed, "warning": warning})
+		return c.JSON(fiber.Map{"status": "ok", "msg": r.Msg, "files": r.Changed, "warning": r.Warning})
 	})
+
+	// Windows Update : mises à jour du code depuis GitHub (winupdate.go)
+	setupUpdateRoutes(app)
 
 	// Route API pour flasher les ESPs (Motor / Actionneurs) depuis la base déportée via la Raspberry Pi
 	app.Post("/api/flash_esp/:target", func(c *fiber.Ctx) error {

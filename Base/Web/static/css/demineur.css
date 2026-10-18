@@ -1,0 +1,130 @@
+/* Démineur : relief Windows 95 dans tous les thèmes (c'est le jeu), cases plus grosses hors Win95 */
+
+.mine-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 10px;
+}
+
+.mine-levels { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+.mine-frame {
+    --cell: 28px;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 100%;
+    padding: 6px;
+    background: #c0c0c0;
+    border: 3px solid;
+    border-color: #fff #808080 #808080 #fff;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.mine-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 6px;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+}
+
+.mine-led {
+    min-width: 41px;
+    padding: 0 2px;
+    background: #000;
+    color: #ff0000;
+    font: bold 24px/26px 'Courier New', Courier, monospace;
+    letter-spacing: 1px;
+    text-align: center;
+    border: 1px solid;
+    border-color: #808080 #fff #fff #808080;
+}
+
+html[data-theme="win95"] .mine-led { font-family: 'Courier New', Courier, monospace !important; letter-spacing: 1px !important; }
+
+button.mine-face {
+    width: 30px;
+    height: 30px;
+    padding: 2px;
+    display: grid;
+    place-items: center;
+    background: #c0c0c0 !important;
+    border: 2px solid !important;
+    border-color: #fff #808080 #808080 #fff !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    cursor: pointer;
+}
+
+button.mine-face:active { border-color: #808080 #fff #fff #808080 !important; }
+button.mine-face svg { width: 22px; height: 22px; }
+
+.mine-grid-wrap {
+    max-width: calc(100vw - 40px);
+    overflow: auto;
+    border: 3px solid;
+    border-color: #808080 #fff #fff #808080;
+}
+
+.mine-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols), var(--cell));
+    grid-auto-rows: var(--cell);
+}
+
+.mine-cell {
+    display: grid;
+    place-items: center;
+    background: #c0c0c0;
+    border: 3px solid;
+    border-color: #fff #808080 #808080 #fff;
+    font: bold calc(var(--cell) * .6) / 1 Arial, sans-serif;
+    cursor: pointer;
+}
+
+.mine-cell.is-open {
+    border: 0;
+    border-right: 1px solid #808080;
+    border-bottom: 1px solid #808080;
+    cursor: default;
+}
+
+.mine-cell.is-hit { background: #ff0000; }
+.mine-cell.is-wrong { position: relative; }
+.mine-cell.is-wrong::after { content: '×'; position: absolute; color: #ff0000; font-size: calc(var(--cell) * .9); }
+.mine-ico { width: calc(var(--cell) - 4px); height: calc(var(--cell) - 4px); max-width: 16px; max-height: 16px; }
+.mine-cell.is-open .mine-ico { max-width: none; max-height: none; width: calc(var(--cell) - 6px); height: calc(var(--cell) - 6px); }
+
+.mine-cell.n1 { color: #0000ff; }
+.mine-cell.n2 { color: #008000; }
+.mine-cell.n3 { color: #ff0000; }
+.mine-cell.n4 { color: #000080; }
+.mine-cell.n5 { color: #800000; }
+.mine-cell.n6 { color: #008080; }
+.mine-cell.n7 { color: #000000; }
+.mine-cell.n8 { color: #808080; }
+
+.mine-help { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; font-size: .85rem; }
+
+/* Le mode drapeau ne sert qu'au tactile */
+@media (hover: hover) and (pointer: fine) {
+    .mine-flag-mode { display: none !important; }
+}
+
+/* Windows 95 : taille d'origine (cases de 16 px), police Arial pour les chiffres */
+html[data-theme="win95"] .mine-frame { --cell: 16px; }
+html[data-theme="win95"] .mine-cell { border-width: 2px; font-family: Arial, sans-serif !important; font-size: 11px; }
+html[data-theme="win95"] .mine-cell.is-open { border-width: 0 1px 1px 0; }
+html[data-theme="win95"] .w95-appframe > main.mine-page { justify-content: flex-start; padding-top: 20px; }
+
+@media (max-width: 640px) {
+    .mine-frame { --cell: 30px; }
+    html[data-theme="win95"] .mine-frame { --cell: 26px; }
+    html[data-theme="win95"] .mine-cell { font-size: 16px; }
+}

@@ -6,12 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>EIRBOT - RÈGLEMENT 2027</title>
     <script src="/static/js/theme.js?v=5"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=8.0">
+    <link rel="stylesheet" href="/static/css/common.css?v=8.1">
     <link rel="stylesheet" href="/static/css/regles.css?v=1">
 
     <script src="/static/js/common.js?v=2.9" defer></script>
-    <script src="/static/js/clippy.js?v=3" defer></script>
-    <script src="/static/js/win95.js?v=12" defer></script>
+    <script src="/static/js/clippy.js?v=5" defer></script>
+    <script src="/static/js/win95.js?v=14" defer></script>
+    <script src="/static/js/tux.js?v=1" defer></script>
     <script src="/static/js/regles.js?v=1" defer></script>
 </head>
 
@@ -41,12 +42,12 @@
                     <svg viewBox="0 0 20 20" aria-hidden="true"><path class="ie-folder" d="M1 5h6l2 2h10v11H1z"/><path d="M13 8l1.5 3 3 .4-2.2 2 .6 3-2.9-1.5-2.9 1.5.6-3-2.2-2 3-.4z" fill="#ffff00" stroke="#000" stroke-width=".6"/></svg><span>Favoris</span></button>
                 <button type="button" class="ie-tb" onclick="iePrint()" title="Imprimer">
                     <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 1h10v6H5z" fill="#fff" stroke="#000"/><path class="ie-printer" d="M1 7h18v8h-3v-3H4v3H1z"/><path d="M4 12h12v7H4z" fill="#fff" stroke="#000"/></svg><span>Imprimer</span></button>
-                <div class="ie-throbber" id="ie-throbber" aria-hidden="true"><svg class="w95-ico"><use href="/static/icons/win95.svg?v=5#w95-ie"></use></svg></div>
+                <div class="ie-throbber" id="ie-throbber" aria-hidden="true"><svg class="w95-ico"><use href="/static/icons/win95.svg?v=7#w95-ie"></use></svg></div>
             </div>
             <form class="ie-address" id="ie-address" autocomplete="off">
                 <label for="ie-url"><u>A</u>dresse</label>
                 <div class="ie-addr-box">
-                    <svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-ie"></use></svg>
+                    <svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=7#w95-ie"></use></svg>
                     <input type="text" id="ie-url" spellcheck="false" value="http://intranet.eirbot/">
                 </div>
                 <button type="submit" class="ie-go">OK</button>
@@ -66,14 +67,14 @@
         <div class="ie-body">
             <aside class="ie-favs" id="ie-favs" hidden>
                 <div class="ie-favs-title">Favoris <button type="button" onclick="ieFavorites()" aria-label="Fermer">×</button></div>
-                <a href="#accueil"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-ie"></use></svg> Page de démarrage</a>
-                <a href="#jeu"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-ie"></use></svg> Règlement 2027</a>
-                <a href="#jeu/points"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-ie"></use></svg> Barème des points</a>
-                <a href="#jeu/plan"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-map"></use></svg> Plan de la table</a>
-                <a href="#general"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-ie"></use></svg> Règles générales</a>
-                <a href="#general/penalites"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-warning"></use></svg> Pénalités</a>
-                <a href="#score"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-calc"></use></svg> Calculateur de score</a>
-                <a href="#pdf"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-folder"></use></svg> Documents PDF</a>
+                <a href="#accueil"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=7#w95-ie"></use></svg> Page de démarrage</a>
+                <a href="#jeu"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=7#w95-ie"></use></svg> Règlement 2027</a>
+                <a href="#jeu/points"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=7#w95-ie"></use></svg> Barème des points</a>
+                <a href="#jeu/plan"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=7#w95-map"></use></svg> Plan de la table</a>
+                <a href="#general"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=7#w95-ie"></use></svg> Règles générales</a>
+                <a href="#general/penalites"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=7#w95-warning"></use></svg> Pénalités</a>
+                <a href="#score"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=7#w95-calc"></use></svg> Calculateur de score</a>
+                <a href="#pdf"><svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=7#w95-folder"></use></svg> Documents PDF</a>
             </aside>
 
             <div class="ie-view" id="ie-view">

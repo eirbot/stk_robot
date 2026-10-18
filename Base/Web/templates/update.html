@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EIRBOT - MISES À JOUR</title>
+    <script src="/static/js/theme.js?v=5"></script>
+    <link rel="stylesheet" href="/static/css/common.css?v=8.1">
+    <link rel="stylesheet" href="/static/css/update.css?v=2">
+
+    <script src="/static/js/common.js?v=2.9" defer></script>
+    <script src="/static/js/clippy.js?v=5" defer></script>
+    <script src="/static/js/win95.js?v=14" defer></script>
+    <script src="/static/js/tux.js?v=1" defer></script>
+    <script src="/static/js/update.js?v=1" defer></script>
+</head>
+
+<body>
+    <header class="header">
+        <a href="/" class="btn-back"><svg class="icon"><use href="/static/icons/sprite.svg#i-arrow-left"></use></svg> Accueil</a>
+        <h1 class="page-title">MISES À JOUR</h1>
+        <div class="sys-info" id="sys-info">...</div>
+    </header>
+
+    <main class="update-page">
+        <div class="wu-banner">
+            <svg class="wu-logo" viewBox="0 0 48 48" aria-hidden="true">
+                <circle cx="22" cy="22" r="19" fill="#1060c0" stroke="#000" stroke-width="1.5"/>
+                <path d="M10 14c4-3 8-2 9 1s-3 5-1 8 6 1 6 5-4 6-7 6-6-6-7-10-3-7 0-10zM27 8c4 0 9 3 11 8s-2 4-5 3-4-4-6-5-3-6 0-6z" fill="#2c9c2c"/>
+                <rect x="26" y="26" width="20" height="18" fill="#fff" stroke="#000" stroke-width="1.5"/>
+                <rect x="26" y="26" width="20" height="4" fill="#000080"/>
+                <rect x="29" y="32" width="6" height="5" fill="#ff0000"/><rect x="36" y="32" width="6" height="5" fill="#00a000"/>
+                <rect x="29" y="38" width="6" height="4" fill="#0000ff"/><rect x="36" y="38" width="6" height="4" fill="#ffcc00"/>
+            </svg>
+            <div>
+                <div class="wu-banner-title"><span class="w95-hide">Mises à jour</span><span class="w95-only">Windows Update</span></div>
+                <div class="wu-banner-sub">Mises à jour du code d'EIRBOT : base et robot, depuis GitHub</div>
+            </div>
+        </div>
+
+        <div class="wu-layout">
+            <aside class="wu-side card">
+                <h2 class="card-title"><svg class="icon"><use href="/static/icons/sprite.svg#i-info"></use></svg> État</h2>
+                <dl class="wu-facts">
+                    <dt>Branche</dt><dd id="wu-branch">…</dd>
+                    <dt>Dépôt de la base</dt><dd id="wu-head">…</dd>
+                    <dt>Serveur de la base</dt><dd id="wu-base">…</dd>
+                    <dt>Code du robot</dt><dd id="wu-robot">…</dd>
+                    <dt>Dernière vérification</dt><dd id="wu-checked">…</dd>
+                </dl>
+                <button type="button" class="btn btn-primary" id="wu-check"><svg class="icon"><use href="/static/icons/sprite.svg#i-refresh-cw"></use></svg> Rechercher les mises à jour</button>
+            </aside>
+
+            <section class="wu-main card">
+                <h2 class="card-title"><svg class="icon"><use href="/static/icons/sprite.svg#i-download"></use></svg> Mises à jour disponibles</h2>
+                <div class="wu-notes" id="wu-notes"></div>
+                <div class="wu-list" id="wu-list"><p class="muted">Chargement…</p></div>
+
+                <div class="wu-actions">
+                    <button type="button" class="btn btn-success" id="wu-install" disabled><svg class="icon"><use href="/static/icons/sprite.svg#i-download"></use></svg> Installer</button>
+                    <span class="muted" id="wu-selection"></span>
+                </div>
+
+                <div class="wu-progress" id="wu-progress" hidden>
+                    <div class="wu-progress-label" id="wu-progress-label">Installation…</div>
+                    <div class="wu-bar" id="wu-bar"><span></span></div>
+                    <pre class="log-box wu-log" id="wu-log"></pre>
+                </div>
+
+                <details class="wu-commits" id="wu-commits" hidden>
+                    <summary id="wu-commits-title">Détails des modifications</summary>
+                    <table class="wu-table">
+                        <thead><tr><th>Commit</th><th>Auteur</th><th>Date</th><th>Message</th></tr></thead>
+                        <tbody id="wu-commits-body"></tbody>
+                    </table>
+                </details>
+            </section>
+        </div>
+    </main>
+</body>
+
+</html>

@@ -18,6 +18,8 @@
         { href: '/media', label: 'Sons', icon: 'sound' },
         { href: '/replay', label: 'Replay', icon: 'film' },
         { href: '/regles', label: 'Internet Explorer', icon: 'ie' },
+        { href: '/demineur', label: 'Démineur', icon: 'mine' },
+        { href: '/update', label: 'Windows Update', icon: 'update', top: true },  // en haut du menu Démarrer
     ];
 
     let bar = null, menu = null, tray = null, clock = null, sysInfoHome = null;
@@ -30,7 +32,7 @@
     }
 
     // Icônes pixel art 16x16 (static/icons/win95.svg, généré par tools/win95_icons.py)
-    const ico = (name) => `<svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=5#w95-${name}"></use></svg>`;
+    const ico = (name) => `<svg class="w95-ico" aria-hidden="true"><use href="/static/icons/win95.svg?v=7#w95-${name}"></use></svg>`;
     const path = () => location.pathname.replace(/\/$/, '') || '/';
 
     // Icône de la barre de titre d'une fenêtre, d'après son titre (sinon celle de la page)
@@ -251,7 +253,9 @@
         menu.innerHTML = `
 <div class="w95-menu-banner"><b>EIRBOT</b>95</div>
 <div class="w95-menu-items">
-  ${PAGES.map(p => `<a role="menuitem" href="${p.href}"${p.href === current ? ' class="is-current"' : ''}>${ico(p.icon)}<span>${p.label}</span></a>`).join('')}
+  ${PAGES.filter(p => p.top).map(p => `<a role="menuitem" href="${p.href}"${p.href === current ? ' class="is-current"' : ''}>${ico(p.icon)}<span>${p.label}</span></a>`).join('')}
+  <hr>
+  ${PAGES.filter(p => !p.top).map(p => `<a role="menuitem" href="${p.href}"${p.href === current ? ' class="is-current"' : ''}>${ico(p.icon)}<span>${p.label}</span></a>`).join('')}
   <hr>
   <div class="w95-sub">
     <button type="button" role="menuitem" aria-haspopup="menu">${ico('palette')}<span>Thèmes</span><i class="w95-arrow">▸</i></button>
@@ -478,6 +482,36 @@
             ],
             status: [{ mirror: '#ie-zone', fmt: '%' }],
         },
+        '/demineur': {
+            title: 'Démineur',
+            menus: [
+                ['&Partie', [
+                    { label: 'Nouvelle partie (F2)', run: call('mineNew') },
+                    '-',
+                    { label: 'Débutant', run: call('mineNew', 'debutant') },
+                    { label: 'Intermédiaire', run: call('mineNew', 'intermediaire') },
+                    { label: 'Expert', run: call('mineNew', 'expert') },
+                    '-',
+                    { label: 'Meilleurs temps…', run: call('mineBest') },
+                    '-', CLOSE,
+                ]],
+                ['&?', [{ label: 'À propos du Démineur', run: () => messageBox({
+                    title: 'À propos du Démineur', icon: 'info',
+                    text: 'Démineur pour EIRBOT\n\nAucune mine n\'a été posée sur la table de jeu. En principe.' }) }, ABOUT]],
+            ],
+        },
+        '/update': {
+            title: 'Windows Update',
+            menus: [
+                ['&Fichier', [CLOSE]],
+                ['&Outils', [
+                    { label: 'Rechercher les mises à jour', run: click('#wu-check') },
+                    { label: 'Installer', run: click('#wu-install') },
+                ]],
+                ['&?', [ABOUT]],
+            ],
+            status: [{ mirror: '#wu-head', fmt: 'Dépôt : %' }, { mirror: '#wu-checked', fmt: 'Vérifié : %' }],
+        },
     };
 
     // « &Fichier » -> F souligné
@@ -607,6 +641,60 @@
         clock.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     }
 
+    // --- Bulle de la zone de notification (mises à jour, Tux…) ---
+    let balloonEl = null;
+    function balloon(title, text, onClick) {
+        if (balloonEl) balloonEl.remove();
+        const b = document.createElement('div');
+        b.className = 'w95-balloon';
+        b.setAttribute('role', 'status');
+        b.innerHTML = `<button type="button" class="w95-balloon-x" aria-label="Fermer">×</button><b>${escape(title)}</b><p>${escape(text)}</p>`;
+        b.querySelector('.w95-balloon-x').addEventListener('click', (e) => { e.stopPropagation(); b.remove(); });
+        if (onClick) b.addEventListener('click', onClick);
+        document.body.appendChild(b);
+        balloonEl = b;
+        setTimeout(() => { if (b.isConnected) b.remove(); }, 15000);
+        if (window.w95Sound) window.w95Sound('ding');
+    }
+
+    // --- Mises à jour disponibles (winupdate.go) : icône dans la zone de notification ---
+    const UPDATE_EVERY = 5 * 60 * 1000;
+    let updateTimer = null;
+
+    async function checkUpdates() {
+        if (!active() || !tray) return;
+        let st;
+        try { st = await (await fetch('/api/update/status')).json(); } catch (e) { return; }
+        let btn = tray.querySelector('.w95-tray-update');
+        if (!st || !st.available || path() === '/update') {
+            if (btn) btn.hidden = true;
+            return;
+        }
+        if (!btn) {
+            btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'w95-tray-update';
+            btn.innerHTML = ico('update');
+            btn.addEventListener('click', () => { location.href = '/update'; });
+            tray.insertBefore(btn, tray.firstChild);
+        }
+        btn.hidden = false;
+        btn.title = `${st.available} mise(s) à jour disponible(s)`;
+        // Une bulle par nouvel état du dépôt, pas à chaque page
+        const key = `${st.head}:${st.behind}:${st.robot_commit}`;
+        let seen = false;
+        try { seen = sessionStorage.getItem('stk-w95-update') === key; sessionStorage.setItem('stk-w95-update', key); } catch (e) { /* stockage bloqué */ }
+        if (!seen) {
+            balloon('Mises à jour disponibles', 'De nouvelles mises à jour sont disponibles pour EIRBOT. Cliquez ici pour les installer.',
+                () => { location.href = '/update'; });
+        }
+    }
+
+    // Pour tux.js et les pages
+    window.w95MessageBox = (opts) => messageBox(opts);
+    window.w95Shutdown = () => shutdown();
+    window.w95Balloon = balloon;
+
     // --- Activation / désactivation selon le thème ---
     function sync() {
         const sysInfo = document.getElementById('sys-info');
@@ -639,6 +727,10 @@
             }
             tick();
             if (!clockTimer) clockTimer = setInterval(tick, 10000);
+            if (!updateTimer) {
+                checkUpdates();
+                updateTimer = setInterval(checkUpdates, UPDATE_EVERY);
+            }
         } else {
             if (bar) bar.hidden = true;
             restoreCaps();
@@ -650,6 +742,9 @@
             }
             clearInterval(clockTimer);
             clockTimer = null;
+            clearInterval(updateTimer);
+            updateTimer = null;
+            if (balloonEl) balloonEl.remove();
         }
     }
 

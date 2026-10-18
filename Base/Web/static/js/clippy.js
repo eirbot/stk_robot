@@ -40,6 +40,8 @@
         '/led_studio': "Plus de LEDs = plus de points. C'est la règle. (Ce n'est pas la règle.)",
         '/replay': "Revoir le match ? Courage.",
         '/regles': "On dirait que vous lisez le règlement. C'est rare. Voulez-vous que je résume ? La porte, c'est 20 points.",
+        '/demineur': "Astuce : les mines, c'est comme les robots adverses. Il vaut mieux les éviter.",
+        '/update': "Des mises à jour ! Comme Windows : on sait quand ça commence, jamais quand ça finit.",
     };
 
     const ERROR_TAUNTS = [
@@ -206,11 +208,25 @@
         });
     }
 
+    // Tux est arrivé (tux.js) : Clippy n'apprécie pas la concurrence
+    const TUX_TAUNTS = [
+        "Ne l'écoutez pas ! Il n'a même pas de bouton Démarrer.",
+        "Un pingouin ? Ici ? Appelez la sécurité.",
+        "Linux, c'est bien, mais est-ce que Linux a un trombone ?",
+    ];
+
+    function hookTux() {
+        document.addEventListener('stk:tux', () => {
+            if (active() && root) setTimeout(() => say(TUX_TAUNTS[Math.floor(Math.random() * TUX_TAUNTS.length)], 'chord'), 1200);
+        });
+    }
+
     // Sons partagés avec les boîtes de dialogue Win95 (win95.js)
     window.w95Sound = play;
 
     function init() {
         hookErrors();
+        hookTux();
         sync();
         new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
         // Les navigateurs bloquent le son avant une première interaction

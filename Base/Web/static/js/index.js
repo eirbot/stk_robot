@@ -175,3 +175,15 @@ function cycleStrat() {
         updateStrat(sel.options[nextIdx].value);
     }
 }
+
+// Tuile « Mises à jour » : nombre de mises à jour disponibles (cf. winupdate.go)
+async function refreshUpdateTile() {
+    const sub = document.getElementById('tile-update-sub');
+    if (!sub) return;
+    try {
+        const st = await (await fetch('/api/update/status')).json();
+        sub.textContent = st.available ? `${st.available} disponible(s)` : 'À jour';
+        sub.closest('.tile').classList.toggle('tile-attention', !!st.available);
+    } catch (e) { /* base injoignable : texte par défaut */ }
+}
+document.addEventListener('DOMContentLoaded', refreshUpdateTile);

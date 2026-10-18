@@ -8,7 +8,9 @@ les refontes sont acceptées.
 - Branche `base_deporte` poussée jusqu'au commit Clippy ; fusion odométrie + caméra **non commitée**.
 - **Rien n'a été déployé** sur la base ni sur le robot depuis ces commits ; aucun test sur le vrai matériel.
 - Tests : `tools/run_tests.sh` (tout passe : 67 Python, 4 JS, Go). `--rapide` saute test_strategies (~70 s).
-- Page Règlement / Internet Explorer (2026-10-19) **non commitée**, rien de déployé.
+- Pages Règlement / Internet Explorer, Windows Update + Tux, Démineur (2026-10-19) **non commitées**, rien de déployé.
+- PC de dev : la règle NAT de `/etc/ufw/before.rules` visait encore `wlan0` (carte wifi = `wlp192s0`) ; commande de
+  correction donnée, à vérifier que le LAN robot sort bien sur internet (la base doit avoir le PC comme passerelle).
 - Sur ce PC, `test_robot_integration` échoue faute de `numpy` dans le Python système (environnement, pas le code).
 
 ## Fait (récent, du plus ancien au plus récent)
@@ -58,6 +60,30 @@ les refontes sont acceptées.
   `playPrev()` / `playNext()` (appelées par la page Sons) n'existaient pas : ajoutées.
 - Affichage téléphone ; mode test (pas d'arrêt à 100 s) ; notifications (`toast()`) ; pastille
   « Robot hors ligne » ; versions du code dans Debug.
+
+### Démineur (2026-10-19)
+- Page `/demineur` (`demineur.html/js/css`) : niveaux Débutant / Intermédiaire / Expert, premier clic jamais
+  sur une mine (ni à côté), drapeau au clic droit / appui long / « mode drapeau » (tactile), clic sur un
+  chiffre = découvrir autour, F2, meilleurs temps dans le navigateur. Menus Partie en Win95, tuile sur
+  l'accueil, icônes Win95 `mine` et `flag`. Une défaite émet `stk:error` (Clippy, Tux).
+- Idées suivantes : Solitaire (moyen), Pinball (gros : moteur physique).
+
+### Windows Update et Tux (2026-10-19)
+- `Base/Web/winupdate.go` : git fetch au démarrage puis toutes les 15 min (hors match), comparaison dépôt de la
+  base / branche distante / binaire qui tourne (`buildVersion`) / code du robot (`RobotVersion`). Routes
+  `GET /api/update/status`, `GET /api/update/check` (fetch, sans PIN), `POST /api/update/install`
+  (`targets` : depot | base | robot, PIN), `GET /api/update/job?since=N` (journal). Installation : git pull,
+  puis rsync robot (code partagé avec `/api/update_rasp` : `deployRaspCode`) et/ou `Base/build.sh` puis
+  `sudo -n systemctl restart base_stk` (la page attend le retour de la base). Refus pendant un match,
+  même verrou que le flash ESP. Tests : `winupdate_test.go` (vrai dépôt git temporaire).
+- Page `/update` (`update.html/js/css`) : site Windows Update de 1998 en Win95, cartes en STK. Tuile sur
+  l'accueil (nombre de mises à jour), entrée en haut du menu Démarrer, icône + bulle dans la zone de
+  notification quand il y a des mises à jour (win95.js `checkUpdates`, `balloon`).
+- `git pull --ff-only --no-rebase` partout (winupdate.go, deploy.sh) : avec `pull.rebase=true`, un pull
+  échoue dès qu'un fichier est modifié.
+- Tux (`static/js/tux.js`, Win95) : « Avez-vous essayé Linux ? » une fois par session (2 min 30 à 5 min 30,
+  ou après une erreur) ; Oui -> proposition d'arrêter Windows ; Clippy réagit (`stk:tux`).
+  `window.tuxShow()` dans la console pour le voir tout de suite.
 
 ### Règlement 2027 / Internet Explorer (2026-10-19)
 - Nouvelles règles dans `docu/` (non suivies par git) : `Eurobot2027_Rules_FR.pdf` (thème Camelot) et
@@ -134,6 +160,8 @@ les refontes sont acceptées.
       trône) d'après `static/img/regles/plan.jpg` (plan : x 0..2000, y 0..3000, jaune en bas).
 - [ ] Règles 2027 à prendre en compte côté robot : évitement des **PAMI** (le LiDAR voit-il un objet de
       150 mm ?), **support de balise obligatoire** (sommet à 430 mm), phase d'attaque à 85 s (chrono).
+- [ ] Windows Update sur la vraie base : tester l'installation robot et base (redémarrage du service via
+      sudoers de `install_service.sh`), vérifier que `git fetch` marche avec les accès GitHub de la base.
 - [ ] Calculateur : nombres maxi de murs / tours / douves devinés d'après le plan (4 tours, 3 douves) : à vérifier.
 - [ ] Pas d'icônes pause / flèches haut-bas dans le sprite (ajouter des symboles Lucide si besoin).
 - [ ] `Rasp/stop.sh` arrête encore un ancien `robot.service` ; `Rasp/exec.sh` écrit dans `/var/log/ihm.log`.
