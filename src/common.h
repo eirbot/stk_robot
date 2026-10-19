@@ -11,7 +11,7 @@
 
 #define dRoues 72.0
 #define stepPerRev 3200
-#define ecartRoues 345.0
+#define ecartRoues 339.3  // mesuré le 2026-10-19 : 10 tours demandés -> 10 tours + 60° (345 x 3600/3660)
 
 #define vitesse_nominale 100
 #define STOP_DISTANCE 300
