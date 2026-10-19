@@ -63,7 +63,9 @@ function setIconLabel(el, name, label) {
 window.socket.on('state_update', (state) => {
     const btnCam = document.getElementById('btn-toggle-cam');
     if (btnCam) {
-        const c = state.config || {};
+        // La config n'est pas dans tous les messages (~1 sur 15) : sans elle, garder la dernière reçue
+        // (common.js), sinon caméra, LiDAR et mode de stratégie repassaient aux valeurs par défaut
+        const c = state.config || window.localConfig || {};
         
         // 1. État caméra
         let camEnabled = (typeof c.camera === 'object') ? c.camera.enabled : c.camera;

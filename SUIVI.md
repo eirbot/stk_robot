@@ -79,6 +79,8 @@ les refontes sont acceptées.
 - Menus de stratégie (Debug, accueil) qui « clignotaient » : la page remettait la valeur du robot toutes les
   ~1,6 s même pendant la demande de PIN / avant la confirmation du robot. common.js : `sendConfigEdit` +
   `syncSelect` (le choix est gardé 10 s ou jusqu'à confirmation, abandonné si la commande est refusée).
+- Vrai clignotement STATIQUE <-> DYNAMIQUE (et caméra / LiDAR) dans Debug : la config n'arrive que dans ~1
+  message d'état sur 15 ; debug.js prenait `{}` sinon. Corrigé : dernière config reçue (`window.localConfig`).
 
 ### Relance du robot après une mise à jour (2026-10-19)
 - Avant : redémarrer `robot_launcher` tuait `main_robot.py`, qu'il fallait relancer au bouton 3.
