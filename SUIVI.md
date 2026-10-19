@@ -65,6 +65,12 @@ les refontes sont acceptées.
 - Affichage téléphone ; mode test (pas d'arrêt à 100 s) ; notifications (`toast()`) ; pastille
   « Robot hors ligne » ; versions du code dans Debug.
 
+### PIN et menus de stratégie (2026-10-19)
+- PIN `2023` actif sur la base (`Base/pin.txt`, droits 600) ; vérifié : POST sans session -> 401, GET libre.
+- Menus de stratégie (Debug, accueil) qui « clignotaient » : la page remettait la valeur du robot toutes les
+  ~1,6 s même pendant la demande de PIN / avant la confirmation du robot. common.js : `sendConfigEdit` +
+  `syncSelect` (le choix est gardé 10 s ou jusqu'à confirmation, abandonné si la commande est refusée).
+
 ### Relance du robot après une mise à jour (2026-10-19)
 - Avant : redémarrer `robot_launcher` tuait `main_robot.py`, qu'il fallait relancer au bouton 3.
 - Le déploiement (`robotRestartCmd` dans winupdate.go, utilisé par Windows Update et Debug ; même commande

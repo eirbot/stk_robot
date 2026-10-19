@@ -51,8 +51,7 @@ window.socket.on('state_update', (state) => {
             stratSel.style.display = 'inline-block';
             stratSel.style.color = "#FF9800";
 
-            const current = state.strat_id ?? config.static_strat;
-            if (current) stratSel.value = current;
+            syncSelect(stratSel, state.strat_id ?? config.static_strat ?? null);
 
         } else {
             stratEl.style.display = 'inline-block';
@@ -155,11 +154,7 @@ async function updateStrat(event_or_val) {
 
     if (!val) return;
 
-    await fetch('/api/config_edit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'static_strat', val: val })
-    });
+    await sendConfigEdit('strat-select', 'static_strat', val);
 }
 
 // Fonction pour faire défiler les stratégies (Bouton 2 sur l'écran robot ou tactile)

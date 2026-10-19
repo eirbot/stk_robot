@@ -107,15 +107,12 @@ window.socket.on('state_update', (state) => {
         // Gestion Mode Stratégie
         const stratMode = c.strat_mode || "DYNAMIC";
         const modeSel = document.getElementById('strat-mode');
-        if (modeSel) modeSel.value = stratMode;
+        syncSelect(modeSel, stratMode);
 
         const box = document.getElementById('static-strat-box');
-        if (box) box.style.display = (stratMode === 'STATIC') ? 'block' : 'none';
+        if (box && modeSel) box.style.display = (modeSel.value === 'STATIC') ? 'block' : 'none';
 
-        const stratSel = document.getElementById('strat-select');
-        if (stratSel && c.static_strat) {
-            stratSel.value = c.static_strat;
-        }
+        syncSelect(document.getElementById('strat-select'), c.static_strat || null);
     }
 
     // Mise à jour de la télémétrie odonométrique en direct
@@ -199,19 +196,10 @@ async function updateStratConfig() {
     }
     // -----------------------------------------------
 
-    // Envoi au serveur (Backend)
-    await fetch('/api/config_edit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'strat_mode', val: mode })
-    });
-
+    // Envoi au robot (le menu garde le choix tant que le robot ne l'a pas confirmé)
+    if (!await sendConfigEdit('strat-mode', 'strat_mode', mode)) return;
     if (mode === 'STATIC' && file) {
-        await fetch('/api/config_edit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ key: 'static_strat', val: file })
-        });
+        await sendConfigEdit('strat-select', 'static_strat', file);
     }
 }
 

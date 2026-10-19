@@ -114,6 +114,48 @@ window.socket = new SocketWrapper();
 let localState = {};
 
 // --- FONCTIONS PARTAGÉES ---
+
+// Réglage du robot choisi dans un <select> (stratégie...) : tant que le robot n'a pas confirmé
+// la nouvelle valeur (demande de PIN, aller-retour réseau), l'état reçu ne doit pas remettre
+// l'ancienne, sinon le menu « clignote ». Abandon après 10 s ou si la commande est refusée.
+const pendingEdits = {};  // id du <select> -> { val, until }
+
+function markPendingEdit(id, val) {
+    pendingEdits[id] = { val: String(val), until: Date.now() + 10000 };
+}
+
+function clearPendingEdit(id) {
+    delete pendingEdits[id];
+}
+
+// Applique la valeur venant du robot, sauf si l'utilisateur vient d'en choisir une autre
+function syncSelect(sel, robotVal) {
+    if (!sel || robotVal === undefined || robotVal === null) return;
+    const v = String(robotVal);
+    const p = pendingEdits[sel.id];
+    if (p) {
+        if (v === p.val || Date.now() > p.until) delete pendingEdits[sel.id];
+        else return;
+    }
+    if (sel.value !== v) sel.value = v;
+}
+
+// Envoie un réglage au robot pour le <select> id ; false si refusé (le menu reprend la valeur du robot)
+async function sendConfigEdit(id, key, val) {
+    markPendingEdit(id, val);
+    try {
+        const r = await fetch('/api/config_edit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key, val })
+        });
+        if (!r.ok) clearPendingEdit(id);
+        return r.ok;
+    } catch (e) {
+        clearPendingEdit(id);
+        return false;
+    }
+}
 function sendAction(act) {
     console.log("Envoi action :", act);
     fetch('/api/action/' + act, { method: 'POST' });  // erreurs affichées par le fetch ci-dessous
