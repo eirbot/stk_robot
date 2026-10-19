@@ -37,6 +37,7 @@ var pinFreeRoutes = map[string]bool{
 	"/api/logout":           true,
 	"/api/action/stop":      true, // sécurité : arrêter le robot ne doit jamais être bloqué
 	"/api/speedtest/upload": true, // diagnostic réseau, sans effet
+	"/api/ui_theme":         true, // thème de l'écran du robot, sans effet sur le robot
 }
 
 type authState struct {

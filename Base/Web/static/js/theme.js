@@ -45,12 +45,35 @@
         return document.documentElement.getAttribute('data-theme');
     };
 
+    // Écran 7" du robot (?mode=robot) : il suit le dernier thème choisi sur un autre appareil,
+    // retenu par la base (Base/Web/uitheme.go) ; les autres appareils lui envoient leur choix.
+    var robotScreen = new URLSearchParams(window.location.search).get('mode') === 'robot';
+
     window.setTheme = function (name) {
         save(apply(name));
         document.querySelectorAll('select[data-theme-select]').forEach(function (sel) {
             sel.value = window.getTheme();
         });
+        if (!robotScreen) {
+            try {
+                fetch('/api/ui_theme', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ theme: window.getTheme() })
+                }).catch(function () { /* base injoignable : tant pis */ });
+            } catch (e) { /* idem */ }
+        }
     };
+
+    if (robotScreen && !fromUrl) {
+        fetch('/api/ui_theme').then(function (r) { return r.json(); })
+            .then(function (d) { if (d && THEMES[d.theme]) save(apply(d.theme)); })
+            .catch(function () { /* garde le thème enregistré */ });
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.socket) {
+                window.socket.on('ui_theme', function (d) { if (d && THEMES[d.theme]) save(apply(d.theme)); });
+            }
+        });
+    }
 
     // Remplit automatiquement tous les <select data-theme-select>
     document.addEventListener('DOMContentLoaded', function () {

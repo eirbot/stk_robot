@@ -31,4 +31,6 @@ Rasp/LiDAR/lidar_udp
 Base/robot_config_cache.json
 # Code PIN des actions sensibles de l interface (cf. Base/Web/auth.go)
 Base/pin.txt
+# Thème suivi par l'écran du robot (cf. Base/Web/uitheme.go)
+Base/ui_theme.txt
 Rasp/logs/

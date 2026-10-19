@@ -636,6 +636,9 @@ func setupRoutes(app *fiber.App) {
 		return c.JSON(fiber.Map{"status": "ok", "msg": r.Msg, "files": r.Changed, "warning": r.Warning})
 	})
 
+	// Thème suivi par l'écran du robot (uitheme.go)
+	setupUIThemeRoutes(app)
+
 	// Windows Update : mises à jour du code depuis GitHub (winupdate.go)
 	setupUpdateRoutes(app)
 

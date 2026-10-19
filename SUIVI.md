@@ -5,12 +5,16 @@ les refontes sont acceptées.
 
 ## État du dépôt
 
-- Branche `base_deporte` poussée jusqu'au commit Clippy ; fusion odométrie + caméra **non commitée**.
-- **Rien n'a été déployé** sur la base ni sur le robot depuis ces commits ; aucun test sur le vrai matériel.
+- Branche `base_deporte` poussée et à jour (tout est commité). Aucun test sur le vrai matériel.
 - Tests : `tools/run_tests.sh` (tout passe : 67 Python, 4 JS, Go). `--rapide` saute test_strategies (~70 s).
-- Pages Règlement / Internet Explorer, Windows Update + Tux, Démineur (2026-10-19) **non commitées**, rien de déployé.
-- PC de dev : la règle NAT de `/etc/ufw/before.rules` visait encore `wlan0` (carte wifi = `wlp192s0`) ; commande de
-  correction donnée, à vérifier que le LAN robot sort bien sur internet (la base doit avoir le PC comme passerelle).
+- Commit `4fbf9d8` (« le tux ») poussé et **déployé sur la base** le 2026-10-19 : service `base_stk` installé
+  et actif. Anciennes modifs locales de la base : `git stash` + `~/sauvegarde_base_20261019.tgz` ; stratégie
+  `carre.py/.xml` (faite sur la base) non suivie, à commiter si on la garde.
+- Robot pas encore mis à jour : son code n'envoie pas sa version, donc Windows Update ne le propose pas ;
+  première fois par Debug > Outils > Mettre à jour la Rasp (ou `tools/deploy.sh robot`).
+- Réseau (2026-10-19) : la base sort sur internet via le PC (NAT `-o wlp192s0` dans `/etc/ufw/before.rules` ;
+  `ufw reload` ne recharge pas la table nat : règle ajoutée à la main avec iptables). dnsmasq de la base
+  plantait au démarrage (adresse pas encore là) : `bind-dynamic` au lieu de `bind-interfaces`.
 - Sur ce PC, `test_robot_integration` échoue faute de `numpy` dans le Python système (environnement, pas le code).
 
 ## Fait (récent, du plus ancien au plus récent)
@@ -60,6 +64,11 @@ les refontes sont acceptées.
   `playPrev()` / `playNext()` (appelées par la page Sons) n'existaient pas : ajoutées.
 - Affichage téléphone ; mode test (pas d'arrêt à 100 s) ; notifications (`toast()`) ; pastille
   « Robot hors ligne » ; versions du code dans Debug.
+
+### Thème de l'écran du robot (2026-10-19)
+- L'écran 7" (`?mode=robot`) suit le dernier thème choisi sur un autre appareil : `setTheme()` (theme.js)
+  envoie le choix à la base (`POST /api/ui_theme`, sans PIN), qui le garde dans `Base/ui_theme.txt` et le
+  diffuse par WebSocket (`ui_theme`). Les autres appareils gardent leur propre thème. Go : `uitheme.go` + test.
 
 ### Démineur (2026-10-19)
 - Page `/demineur` (`demineur.html/js/css`) : niveaux Débutant / Intermédiaire / Expert, premier clic jamais
@@ -135,12 +144,10 @@ les refontes sont acceptées.
 ## À faire
 
 ### Sur le matériel (priorité, rien de tout ça n'a été essayé)
-- [ ] Pousser les commits, puis déployer **base et robot ensemble** (le protocole d'état a changé) :
-      `tools/deploy.sh base` puis `tools/deploy.sh robot`.
+- [ ] Déployer le **robot** (la base est faite ; le protocole d'état a changé, les deux doivent suivre).
 - [ ] Flasher l'ESP moteurs (`tools/deploy.sh esp motors`) ; vérifier : pas de faux déclenchement du
       watchdog en match (`watchdog_count` dans esp_motors), arrêt si on débranche l'USB, pas de reprise
       au rebranchement. Si faux déclenchements : passer `RASP_TIMEOUT_MS` à 400-500.
-- [ ] Sur la base : arrêter le `base_stk` lancé à la main, puis `sudo Base/install_service.sh`.
 - [ ] Définir le PIN dans `Base/pin.txt` sur la base.
 - [ ] Vérifier un match complet : tirette, fin à 100 s, réarmement par la tirette après un match,
       équipe/LEDs, mode test, écran 7" du robot.
