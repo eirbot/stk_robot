@@ -139,8 +139,11 @@ cmd_robot() {
 
     run_stdin "$version"$'\n' ssh "${ROBOT_SSH_OPTS[@]}" "$ROBOT" "cat > $ROBOT_DIR/VERSION"
 
-    log "Redémarrage de robot_launcher"
-    ssh_robot "sudo systemctl restart robot_launcher"
+    # Si le programme tournait : témoin pour que le launcher le relance (Rasp/launcher.py,
+    # même commande que robotRestartCmd dans Base/Web/winupdate.go)
+    log "Redémarrage de robot_launcher (programme relancé s'il tournait)"
+    ssh_robot "if pgrep -f '[m]ain_robot.py' >/dev/null; then touch $ROBOT_DIR/.relance_apres_maj && echo '  programme relancé'; fi;" \
+        "sudo systemctl restart robot_launcher"
 }
 
 cmd_esp() {

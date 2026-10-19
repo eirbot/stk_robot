@@ -59,14 +59,16 @@ type updateStatus struct {
 }
 
 type updateJob struct {
-	Targets    []string  `json:"targets"`
-	Lines      []string  `json:"lines"`
-	Running    bool      `json:"running"`
-	OK         bool      `json:"ok"`
-	Error      string    `json:"error,omitempty"`
-	Restarting bool      `json:"restarting"` // la base va redémarrer : attendre son retour
-	Started    time.Time `json:"started"`
-	Ended      time.Time `json:"ended,omitempty"`
+	Targets    []string `json:"targets"`
+	Lines      []string `json:"lines"`
+	Running    bool     `json:"running"`
+	OK         bool     `json:"ok"`
+	Error      string   `json:"error,omitempty"`
+	Restarting bool     `json:"restarting"` // la base va redémarrer : attendre son retour
+	// Le programme du robot a été relancé : la page attend qu'il revienne avec la nouvelle version
+	RobotRelaunched bool      `json:"robot_relaunched"`
+	Started         time.Time `json:"started"`
+	Ended           time.Time `json:"ended,omitempty"`
 }
 
 var updates struct {
@@ -285,6 +287,9 @@ func runUpdateJob(j *updateJob, wantBase, wantRobot bool) {
 			j.logf("Attention : %s", r.Warning)
 		}
 		j.logf("Robot : %s", r.Msg)
+		updates.Lock()
+		j.RobotRelaunched = r.Relaunched
+		updates.Unlock()
 	}
 
 	if wantBase {
@@ -395,12 +400,18 @@ func setupUpdateRoutes(app *fiber.App) {
 
 // --- Déploiement du code Python sur le robot (partagé avec /api/update_rasp) ---
 
+// Sur le robot : témoin de relance si main_robot.py tourne ([m] : pgrep ne se voit pas lui-même),
+// puis redémarrage du launcher. Même commande dans tools/deploy.sh.
+var robotRestartCmd = fmt.Sprintf("if pgrep -f '[m]ain_robot.py' >/dev/null; then touch %s/.relance_apres_maj && echo RELANCE; fi; "+
+	"sudo systemctl restart robot_launcher", robotDir)
+
 type raspDeployResult struct {
-	Changed []string
-	Warning string
-	Msg     string
-	Step    string // étape en échec (vide = succès)
-	Output  string
+	Relaunched bool // le programme du robot tournait : relancé après la mise à jour
+	Changed    []string
+	Warning    string
+	Msg        string
+	Step       string // étape en échec (vide = succès)
+	Output     string
 }
 
 // git pull (si pull, best effort), rsync de Rasp/ vers le robot, fichier VERSION, redémarrage
@@ -451,21 +462,27 @@ func deployRaspCode(ctx context.Context, pull bool, log *updateJob) raspDeployRe
 		fmt.Printf("[UPDATE RASP] Écriture de VERSION impossible : %v %s\n", err, string(out))
 	}
 
-	// 4. Redémarrage du launcher seulement si quelque chose a changé
+	// 4. Redémarrage du launcher seulement si quelque chose a changé. Si le programme du robot
+	// tournait, témoin pour que le launcher le relance (Rasp/launcher.py : autostart_after_update)
 	if len(r.Changed) > 0 {
 		restartCmd := exec.CommandContext(ctx, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
-			robotTarget(raspIP), "sudo systemctl restart robot_launcher")
-		if out, err := restartCmd.CombinedOutput(); err != nil {
+			robotTarget(raspIP), robotRestartCmd)
+		out, err := restartCmd.CombinedOutput()
+		if err != nil {
 			r.Step, r.Output = "restart", string(out)
 			r.Msg = fmt.Sprintf("Code copié mais redémarrage du launcher impossible : %v", err)
 			return r
 		}
+		r.Relaunched = strings.Contains(string(out), "RELANCE")
 	}
 	fmt.Printf("[UPDATE RASP] %d fichier(s) mis à jour sur %s\n", len(r.Changed), raspIP)
 
 	r.Msg = "Code Rasp déjà à jour"
-	if len(r.Changed) > 0 {
-		r.Msg = fmt.Sprintf("%d fichier(s) mis à jour, launcher redémarré", len(r.Changed))
+	switch {
+	case len(r.Changed) > 0 && r.Relaunched:
+		r.Msg = fmt.Sprintf("%d fichier(s) mis à jour, programme du robot relancé", len(r.Changed))
+	case len(r.Changed) > 0:
+		r.Msg = fmt.Sprintf("%d fichier(s) mis à jour (programme du robot arrêté : bouton 3 pour le lancer)", len(r.Changed))
 	}
 	return r
 }

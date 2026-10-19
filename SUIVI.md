@@ -65,6 +65,15 @@ les refontes sont acceptées.
 - Affichage téléphone ; mode test (pas d'arrêt à 100 s) ; notifications (`toast()`) ; pastille
   « Robot hors ligne » ; versions du code dans Debug.
 
+### Relance du robot après une mise à jour (2026-10-19)
+- Avant : redémarrer `robot_launcher` tuait `main_robot.py`, qu'il fallait relancer au bouton 3.
+- Le déploiement (`robotRestartCmd` dans winupdate.go, utilisé par Windows Update et Debug ; même commande
+  dans deploy.sh) pose `~/Documents/robot_stk/.relance_apres_maj` si le programme tournait ; au démarrage,
+  `Rasp/launcher.py` (`autostart_after_update`) supprime le témoin et relance le programme.
+- Windows Update : avertissement (Continuer / Annuler) « le robot va redémarrer », attente du retour du
+  robot avec la nouvelle version (90 s max), puis fenêtre « installée avec succès » (aussi après un
+  redémarrage de la base, via sessionStorage).
+
 ### Thème de l'écran du robot (2026-10-19)
 - L'écran 7" (`?mode=robot`) suit le dernier thème choisi sur un autre appareil : `setTheme()` (theme.js)
   envoie le choix à la base (`POST /api/ui_theme`, sans PIN), qui le garde dans `Base/ui_theme.txt` et le

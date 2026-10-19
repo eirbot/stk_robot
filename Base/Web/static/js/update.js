@@ -110,13 +110,34 @@ function appendLog(lines) {
     log.scrollTop = log.scrollHeight;
 }
 
+// Fenêtres : MessageBox Win95 si le thème est actif, sinon boîtes du navigateur
+const isW95 = () => !!window.w95MessageBox && document.body.classList.contains('w95-app');
+
+async function warnBox(text) {
+    if (!isW95()) return askConfirm(text);
+    const i = await window.w95MessageBox({ title: 'Windows Update', icon: 'warning', text,
+        buttons: ['Continuer', 'Annuler'], defaultIndex: 0, cancelIndex: 1 });
+    return i === 0;
+}
+
+function successBox(text) {
+    if (isW95()) window.w95MessageBox({ title: 'Windows Update', icon: 'info', text });
+    else alert(text);
+}
+
 async function install() {
     const targets = selectedTargets();
     if (!targets.length) return;
     const names = { base: 'le serveur de la base', robot: 'le code du robot', depot: 'les fichiers du dépôt' };
     const what = targets.map(t => names[t]).join(' et ');
-    const warn = targets.includes('base') ? '\n\nLa base va redémarrer : l\'interface sera coupée quelques secondes.' : '';
-    if (!await askConfirm(`Installer ${what} ?${warn}`)) return;
+    let warn = '';
+    if (targets.includes('robot')) {
+        warn += '\n\nLe robot va redémarrer : son programme sera arrêté puis relancé automatiquement (environ 15 s). Ne lancez pas de match pendant ce temps.';
+    }
+    if (targets.includes('base')) {
+        warn += '\n\nLa base va redémarrer : l\'interface sera coupée quelques secondes.';
+    }
+    if (!await warnBox(`Installer ${what} ?${warn}`)) return;
 
     const r = await fetch('/api/update/install', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -159,14 +180,49 @@ async function pollJob() {
     if (j.running) return;
     stopPolling();
     if (j.restarting) { waitRestart(); return; }
-    if (j.ok) {
+    if (j.ok && j.robot_relaunched) {
+        waitRobot();
+    } else if (j.ok) {
         showProgress('Installation terminée.');
-        toast('Mises à jour installées', 'ok');
+        const stopped = (j.targets || []).includes('robot')
+            ? '\n\nLe programme du robot était arrêté : appuyez sur le bouton 3 pour le lancer.' : '';
+        successBox('La mise à jour a été installée avec succès.' + stopped);
     } else {
         showProgress('L\'installation a échoué.');
         alert(`Erreur : ${j.error}`);
     }
     loadStatus(false);
+}
+
+// Le programme du robot redémarre : attendre qu'il revienne en ligne avec la version du dépôt
+async function waitRobot() {
+    showProgress('Redémarrage du robot… Ne lancez pas de match.');
+    $('wu-bar').classList.add('is-busy');
+    const t0 = Date.now();
+    const tick = async () => {
+        try {
+            const [st, state] = await Promise.all([
+                fetch('/api/update/status').then(r => r.json()),
+                fetch('/api/state').then(r => r.json()),
+            ]);
+            if (state.robot_online && st.robot_commit && !st.robot_outdated) {
+                $('wu-bar').classList.remove('is-busy');
+                showProgress('Installation terminée.');
+                render(st);
+                successBox(`La mise à jour a été installée avec succès.\n\nLe robot a redémarré avec la version ${st.robot_commit}.`);
+                return;
+            }
+        } catch (e) { /* base occupée : on réessaie */ }
+        if (Date.now() - t0 > 90000) {
+            $('wu-bar').classList.remove('is-busy');
+            showProgress('Code installé, mais le robot ne répond pas après 90 s.');
+            alert('Le code du robot est installé, mais son programme ne répond pas : vérifiez le robot (bouton 3 pour le relancer).');
+            loadStatus(false);
+            return;
+        }
+        setTimeout(tick, 2000);
+    };
+    setTimeout(tick, 6000);  // laisser le launcher tuer l'ancien programme
 }
 
 // La base redémarre : attendre qu'elle réponde avec une autre version, puis recharger
@@ -180,6 +236,8 @@ async function waitRestart() {
             const v = await (await fetch('/api/version', { cache: 'no-store' })).json();
             if (v.base && v.base !== before) {
                 showProgress(`Base redémarrée en ${short(v.base)}.`);
+                // Message de succès affiché après le rechargement
+                try { sessionStorage.setItem('stk-wu-success', `La mise à jour a été installée avec succès.\n\nLa base a redémarré en version ${short(v.base)}.`); } catch (e) { /* rien */ }
                 setTimeout(() => location.reload(), 1200);
                 return;
             }
@@ -199,6 +257,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     $('wu-install').addEventListener('click', install);
     $('wu-list').addEventListener('change', updateSelection);
     await loadStatus(false);
+    let done = null;
+    try { done = sessionStorage.getItem('stk-wu-success'); sessionStorage.removeItem('stk-wu-success'); } catch (e) { /* rien */ }
+    if (done) setTimeout(() => successBox(done), 300);  // après la mise en place du thème Win95
     // Une installation lancée depuis un autre appareil est peut-être en cours
     try {
         const b = await (await fetch('/api/update/job?since=0')).json();
