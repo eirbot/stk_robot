@@ -81,6 +81,19 @@ func TestComputeUpdateStatus(t *testing.T) {
 		t.Fatalf("versions déployées en retard mal vues : %+v", st)
 	}
 
+	// Commit qui ne touche que la base : la base est en retard, pas le robot
+	buildVersion = head() + " 2026-10-19T00:00:00"
+	globalState.Lock()
+	globalState.RobotVersion = map[string]string{"commit": head() + "-dirty"}
+	globalState.Unlock()
+	commitFile(t, dev, "Base/Web/z.go")
+	git(t, dev, "push", "-q", "origin", "HEAD:main")
+	git(t, base, "pull", "-q", "--ff-only")
+	st = computeUpdateStatus(ctx, base)
+	if !st.BaseOutdated || st.RobotOutdated || st.Available != 1 {
+		t.Fatalf("commit base seule : robot à jour attendu, %+v", st)
+	}
+
 	// Version inconnue (binaire « dev », robot sans VERSION) : rien de proposé
 	buildVersion = "dev"
 	globalState.Lock()

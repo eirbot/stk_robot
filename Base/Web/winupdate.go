@@ -152,7 +152,12 @@ func computeUpdateStatus(ctx context.Context, root string) updateStatus {
 		st.RobotCommit = globalState.RobotVersion["commit"]
 	}
 	globalState.Unlock()
-	st.RobotOutdated = !sameCommit(commitOf(st.RobotCommit), st.Head)
+	// Le robot n'est en retard que si son code (Rasp/, hors config.json) a changé depuis la version
+	// qu'il fait tourner : un commit qui ne touche que la base ne doit pas proposer de le redémarrer.
+	if rc := commitOf(st.RobotCommit); rc != "" && !sameCommit(rc, st.Head) {
+		_, err := gitOut(ctx, root, "diff", "--quiet", rc, "HEAD", "--", "Rasp", ":!Rasp/config.json")
+		st.RobotOutdated = err != nil // différence, ou commit inconnu du dépôt
+	}
 
 	if st.TouchesBase || st.BaseOutdated {
 		st.Available++
@@ -273,7 +278,9 @@ func runUpdateJob(j *updateJob, wantBase, wantRobot bool) {
 
 	if wantRobot {
 		j.logf("Installation sur le robot (copie de Rasp/)…")
-		r := deployRaspCode(ctx, false, j)
+		// Toujours redémarrer : le robot était proposé parce que le programme qui tourne est ancien,
+		// même si les fichiers ont déjà été copiés (deploy.sh, Debug)
+		r := deployRaspCode(ctx, false, true, j)
 		if r.Step != "" {
 			if out := strings.TrimSpace(r.Output); out != "" {
 				for _, l := range strings.Split(out, "\n") {
@@ -415,8 +422,9 @@ type raspDeployResult struct {
 }
 
 // git pull (si pull, best effort), rsync de Rasp/ vers le robot, fichier VERSION, redémarrage
-// du launcher si des fichiers ont changé. log reçoit les fichiers copiés (peut être nil).
-func deployRaspCode(ctx context.Context, pull bool, log *updateJob) raspDeployResult {
+// du launcher si des fichiers ont changé (ou toujours si forceRestart). log reçoit les fichiers
+// copiés (peut être nil).
+func deployRaspCode(ctx context.Context, pull, forceRestart bool, log *updateJob) raspDeployResult {
 	var r raspDeployResult
 	projectRoot := findProjectRoot()
 
@@ -464,7 +472,7 @@ func deployRaspCode(ctx context.Context, pull bool, log *updateJob) raspDeployRe
 
 	// 4. Redémarrage du launcher seulement si quelque chose a changé. Si le programme du robot
 	// tournait, témoin pour que le launcher le relance (Rasp/launcher.py : autostart_after_update)
-	if len(r.Changed) > 0 {
+	if len(r.Changed) > 0 || forceRestart {
 		restartCmd := exec.CommandContext(ctx, "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
 			robotTarget(raspIP), robotRestartCmd)
 		out, err := restartCmd.CombinedOutput()
@@ -477,11 +485,12 @@ func deployRaspCode(ctx context.Context, pull bool, log *updateJob) raspDeployRe
 	}
 	fmt.Printf("[UPDATE RASP] %d fichier(s) mis à jour sur %s\n", len(r.Changed), raspIP)
 
+	restarted := len(r.Changed) > 0 || forceRestart
 	r.Msg = "Code Rasp déjà à jour"
 	switch {
-	case len(r.Changed) > 0 && r.Relaunched:
+	case restarted && r.Relaunched:
 		r.Msg = fmt.Sprintf("%d fichier(s) mis à jour, programme du robot relancé", len(r.Changed))
-	case len(r.Changed) > 0:
+	case restarted:
 		r.Msg = fmt.Sprintf("%d fichier(s) mis à jour (programme du robot arrêté : bouton 3 pour le lancer)", len(r.Changed))
 	}
 	return r

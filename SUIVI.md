@@ -65,6 +65,15 @@ les refontes sont acceptées.
 - Affichage téléphone ; mode test (pas d'arrêt à 100 s) ; notifications (`toast()`) ; pastille
   « Robot hors ligne » ; versions du code dans Debug.
 
+### Windows Update : robot proposé à tort / pas redémarré (2026-10-19)
+- Le robot était déclaré en retard dès que le commit changeait (même pour des fichiers de la base) ; le
+  déploiement ne redémarrait que si des fichiers avaient été copiés -> robot jamais redémarré, version
+  annoncée inchangée, mise à jour reproposée en boucle. Le nouveau launcher.py avait été copié (20:33)
+  sans redémarrage du launcher.
+- Corrigé : robot en retard seulement si `git diff <commit du robot> HEAD -- Rasp ':!Rasp/config.json'`
+  n'est pas vide ; installation « Code du robot » = redémarrage forcé (`deployRaspCode(..., forceRestart)`).
+  Debug > Mettre à jour la Rasp garde l'ancien comportement (redémarre si des fichiers ont changé).
+
 ### PIN et menus de stratégie (2026-10-19)
 - PIN `2023` actif sur la base (`Base/pin.txt`, droits 600) ; vérifié : POST sans session -> 401, GET libre.
 - Menus de stratégie (Debug, accueil) qui « clignotaient » : la page remettait la valeur du robot toutes les

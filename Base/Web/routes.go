@@ -629,7 +629,7 @@ func setupRoutes(app *fiber.App) {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 
-		r := deployRaspCode(ctx, true, nil)
+		r := deployRaspCode(ctx, true, false, nil)
 		if r.Step != "" {
 			return c.JSON(fiber.Map{"status": "error", "step": r.Step, "msg": r.Msg, "output": r.Output})
 		}
