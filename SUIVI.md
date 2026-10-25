@@ -5,8 +5,8 @@ les refontes sont acceptées.
 
 ## État du dépôt
 
-- Branche `base_deporte` : 3 commits locaux NON poussés (2026-10-25) : échelle caméra (02b83a8), firmware
-  moteurs réécrit (6bb0374), rangement (`ESP/`). Rien de tout ça n'est déployé ni testé sur le robot.
+- Branche `base_deporte` poussée le 2026-10-25 (d498846) : échelle caméra (02b83a8), firmware moteurs réécrit
+  (6bb0374), rangement (`ESP/`, d498846). Rien de tout ça n'est déployé ni testé sur le robot.
 - Tests : `tools/run_tests.sh` (tout passe : 67 Python, 4 JS, Go). `--rapide` saute test_strategies (~70 s).
 - Commit `4fbf9d8` (« le tux ») poussé et **déployé sur la base** le 2026-10-19 : service `base_stk` installé
   et actif. Anciennes modifs locales de la base : `git stash` + `~/sauvegarde_base_20261019.tgz` ; stratégie
