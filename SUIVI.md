@@ -268,6 +268,19 @@ les refontes sont acceptées.
   `led_cmd` (liste blanche) et `led_animations` ; le journal de télémétrie démarre / s'arrête avec le match
   (`Rasp/logs/telemetry/blackbox_*.csv`, jamais démarré avant). Tests Go + `test_7_commandes_led`.
 
+### Découpage du JS (2026-10-25)
+- Pas de framework ni de modules ES (122 `onclick=` dans les templates appellent des fonctions globales) : les gros
+  fichiers sont coupés par sujet en fichiers classiques, chargés dans l'ordre par leur template.
+  `debug.js` -> `static/js/debug/` (7), `blockly.js` -> `blockly/` (8, en defer après Blockly), `controle.js` ->
+  `controle/` (8), `map.js` -> `map/` (6), menus Win95 -> `win95_apps.js`. Plus aucun fichier > 600 lignes.
+- Vérification : chaque ligne de code retrouvée une fois ; captures Chromium headless identiques au pixel avant /
+  après ; script qui vérifie que toutes les fonctions des attributs on* existent ; scénarios (Strat Studio :
+  chargement + aperçu + simulation, Python généré identique ; carte : vue de dessus).
+- Jauges de vitesse des roues (Pilotage) : entraxe 339,3 et convention du nouveau firmware (étaient inversées).
+- `static/js/socket.io.js` (6000 lignes, chargé nulle part) supprimé ; la copie de `vendor/` reste (non vérifiée).
+- Outil de vérification utilisé (non commité, à refaire si besoin) : Chromium headless piloté par CDP
+  (`uv run --with websockets`), base locale sur des ports libres (`STK_HTTP_PORT=28080`...).
+
 ## À faire
 
 ### Sur le matériel (priorité, rien de tout ça n'a été essayé)

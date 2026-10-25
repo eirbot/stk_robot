@@ -15,7 +15,9 @@ Répondre en français. Réponses courtes : le résultat, pas le récit des éta
   `ESP/src/motors/` : firmware moteurs (env `Motor`), protocole série dans `protocol.h` (`G id x y theta` -> `D id` / `A id`, trame `T x y theta`) ;
   code pur testé sur PC (`ESP/test/`, env `native`) ; seuls `steppers`, `motion_task`, `link`, `main` touchent au matériel.
   `ESP/src/actuators/` : firmware actionneurs (env `Actionneurs`).
-- `Base/Web/` : serveur Go (fiber + zmq4/cgo) -> binaire `Base/base_stk`, compilé par `Base/build.sh`, lancé depuis `Base/`. Pages `templates/*.html` + `static/js/*.js`.
+- `Base/Web/` : serveur Go (fiber + zmq4/cgo) -> binaire `Base/base_stk`, compilé par `Base/build.sh`, lancé depuis `Base/`. Pages `templates/*.html` + `static/js/*.js` ; les grosses pages ont un dossier par page
+  (`static/js/debug/`, `blockly/`, `controle/`, `map/`) : fichiers classiques chargés dans l'ordre par le template, portée
+  globale partagée (les `onclick=` des templates appellent ces fonctions). Menus Win95 par page : `win95_apps.js`.
 - `Base/Vision/` : `vision_deporte_worker.py` (caméra zénithale -> pose) + sous-module `vision_deporte/` (uv).
 - `docu/` : règles Eurobot (PDF), protocole LiDAR.
 - `Rasp/core/` : modules purs, testés sans robot : `match_state.py` (seul écrivain de l'état du match), `config_store.py` (config du robot), `frames.py` (repères), `localisation.py` (fusion odométrie + caméra), `obstacles.py` (tours LiDAR -> état d'évitement L 0..3).
