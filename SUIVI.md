@@ -18,7 +18,7 @@ les refontes sont acceptées.
   plantait au démarrage (adresse pas encore là) : `bind-dynamic` au lieu de `bind-interfaces`.
 - Env uv à la racine (`pyproject.toml` : numpy, OpenCV headless, pyzmq) : `tools/run_tests.sh` lance les tests
   Python avec `uv run python` si uv est là (le python3 de ce PC n'a pas numpy). 129 tests Python OK le 2026-10-25.
-- Caméra embarquée refaite (2026-10-25) : **non commitée, non essayée sur le robot** (robot injoignable).
+- Caméra embarquée refaite (2026-10-25) : commit b3afb38 poussé sur `base_deporte`, **non essayée sur le robot**.
 
 ## Fait (récent, du plus ancien au plus récent)
 
