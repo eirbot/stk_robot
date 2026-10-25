@@ -5,7 +5,7 @@ import sys
 import os
 import random
 import ihm.shared as shared
-from strat.actions import actionneurs
+import hardware
 
 # Try Importing GPIO (Mock if not available)
 try:
@@ -192,9 +192,9 @@ class ButtonsThread:
 
     def action_init(self):
         print("[BUTTONS] INIT des Actionneurs !")
-        if actionneurs:
+        if hardware.actionneurs:
             # On lance l'init dans un thread pour ne pas bloquer la boucle des boutons
-            threading.Thread(target=actionneurs.pose_match, daemon=True).start()
+            threading.Thread(target=hardware.actionneurs.pose_match, daemon=True).start()
         else:
             print("[BUTTONS] ⚠️ Actionneurs non connectés, impossible d'init.")
         

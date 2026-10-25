@@ -3,7 +3,8 @@ import cv2
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
-import ihm.shared as shared
+import hardware
+
 
 class MJPEGHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -28,8 +29,8 @@ class MJPEGHandler(BaseHTTPRequestHandler):
                         time.sleep(0.005)
                         continue
 
-                    if shared.camera and shared.camera.running:
-                        success, frame = shared.camera.read()
+                    if hardware.camera_running():
+                        success, frame = hardware.camera.read()
                         if success and frame is not None:
                             # Redimensionnement à 800px de large (résolution optimale attendue par cam.py)
                             h, w = frame.shape[:2]

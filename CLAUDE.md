@@ -10,7 +10,7 @@ Répondre en français. Réponses courtes : le résultat, pas le récit des éta
 - Ne pas y recopier l'historique git en détail : l'essentiel, pour reprendre le travail ailleurs.
 
 ## Carte du repo (ne pas réexplorer)
-- `Rasp/` : Python sur la Raspberry du robot. `main_robot.py`, `launcher.py`, `ihm/` (shared.py = état global, zmq_client.py = lien base), `strat/` (actions.py = primitives goto/set_pos/symétrie, `strategies/` = stratégies Blockly .xml/.py), `interface_deplacement/esp_motors.py`, `interface_actionneur/`, `LiDAR/` (lidar_udp.cpp + lidar_thread.py, évitement uniquement), `config.json`.
+- `Rasp/` : Python sur la Raspberry du robot. `main_robot.py`, `launcher.py`, `hardware.py` (ESP, caméra : créés une fois par `hardware.start()`, lus via `hardware.esp`...), `ihm/` (shared.py = état global, zmq_client.py = lien base), `strat/` (actions.py = primitives goto/set_pos/symétrie, `strategies/` = stratégies Blockly .xml/.py), `interface_deplacement/esp_motors.py`, `interface_actionneur/`, `LiDAR/` (lidar_udp.cpp + lidar_thread.py, évitement uniquement), `config.json`.
 - `ESP/` : projet PlatformIO des deux ESP32 (`ESP/platformio.ini`, commandes `pio` lancées depuis `ESP/` ou avec `-d ESP`).
   `ESP/src/motors/` : firmware moteurs (env `Motor`), protocole série dans `protocol.h` (`G id x y theta` -> `D id` / `A id`, trame `T x y theta`) ;
   code pur testé sur PC (`ESP/test/`, env `native`) ; seuls `steppers`, `motion_task`, `link`, `main` touchent au matériel.

@@ -39,9 +39,9 @@ class cam:
 
         # Test d'ouverture pour basculer en simu si besoin
         if self.use_camera:
-            import ihm.shared as shared
+            import hardware
             # Si on a déjà une caméra partagée qui tourne, c'est OK
-            if shared.camera and shared.camera.running:
+            if hardware.camera_running():
                 print("[CAM] Utilisation de la caméra partagée détectée.")
             else:
                 # Sinon on teste l'ouverture locale (cas hors robot complet)
@@ -106,15 +106,15 @@ class cam:
         return self.everything_in_position
 
     def capture_image(self):
-        import ihm.shared as shared
+        import hardware
         import numpy as np
 
         # Priorité à la caméra partagée (LibCamera)
-        if shared.camera and shared.camera.running:
-            success, frame = shared.camera.read()
+        if hardware.camera_running():
+            success, frame = hardware.camera.read()
             if success and frame is not None:
                 return frame
-            print("⚠️ [CAM] Échec lecture shared.camera, tentative fallback...")
+            print("⚠️ [CAM] Échec lecture hardware.camera, tentative fallback...")
 
         # Fallback VideoCapture(0)
         cap = cv2.VideoCapture(0)

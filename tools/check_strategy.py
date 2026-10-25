@@ -28,9 +28,12 @@ def run_strategy(name, team, timeout=60.0):
     sys.path.insert(0, robot_sim.RASP)
     os.chdir(robot_sim.RASP)
 
+    import hardware
     import ihm.shared as shared
     import strat.actions as actions
     from core import frames
+
+    hardware.start(shared.cfg)  # faux ESP (robot_sim.install_fakes)
 
     shared.match.ready(tirette_inserted=False)
     shared.match.apply_config({"team": team})
@@ -51,7 +54,7 @@ def run_strategy(name, team, timeout=60.0):
     if t.is_alive():
         error.append(f"pas terminée après {timeout:.0f} s")
 
-    poses = [c for c in actions.esp.calls if c[0] in ("set_pos", "goto")]
+    poses = [c for c in hardware.esp.calls if c[0] in ("set_pos", "goto")]
     out_of_table = [c for c in poses if not frames.in_table(c[1], c[2])]
     return {"strategy": name, "team": team, "error": error[0] if error else None,
             "poses": poses, "out_of_table": out_of_table}

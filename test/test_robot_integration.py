@@ -79,11 +79,6 @@ def install_fakes():
             raise RuntimeError("pas de caméra en test")
     module("utils.sensors.camera_libcamera", LibCamera=FakeCam)
 
-    class FakeVisionCam:
-        def __init__(self, *a, **k):
-            raise RuntimeError("pas de vision en test")
-    module("Vision.cam", cam=FakeVisionCam)
-
 
 STRAT_SOURCE = '''
 METADATA = {"name": "test_integration"}
@@ -102,6 +97,7 @@ class TestIntegrationRobot(unittest.TestCase):
             cfg = json.load(f)
         cfg.update({"team": "BLEUE", "strat_mode": "STATIC", "static_strat": "test_integration",
                     "test_mode": False, "music_enabled": False,
+                    "audio": {**cfg.get("audio", {}), "enabled": False},
                     "vision_odom": {**cfg.get("vision_odom", {}), "enregistrer": False}})
         with open(cfg_path, "w", encoding="utf-8") as f:
             json.dump(cfg, f)
@@ -116,6 +112,8 @@ class TestIntegrationRobot(unittest.TestCase):
             f.write(STRAT_SOURCE)
 
         cls.shared = importlib.import_module("ihm.shared")
+        hardware = importlib.import_module("hardware")
+        hardware.start(cls.shared.cfg)  # faux ESP (install_fakes)
         cls.actions = importlib.import_module("strat.actions")
         cls.main_strat = importlib.import_module("strat.main_strat")
         cls.zmq_client = importlib.import_module("ihm.zmq_client")
@@ -124,9 +122,9 @@ class TestIntegrationRobot(unittest.TestCase):
         cls.shared.match.ready(tirette_inserted=False)
 
         cls.client = cls.zmq_client.ZmqClient("127.0.0.1")  # sockets créés, thread non démarré
-        threading.Thread(target=cls.main_strat.strat_loop, daemon=True).start()
-        cls.esp = cls.actions.esp
-        cls.act = cls.actions.actionneurs
+        threading.Thread(target=cls.main_strat.strat_loop, args=(cls.actions.RobotActions(),), daemon=True).start()
+        cls.esp = hardware.esp
+        cls.act = hardware.actionneurs
 
     @classmethod
     def tearDownClass(cls):

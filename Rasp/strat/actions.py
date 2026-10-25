@@ -1,61 +1,27 @@
-# strat/actions.py
-import time
+"""Actions de haut niveau appelées par les stratégies (et les blocs Blockly) : déplacements avec
+symétrie d'équipe, recalage caméra, actions de jeu. Le matériel vient de hardware.py
+(None en simulation : chaque action le tolère)."""
 import math
+import time
+
+import hardware
 import ihm.shared as shared
-
-# --- AJOUT AU PATH GLOBAL POUR LES IMPORTS CROSS-FOLDERS ---
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from core import frames
-
-# --- COM ACTIONNEURS (via module dédié) ---
-try:
-    from interface_actionneur.esp_actionneur import ESPActionneurs
-    actionneurs = ESPActionneurs()
-    actionneurs.start()
-except Exception as e:
-    print(f"⚠️ Attention : Erreur de chargement du module Actionneur ({e}) -> Mode simulation")
-    actionneurs = None
-
-try:
-    # On essaie d'importer la classe ESPMotors
-    from interface_deplacement.esp_motors import ESPMotors
-    esp = ESPMotors()
-    esp.start()
-
-except ImportError as e:
-    print(f"⚠️ Attention : Modules de déplacement non trouvés ({e}) -> Mode Simulation pur")
-    esp = None
-
-# --- CONSTANTES ---
-TABLE_WIDTH = 3000
-TIME_TO_RETURN = 90
-
-class EndOfMatchException(Exception):
-    pass
 
 _angle_diff = frames.angle_diff_deg
 
 class RobotActions:
     def __init__(self):
-        self.is_returning = False
-        shared.state["is_returning"] = False
-        self.base_pos = None # (x, y, theta) stockés avant symétrie
+        self.base_pos = None  # première pose set_pos (côté BLEUE), pour GoBase
 
     @property
     def is_yellow(self):
         return shared.state["team"] == "JAUNE"
 
-    def _check_time(self):
-        # On ne lève plus d'exception automatique à 90s
-        # On vérifie juste si le match est arrêté (STOP)
-        pass
-
     def _check_abort(self, manual=False):
-        if not manual and not shared.state["match_running"]: raise Exception("Stop")
-        self._check_time()
+        """Interrompt la stratégie (exception) si le match est arrêté."""
+        if not manual and not shared.state["match_running"]:
+            raise Exception("Stop")
 
     def _apply_sym(self, x, y, theta=None):
         """Coordonnées écrites côté BLEUE -> coordonnées réelles de l'équipe courante (core/frames.py)."""
@@ -77,8 +43,8 @@ class RobotActions:
         print(f"[ACTION] SET_POS -> ({real_x}, {real_y}, {real_theta}°)")
 
         # 2. Envoi à l'ESP32 (Reset Odométrie) + remise à zéro de la fusion caméra
-        if esp:
-            esp.set_pos(real_x, real_y, real_theta)
+        if hardware.esp:
+            hardware.esp.set_pos(real_x, real_y, real_theta)
         else:
             shared.set_known_pose(real_x, real_y, real_theta)
             print("[SIMU] SET_POS virtuel (Pas de com)")
@@ -99,8 +65,8 @@ class RobotActions:
         else:
             real_x, real_y, real_theta = x, y, theta
 
-        if esp:
-            success = esp.goto(real_x, real_y, real_theta, manual=manual)
+        if hardware.esp:
+            success = hardware.esp.goto(real_x, real_y, real_theta, manual=manual)
             while not success:
                 if manual and shared.state.get("fsm_state") == "STOPPED":
                     break
@@ -109,7 +75,7 @@ class RobotActions:
                 print(f"[ACTION] 🔄 GOTO annulé par l'ESP (Obstacle), recalcul et relance vers ({real_x}, {real_y}, {real_theta}°)")
                 self._check_abort(manual=manual)
                 time.sleep(0.5)
-                success = esp.goto(real_x, real_y, real_theta, manual=manual)
+                success = hardware.esp.goto(real_x, real_y, real_theta, manual=manual)
             if success:
                 self._rattrapage(real_x, real_y, real_theta, manual)
         else:
@@ -134,39 +100,29 @@ class RobotActions:
                 return
             self._check_abort(manual=manual)
             print(f"[ACTION] Rattrapage caméra : {ecart:.0f} mm, {ecart_theta:+.1f}° de la cible")
-            if not esp.goto(x, y, theta, manual=manual):
+            if not hardware.esp.goto(x, y, theta, manual=manual):
                 return
 
     def set_speed(self, vx, vtheta):
         """Consigne de vitesse pour contrôle joystick."""
-        if esp:
-            esp.set_speed(vx, vtheta)
+        if hardware.esp:
+            hardware.esp.set_speed(vx, vtheta)
         else:
             print(f"[SIMU] SET_SPEED ({vx}, {vtheta}) virtuel")
 
     def stop(self):
         print("[ACTION] STOP")
-        if esp:
-            esp.stop_robot()
+        if hardware.esp:
+            hardware.esp.stop_robot()
         else:
             print("[SIMU] STOP virtuel (Pas de com)")
 
     def set_lidar_state(self, val):
         """Définit l'état du LiDAR sur l'ESP32 (0: Libre, 1: Stop, 2: Front, 3: Back)"""
-        if esp:
-            esp.set_lidar_state(val)
+        if hardware.esp:
+            hardware.esp.set_lidar_state(val)
         else:
             print(f"[SIMU] SET LIDAR STATE {val} virtuel")
-
-    def toggle_lidar(self):
-        """Ancienne fonction de toggle (Legacy)"""
-        print("[ACTION] TOGGLE LIDAR")
-        if esp:
-            # On simule un toggle simple 0/1
-            new_val = 1 if shared.state.get("obstacle_detected", False) else 0
-            esp.set_lidar_state(1 - new_val)
-        else:
-            print("[SIMU] TOGGLE LIDAR virtuel")
 
     # --- Actions de jeu ----------------------------------------------------------------
     # Actions de 2025 (Kapla, thermomètre) vidées : les noms restent (blocs Blockly,
@@ -200,7 +156,7 @@ class RobotActions:
         Retourne True si la pose a été corrigée.
         """
         self._check_abort()
-        if not esp:
+        if not hardware.esp:
             print("[SIMU] Recalage caméra virtuel (Pas de com)")
             return False
 
@@ -212,7 +168,7 @@ class RobotActions:
         #    les images ont alors été prises robot immobile
         fin = time.time() + attente_max
         while True:
-            t_min = esp.last_motion_time + latence
+            t_min = hardware.esp.last_motion_time + latence
             mesures = [m for m in shared.vision_poses if m[0] >= t_min]
             if len(mesures) >= nb_mesures:
                 break
@@ -267,8 +223,6 @@ class RobotActions:
         self._a_definir("pousse_kapla")
 
     def GoBase(self):
-        self.is_returning = True
-        shared.state["is_returning"] = True
         print("⚡ RETOUR BASE")
         if self.base_pos:
             bx, by, bt = self.base_pos
@@ -311,10 +265,10 @@ class RobotActions:
         Interface Blockly vers le module Actionneur dédié.
         """
         self._check_abort()
-        if actionneurs:
+        if hardware.actionneurs:
             if command_string is not None:
-                actionneurs.send_raw(command_string)
+                hardware.actionneurs.send_raw(command_string)
             else:
-                actionneurs.send_cmd(act1, act2, act3, act4)
+                hardware.actionneurs.send_cmd(act1, act2, act3, act4)
         else:
             print("[SIMU] Pas d'interface Actionneur connectée (Mode sans matériel).")

@@ -3,10 +3,8 @@ import time
 import importlib
 import os
 import glob
-import threading
 import sys
 import ihm.shared as shared
-from strat.actions import RobotActions, EndOfMatchException, actionneurs
 
 # Dossier des stratégies (relatif au main)
 STRAT_DIR = "strat/strategies"
@@ -61,11 +59,11 @@ def _load_strategy(strat_name):
     return importlib.import_module(full_mod_path)
 
 
-def strat_loop():
-    """Exécute la stratégie quand le match démarre. Ne modifie jamais l'état du match :
-    c'est le rôle de shared.match (core/match_state.py) ; on lui signale seulement la fin."""
+def strat_loop(robot):
+    """Exécute la stratégie quand le match démarre, avec `robot` (RobotActions, créé une seule
+    fois par main_robot.py). Ne modifie jamais l'état du match : c'est le rôle de shared.match
+    (core/match_state.py) ; on lui signale seulement la fin."""
     print("[STRAT] Thread démarré.")
-    robot = RobotActions()
     last_scan = 0.0
     last_run_start = None  # start_time du dernier match exécuté (une exécution par match)
 
@@ -82,7 +80,6 @@ def strat_loop():
         last_run_start = shared.state.get("start_time")
         strat_name = shared.state["strat_id"]
         print(f"[STRAT] GO ! Lancement : {strat_name}")
-        robot.is_returning = False
         try:
             mod = _load_strategy(strat_name)
             if mod is None:
@@ -97,11 +94,7 @@ def strat_loop():
             # On attend la fin de CE match (même start_time) : un STOP + nouveau départ
             # rapprochés ne doivent pas être confondus avec le match en cours.
             while shared.match.running and shared.state.get("start_time") == last_run_start:
-                robot._check_time()
                 time.sleep(0.2)
-        except EndOfMatchException:
-            print("[STRAT] TIMEOUT -> RETOUR BASE")
-            robot.GoBase()
         except Exception as e:
             # Exception("Stop") levée par _check_abort quand le match s'arrête : cas normal
             if shared.match.running:

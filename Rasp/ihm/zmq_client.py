@@ -3,6 +3,7 @@ import zmq
 import json
 import threading
 import time
+import hardware
 import ihm.shared as shared
 from utils.system_info import get_voltage_float, get_battery_current, get_ip
 
@@ -107,7 +108,7 @@ class ZmqClient(threading.Thread):
                 if act == "init":
                     print("[ZMQ CLIENT] Action INIT reçue (Pose match)")
                     try:
-                        from strat.actions import actionneurs
+                        actionneurs = hardware.actionneurs
                         if actionneurs:
                             threading.Thread(target=actionneurs.pose_match, daemon=True).start()
                     except Exception as e:
@@ -118,7 +119,7 @@ class ZmqClient(threading.Thread):
                 try:
                     vx = float(payload.get("vx", payload.get("v", 0.0)))
                     vtheta = float(payload.get("vtheta", payload.get("w", 0.0)))
-                    from strat.actions import esp
+                    esp = hardware.esp
                     if esp:
                         esp.set_speed(vx, vtheta)
                 except Exception as e:
@@ -126,7 +127,7 @@ class ZmqClient(threading.Thread):
 
             elif cmd_type == "cmd_actuator":
                 try:
-                    from strat.actions import actionneurs
+                    actionneurs = hardware.actionneurs
                     if not actionneurs:
                         print("[ZMQ CLIENT] ⚠️ Actionneurs non disponibles (mode simulation)")
                     else:
@@ -209,7 +210,7 @@ class ZmqClient(threading.Thread):
                     y = float(payload.get("y", 0))
                     theta = float(payload.get("theta", 0))
                     print(f"[ZMQ CLIENT] SET_POS command -> ({x}, {y}, {theta})")
-                    from strat.actions import esp
+                    esp = hardware.esp
                     if esp:
                         esp.set_pos(x, y, theta)  # remet aussi la fusion à zéro
                     else:
@@ -253,7 +254,7 @@ class ZmqClient(threading.Thread):
 
     def _run_manual_goto(self, x, y, theta):
         try:
-            from strat.actions import esp
+            esp = hardware.esp
             if esp:
                 # Coordonnées manuelles absolues : pas de symétrie JAUNE et pas d'écrasement de is_returning
                 esp.goto(x, y, theta, manual=True)

@@ -3,6 +3,8 @@ import time
 import psutil
 import os
 import numpy as np
+
+import hardware
 # On assure d'importer robot_pos
 from ihm.shared import state, audio, send_led_cmd, robot_pos, send_sys_info
 from utils import get_ip, get_battery_voltage, get_cpu_temp, get_battery_current, get_voltage_float
@@ -25,7 +27,7 @@ def background_loop():
                 'lidar': os.path.exists('/dev/lidar'),
                 'esp_motors': os.path.exists('/dev/esp_motors'),
                 'esp_arms': os.path.exists('/dev/esp_action'),
-                'camera': shared.camera is not None and shared.camera.running
+                'camera': hardware.camera_running()
             }
             
             volts = get_voltage_float()

@@ -7,8 +7,7 @@ import threading
 import subprocess
 import webview
 
-# Import de l'IHM
-from ihm import run_ihm
+import hardware
 import ihm.shared as shared
 from strat.main_strat import strat_loop
 
@@ -33,8 +32,7 @@ class RobotEffects:
     """Effets matériels déclenchés par la machine d'état du match (core/match_state.py)."""
 
     def _hw(self):
-        from strat.actions import esp, actionneurs
-        return esp, actionneurs
+        return hardware.esp, hardware.actionneurs
 
     def led(self, cmd):
         shared.send_led_cmd(cmd)
@@ -108,8 +106,10 @@ if __name__ == "__main__":
         # Effets matériels de la machine d'état du match
         shared.match.effects = RobotEffects()
 
-        # 3. Hardware & Collision
-        print("[MAIN] 5. Initialisation RobotActions & Collision Thread...")
+        # 3. Matériel (ESP moteurs + actionneurs, caméra) et évitement. Un seul RobotActions,
+        #    partagé par le LiDAR et la stratégie.
+        print("[MAIN] 5. Démarrage du matériel et du thread d'évitement...")
+        hardware.start(shared.cfg)
         from strat.actions import RobotActions
         from LiDAR.lidar_thread import LidarCollisionThread
         robot_instance = RobotActions()
@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
         # 4. Stratégie
         print("[MAIN] 6. Lancement Thread Stratégie...")
-        strat_thread = threading.Thread(target=strat_loop, daemon=True)
+        strat_thread = threading.Thread(target=strat_loop, args=(robot_instance,), daemon=True)
         strat_thread.start()
         
         # 5. Boutons

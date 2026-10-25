@@ -4,7 +4,8 @@ import socket
 import time
 from collections import deque
 
-from utils import LedStrip, AudioManager
+import hardware
+from utils import AudioManager
 from core.config_store import ConfigError, ConfigStore
 from core.match_state import MatchError, MatchState, TEAM_COLORS
 from core.localisation import Localisation
@@ -35,21 +36,9 @@ def send_log(msg, log_type="info"):
     if zmq_client_instance:
         zmq_client_instance.send_event("new_log", {"msg": msg, "type": log_type, "time": ""})
 
-# Hardware
-from utils.sensors.camera_libcamera import LibCamera
-leds = LedStrip(enabled=cfg.get("leds_enabled", True))
+# Sons (lance un lecteur externe à la demande : rien n'est ouvert ici). Le reste du matériel
+# (ESP, caméra) est démarré par hardware.start(), appelé par main_robot.py.
 audio = AudioManager(cfg.get("audio", {}))
-
-# Caméra partagée
-camera = None
-cam_cfg = cfg.get("camera", {})
-if cam_cfg.get("enabled", True):
-    try:
-        # On initialise la caméra une seule fois pour tout le robot
-        camera = LibCamera(resolution=(1640, 1232), framerate=10).start()
-    except Exception as e:
-        print(f"[CAM] Erreur initialisation globale : {e}")
-        camera = None
 
 # LiDAR partagé
 lidar_bin = None
@@ -157,29 +146,9 @@ def update_config_from_server(new_cfg):
         except Exception as e:
             print(f"[CONFIG] Erreur rechargement audio : {e}")
             
-    # 10. Gestion dynamique de la caméra
-    global camera
+    # 10. Caméra embarquée
     if "camera" in new_cfg:
         cam_info = new_cfg["camera"]
-        new_enabled = True
-        if isinstance(cam_info, dict):
-            new_enabled = cam_info.get("enabled", True)
-        else:
-            new_enabled = bool(cam_info)
-            
-        if new_enabled and camera is None:
-            try:
-                print("[CONFIG] 📷 Initialisation dynamique de la caméra...")
-                camera = LibCamera(resolution=(1640, 1232), framerate=10).start()
-            except Exception as e:
-                print(f"[CAM] Erreur initialisation dynamique : {e}")
-                camera = None
-        elif not new_enabled and camera is not None:
-            print("[CONFIG] 📷 Arrêt dynamique de la caméra...")
-            try:
-                camera.stop()
-            except Exception as e:
-                print(f"[CAM] Erreur lors de l'arrêt de la caméra : {e}")
-            camera = None
+        hardware.set_camera_enabled(cam_info.get("enabled", True) if isinstance(cam_info, dict) else bool(cam_info))
 
     return changed, None

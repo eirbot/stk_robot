@@ -140,17 +140,18 @@ def install_fakes():
         def __init__(self, *a, **k):
             raise RuntimeError("pas de caméra en simulation")
     _module("utils.sensors.camera_libcamera", LibCamera=NoCamera)
-    _module("Vision.cam", cam=NoCamera)
 
 
-def prepare_config(server, source=None):
-    """Copie de Rasp/config.json (ou `source`) pointant vers `server`, dans un dossier temporaire."""
+def prepare_config(server, source=None, son=False):
+    """Copie de Rasp/config.json (ou `source`) pointant vers `server`, dans un dossier temporaire.
+    Son coupé par défaut (tests, check_strategy) : `son=True` pour l'entendre."""
     tmp = tempfile.mkdtemp(prefix="robot_sim_")
     path = os.path.join(tmp, "config.json")
     shutil.copy(source or os.path.join(RASP, "config.json"), path)
     with open(path, encoding="utf-8") as f:
         cfg = json.load(f)
     cfg.update({"server_ip": server, "lidar_mode": "OFF", "music_enabled": False,
+                "audio": {**cfg.get("audio", {}), "enabled": bool(son)},
                 "camera": {**cfg.get("camera", {}), "enabled": False},
                 "vision_odom": {**cfg.get("vision_odom", {}), "enregistrer": False}})
     with open(path, "w", encoding="utf-8") as f:
@@ -174,14 +175,17 @@ def start_robot(server="127.0.0.1", config_path=None, tirette_inserted=False):
     sim_ip = os.environ.get("SIM_ROBOT_IP", "127.0.0.2")
     system_info.get_ip = utils.get_ip = lambda *a, **k: sim_ip
 
+    import hardware
     import ihm.shared as shared
     import strat.main_strat as main_strat
     import main_robot
     from ihm import run_ihm
+    from strat.actions import RobotActions
 
+    hardware.start(shared.cfg)  # faux ESP (install_fakes)
     shared.match.effects = main_robot.RobotEffects()
     threading.Thread(target=run_ihm, daemon=True).start()
-    threading.Thread(target=main_strat.strat_loop, daemon=True).start()
+    threading.Thread(target=main_strat.strat_loop, args=(RobotActions(),), daemon=True).start()
     shared.match.ready(tirette_inserted)
     return shared
 
@@ -191,11 +195,12 @@ def main():
     parser.add_argument("--server", default="127.0.0.1", help="IP de la base (défaut : 127.0.0.1)")
     parser.add_argument("--config", help="config.json de départ (défaut : Rasp/config.json)")
     parser.add_argument("--speed", type=float, help="vitesse simulée en mm/s (défaut : 600)")
+    parser.add_argument("--son", action="store_true", help="jouer les sons (coupés par défaut)")
     args = parser.parse_args()
     if args.speed:
         FakeESPMotors.speed_mm_s = args.speed
 
-    config_path = prepare_config(args.server, args.config)
+    config_path = prepare_config(args.server, args.config, son=args.son)
     print(f"[SIM] Config de simulation : {config_path}")
     shared = start_robot(args.server, config_path)
     print(f"[SIM] Robot simulé connecté à {args.server} (Ctrl+C pour arrêter)")

@@ -35,3 +35,5 @@ Base/pin.txt
 # Thème suivi par l'écran du robot (cf. Base/Web/uitheme.go)
 Base/ui_theme.txt
 Rasp/logs/
+# Stratégie écrite puis effacée par test/test_robot_integration.py
+Rasp/strat/strategies/test_integration.py

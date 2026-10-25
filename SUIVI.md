@@ -229,6 +229,14 @@ les refontes sont acceptées.
   maintenant aussi à l'ESP (avant : seulement à l'affichage). `lidar_thread.py` ne garde que UDP + driver.
 - À vérifier sur le robot : le binaire est recompilé par main_robot.py (.cpp plus récent) ; seuils à régler.
 
+### Matériel démarré une seule fois (2026-10-25)
+- `Rasp/hardware.py` : `start(cfg)` ouvre les ESP et la caméra (appelé par main_robot.py, robot_sim, check_strategy,
+  test d'intégration) ; ailleurs on lit `hardware.esp` / `hardware.actionneurs` / `hardware.camera`. Importer
+  `strat.actions` ou `ihm.shared` n'ouvre plus rien. Un seul `RobotActions` (LiDAR + stratégie : `strat_loop(robot)`).
+- Supprimés : `LedStrip` (utils/leds_manager.py, inutilisé), `EndOfMatchException`, `_check_time`, `toggle_lidar`,
+  `is_returning`, constantes mortes. `test_integration.py` (écrit/effacé par le test) n'est plus suivi par git.
+- Son coupé dans les tests et le simulateur (`audio.enabled` false ; `tools/robot_sim.py --son` pour l'entendre).
+
 ## À faire
 
 ### Sur le matériel (priorité, rien de tout ça n'a été essayé)
