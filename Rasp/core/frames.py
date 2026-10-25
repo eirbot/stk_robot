@@ -63,6 +63,19 @@ def apply_rigid(x, y, theta, dx=0.0, dy=0.0, rotation_deg=0.0):
     return xr, yr, normalize_deg(theta + rotation_deg)
 
 
+def apply_camera_repere(x, y, theta, repere=None):
+    """Correction de la pose caméra (config vision_odom.repere) : mise à l'échelle autour de
+    (centre_x, centre_y) puis changement de repère rigide (rotation_deg autour de l'origine, dx, dy).
+    L'échelle compense une caméra qui voit les distances trop grandes ou trop petites ; le calcul
+    se fait avec tools/calibrer_camera.py à partir de quelques positions mesurées au mètre."""
+    r = repere or {}
+    s = float(r.get("echelle", 1.0))
+    cx, cy = float(r.get("centre_x", 1000.0)), float(r.get("centre_y", 0.0))
+    x, y = cx + s * (x - cx), cy + s * (y - cy)
+    return apply_rigid(x, y, theta, float(r.get("dx", 0.0)), float(r.get("dy", 0.0)),
+                       float(r.get("rotation_deg", 0.0)))
+
+
 def offset_along(x, y, theta, distance):
     """Point à `distance` mm devant (distance > 0) ou derrière (< 0) la pose (x, y, theta)."""
     t = math.radians(theta)

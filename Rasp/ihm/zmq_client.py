@@ -244,8 +244,7 @@ class ZmqClient(threading.Thread):
         """Pose caméra zénithale -> correction continue de la pose (core/localisation.py)."""
         from core import frames
         repere = shared.cfg.get("vision_odom", {}).get("repere", {})
-        x, y, theta = frames.apply_rigid(mesure[1], mesure[2], mesure[3], repere.get("dx", 0.0),
-                                         repere.get("dy", 0.0), repere.get("rotation_deg", 0.0))
+        x, y, theta = frames.apply_camera_repere(mesure[1], mesure[2], mesure[3], repere)
         shared.loc_log.write("c", mesure[0], x, y, theta)
         if not shared.loc.enabled() or shared.loc.pose() is None:
             return

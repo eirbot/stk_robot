@@ -325,9 +325,7 @@ class RobotActions:
 
         # 3. Repère caméra -> repère odométrie (identité par défaut)
         repere = cfg.get("repere", {})
-        x_cam, y_cam, theta_cam = frames.apply_rigid(x_cam, y_cam, theta_cam,
-                                                     repere.get("dx", 0.0), repere.get("dy", 0.0),
-                                                     repere.get("rotation_deg", 0.0))
+        x_cam, y_cam, theta_cam = frames.apply_camera_repere(x_cam, y_cam, theta_cam, repere)
 
         # 4. Application via la fusion (gain forcé, robot immobile) : garde-fou écart_max_mm /
         #    ecart_max_deg ; l'ESP garde son repère, plus de « S » arrondi au degré

@@ -1,4 +1,5 @@
 """Tests des repères (Rasp/core/frames.py). Lancer : python3 -m unittest discover -s test"""
+import math
 import os
 import sys
 import unittest
@@ -57,6 +58,42 @@ class TestConversions(unittest.TestCase):
         self.assertAlmostEqual(x, 10)
         self.assertAlmostEqual(y, 95)
         self.assertAlmostEqual(t, 90)
+
+    def test_apply_camera_repere_identite(self):
+        self.assertEqual(frames.apply_camera_repere(100, 200, 30, {}), (100.0, 200.0, 30))
+        self.assertEqual(frames.apply_camera_repere(100, 200, 30, None), (100.0, 200.0, 30))
+
+    def test_apply_camera_repere_echelle(self):
+        # Caméra qui voit 10 % trop grand autour du centre de la table (1000, 0)
+        x, y, t = frames.apply_camera_repere(1988, -11, 179, {"echelle": 1 / 1.1})
+        self.assertAlmostEqual(x, 1898.18, places=1)
+        self.assertAlmostEqual(y, -10.0, places=1)
+        self.assertAlmostEqual(t, 179)
+
+    def test_calibrer_camera_retrouve_le_reglage(self):
+        """tools/calibrer_camera.py doit retrouver une erreur connue (échelle, rotation, décalage)."""
+        import cmath
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "calibrer_camera", os.path.join(os.path.dirname(__file__), "..", "tools", "calibrer_camera.py"))
+        cal = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cal)
+        vrai = {"echelle": 0.92, "centre_x": 1000.0, "centre_y": 0.0, "rotation_deg": 1.5, "dx": 12.0, "dy": -30.0}
+        pts = []
+        for xm, ym in [(300, -1200), (1700, -1200), (1000, 0), (300, 1200), (1700, 1100)]:
+            w = complex(xm, ym)
+            # Caméra brute = inverse de la correction
+            p = (w - complex(vrai["dx"], vrai["dy"])) / cmath.exp(1j * math.radians(vrai["rotation_deg"]))
+            z = complex(1000, 0) + (p - complex(1000, 0)) / vrai["echelle"]
+            pts.append((w, z))
+        rep = cal.to_repere(*cal.fit(pts))
+        for k in ("echelle", "rotation_deg", "dx", "dy"):
+            self.assertAlmostEqual(rep[k], vrai[k], places=1, msg=k)
+        # Et la formule de l'outil est bien celle du robot
+        for w, z in pts:
+            x, y, _ = frames.apply_camera_repere(z.real, z.imag, 0, rep)
+            self.assertAlmostEqual(x, w.real, delta=0.5)
+            self.assertAlmostEqual(y, w.imag, delta=0.5)
 
     def test_offset_along(self):
         x, y = frames.offset_along(1000, 0, 90, 100)
