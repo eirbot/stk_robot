@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Rendu du robot vu de dessus</title>
+<!-- Page outil (tools/rendu_robot_dessus.py) : le modèle MuJoCo du robot vu de dessus, fond transparent,
+     cadré exactement sur son encombrement (EirbotFrames.ROBOT), à PX_PAR_MM pixels par mm.
+     Orientation de l'image : avant du robot vers la droite, gauche du robot vers le haut. -->
+<style>html, body { margin: 0; background: transparent; overflow: hidden; }</style>
+<script src="/static/js/vendor/three.min.js"></script>
+<script src="/static/js/frames.js"></script>
+<script src="/static/js/mujoco_model.js"></script>
+</head>
+<body>
+<script>
+const PX_PAR_MM = 2;
+const R = EirbotFrames.ROBOT;
+const w = Math.round((R.FRONT_MM + R.BACK_MM) * PX_PAR_MM);
+const h = Math.round(2 * R.HALF_WIDTH_MM * PX_PAR_MM);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(w, h);
+renderer.setClearColor(0x000000, 0);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const sun = new THREE.DirectionalLight(0xffffff, 0.75);
+sun.position.set(-300, 400, 1500);
+scene.add(sun);
+
+// Caméra orthographique au-dessus du robot : X (avant) vers la droite, Y (gauche) vers le haut
+const camera = new THREE.OrthographicCamera(-R.BACK_MM, R.FRONT_MM, R.HALF_WIDTH_MM, -R.HALF_WIDTH_MM, 1, 5000);
+camera.position.set(0, 0, 2000);
+camera.up.set(0, 1, 0);
+camera.lookAt(0, 0, 0);
+
+EirbotMujoco.load('/models/robot/robot.xml').then(model => {
+    model.scale.setScalar(1000);
+    scene.add(model);
+    renderer.render(scene, camera);
+    document.title = 'PRET ' + w + 'x' + h;
+}).catch(e => { document.title = 'ERREUR ' + e; });
+</script>
+</body>
+</html>

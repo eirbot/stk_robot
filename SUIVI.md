@@ -260,6 +260,9 @@ les refontes sont acceptées.
   (l'axe des roues n'est pas au centre), demi-largeur 188,2 mm, hauteur 450 mm. Dans `frames.py` / `frames.js`
   (`ROBOT_*`, `robot_corners`), testé des deux côtés. Strat Studio : robot dessiné à l'échelle (avant 320 x 370
   centré + image du robot 2025) ; tunnel de trajectoire à la vraie largeur.
+- Image du robot vu de dessus dans le Strat Studio (`static/img/robot_dessus.png`) rendue depuis le modèle MuJoCo :
+  `uv run --with websockets python tools/rendu_robot_dessus.py` (base lancée ; page `static/tools/rendu_robot.html`).
+  À relancer quand le modèle du robot change.
 - À vérifier sur le robot : X du modèle MuJoCo = avant du robot (sens de marche quand theta augmente le X).
 - 11 routes appelées par le JS manquaient dans la base Go (restes de l'ancienne IHM Flask : menus Blockly vides,
   Sons, LED Studio, luminosité, Replay cassés). Recréées dans `Base/Web/media.go` : sons (liste, envoi + scp vers

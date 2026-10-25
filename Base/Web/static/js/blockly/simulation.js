@@ -177,22 +177,48 @@ function robotPoint(fx, fy) {
 }
 
 // Robot à l'échelle : encombrement réel (l'axe des roues n'est pas au centre), roues, flèche avant
+// Vue de dessus du vrai robot (modèle MuJoCo, tools/rendu_robot_dessus.py) : cadrée sur son encombrement,
+// avant vers la droite de l'image, gauche du robot vers le haut
+const robotImage = new Image();
+robotImage.src = '/static/img/robot_dessus.png?v=1';
+
+// Image posée sur l'encombrement : les coins haut-gauche, haut-droit et bas-gauche de l'image vont sur
+// l'arrière gauche, l'avant gauche et l'arrière droit du robot (transformation affine)
+function drawRobotImage() {
+    const p0 = robotPoint(-ROBOT.BACK_MM, ROBOT.HALF_WIDTH_MM);
+    const p1 = robotPoint(ROBOT.FRONT_MM, ROBOT.HALF_WIDTH_MM);
+    const p2 = robotPoint(-ROBOT.BACK_MM, -ROBOT.HALF_WIDTH_MM);
+    const s0 = worldToScreen(p0.x, p0.y), s1 = worldToScreen(p1.x, p1.y), s2 = worldToScreen(p2.x, p2.y);
+    const w = robotImage.naturalWidth, h = robotImage.naturalHeight;
+    ctx.save();
+    ctx.transform((s1.x - s0.x) / w, (s1.y - s0.y) / w, (s2.x - s0.x) / h, (s2.y - s0.y) / h, s0.x, s0.y);
+    ctx.drawImage(robotImage, 0, 0);
+    ctx.restore();
+}
+
+// Robot à l'échelle : vue de dessus du robot (ou, en attendant l'image, encombrement + roues),
+// contour de l'encombrement (l'axe des roues n'est pas au centre) et flèche avant
 function drawRobot() {
-    tracePolygon(EirbotFrames.robotCorners(robot.x, robot.y, robot.theta));
-    ctx.fillStyle = "rgba(0, 123, 255, 0.55)";
-    ctx.fill();
-    ctx.strokeStyle = "#003d80";
+    const corners = EirbotFrames.robotCorners(robot.x, robot.y, robot.theta);
+    if (robotImage.complete && robotImage.naturalWidth > 0) {
+        drawRobotImage();
+    } else {
+        tracePolygon(corners);
+        ctx.fillStyle = "rgba(0, 123, 255, 0.55)";
+        ctx.fill();
+        ctx.fillStyle = "#111";
+        for (const side of [1, -1]) {
+            tracePolygon([robotPoint(WHEEL_R_MM, side * (WHEEL_Y_MM + 12)), robotPoint(WHEEL_R_MM, side * (WHEEL_Y_MM - 12)),
+                          robotPoint(-WHEEL_R_MM, side * (WHEEL_Y_MM - 12)), robotPoint(-WHEEL_R_MM, side * (WHEEL_Y_MM + 12))]);
+            ctx.fill();
+        }
+    }
+    tracePolygon(corners);
+    ctx.strokeStyle = "#007bff";
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    ctx.fillStyle = "#111";
-    for (const side of [1, -1]) {
-        tracePolygon([robotPoint(WHEEL_R_MM, side * (WHEEL_Y_MM + 12)), robotPoint(WHEEL_R_MM, side * (WHEEL_Y_MM - 12)),
-                      robotPoint(-WHEEL_R_MM, side * (WHEEL_Y_MM - 12)), robotPoint(-WHEEL_R_MM, side * (WHEEL_Y_MM + 12))]);
-        ctx.fill();
-    }
-
-    tracePolygon([robotPoint(ROBOT.FRONT_MM - 10, 0), robotPoint(ROBOT.FRONT_MM - 90, 60), robotPoint(ROBOT.FRONT_MM - 90, -60)]);
+    tracePolygon([robotPoint(ROBOT.FRONT_MM + 40, 0), robotPoint(ROBOT.FRONT_MM - 30, 55), robotPoint(ROBOT.FRONT_MM - 30, -55)]);
     ctx.fillStyle = "#ff3333";
     ctx.fill();
 }
