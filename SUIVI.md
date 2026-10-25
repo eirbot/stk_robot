@@ -348,14 +348,43 @@ les refontes sont acceptées.
   l'adversaire et après un échec.
 - `strat/__init__.py` ne réexporte plus rien (importer `strat.calibration` chargeait tout le robot).
 
+### Navigation : planificateur sur la base + suivi de trajectoire (2026-10-25, soir)
+- **Base** : `Base/Planif/planif_worker.py` (lancé / relancé par `base_stk` : `Base/Web/planif.go`, prise PUB dédiée
+  5557, `STK_NO_PLANIF=1` pour ne pas le lancer). Il reçoit caméra zénithale (adversaires + **pierres**), télémétrie,
+  points LiDAR, demandes `nav_demande` / `nav_fin` du robot ; renvoie `plan` à 10 Hz (relayé au robot et à la
+  carte 3D) et `carte_planif` à 2 Hz (carte de coûts, trajectoires prédites, pierres). Logique :
+  `core/navigation.py` (même code que le secours du robot).
+- **Prédiction** (`core/suivi_adversaire.py`) : Kalman vitesse constante par tag adverse, vitesse amortie au-delà
+  d'1 s, incertitude croissante (plafonnée à 500 mm).
+- **Planification** (`core/planif.planifier_temps`) : A* dont le coût est une durée (distance, surcoûts, rotations) ;
+  à l'heure de passage prévue, zone interdite autour de la position PRÉDITE de l'adversaire (rayon + 0,5 x
+  incertitude plafonnée à 100 mm) + surcoût autour : le robot passe derrière un adversaire qui traverse. Lissage
+  vérifié à l'heure réelle du chemin lissé. Pierres = rectangles orientés 320 x 110. Hystérésis : un chemin se CRÉE
+  avec 50 mm de tampon et se GARDE sans tampon tant qu'il est valable et qu'un autre ne fait pas gagner 15 %.
+  Base : ~15 ms par plan.
+- **Vision** : pierres = tag 13 face vers le haut, pose calculée par détection (computePosition n'en garde qu'une par
+  numéro) ; `VISION_TAG_PIERRE_MM` (50 par défaut, **à mesurer**), `VISION_PIERRE_AXE_TAG_DEG`.
+- **Robot** (`strat/actions.py : aller`) : plan de la base s'il a moins de 0,4 s, sinon planificateur embarqué ;
+  `planif.execution = "suivi"` : suivi continu (`core/suivi.py`, pure pursuit régulé, consignes `V` à 20 Hz, pose
+  extrapolée entre deux trames T, ralentit en virage / près d'un point LiDAR devant / près de l'adversaire), puis
+  GoTo final précis ; `"goto"` : un GoTo par segment (ancien comportement). L'évitement LiDAR de l'ESP (L) reste
+  actif en mode vitesse (vérifié dans `motion.cpp`).
+- Simulateur : le faux ESP exécute les consignes `V` (rampe, arrêt sans consigne en 500 ms) ; `check_strategy`
+  force `execution = "goto"` (déplacements instantanés).
+- Essai de bout en bout fait sur PC (binaire base + worker + messages caméra / robot simulés) : 29 plans en 3 s
+  reçus sur le canal du robot, contournant adversaire et pierre.
+
 ## Essais robot prévus (dans l'ordre)
-1. Déployer base (`./Base/build.sh` sur la base : Go modifié) et robot ; **copier dans le config.json du robot** les
-   sections `camera`, `lidar` (montage, filtre_table, marge_table_mm), `planif`.
+1. Déployer base (`./Base/build.sh` sur la base : Go modifié ; **`uv sync` à la racine du dépôt sur la base**, avec
+   internet, pour l'env du planificateur) et robot ; **copier dans le config.json du robot** les sections `camera`,
+   `lidar` (montage, filtre_table, marge_table_mm), `planif` (dont `execution`).
 2. Check-list : accueil et Debug ; débrancher un ESP / la tirette / la caméra zénithale -> l'item passe au rouge.
 3. LiDAR : objet posé à gauche du robot -> vérifier sur la carte 3D que les points rouges sont à gauche (sinon
    `lidar.montage.sens: -1` ou `angle`) ; quelqu'un le long de la bordure pendant un GoTo -> pas d'arrêt.
 4. Calibration auto (Debug > Robot, carré 500) -> appliquer, noter les facteurs firmware.
-5. `aller()` avec un obstacle / l'autre robot (tag 1-10) : chemin et heat map sur la carte 3D, replanification.
+5. `aller()` : d'abord `planif.execution = "goto"` (comportement connu), puis `"suivi"` à vitesse réduite
+   (`planif.v_max_mm_s` 300) ; obstacle, pierre (tag 13 posé à plat), autre robot avec un tag 1-10 : chemin,
+   prédiction et carte de coûts sur la carte 3D ; couper la base en route -> le robot continue (plan embarqué).
 6. Caméra embarquée : tag 13 imprimé sur une boîte, bouton Tags, `aligner_tag` (mesurer au réglet).
 7. Match `demo_dynamique` avec chrono court (mode test off) : retour à temps, puis Replay du match.
 
@@ -379,6 +408,9 @@ les refontes sont acceptées.
       que les obstacles fixes. Ajouter un adversaire qui bouge pour tester `aller()` / `jouer()` en simulation.
 - [ ] `planif.obstacles` : saisir les éléments fixes de la table 2027 (château, remparts, douves...) ; les pierres
       vues par le LiDAR deviennent des obstacles : approcher avec `aller()` à distance, puis `aligner_tag`.
+- [ ] Suivi continu : régler `v_max_mm_s`, `a_max_mm_s2`, `a_lat_max_mm_s2`, anticipation sur le vrai robot
+      (pas à pas : vérifier qu'il ne décroche pas) ; latence réelle base -> robot à mesurer (plan.t vs réception).
+- [ ] Test automatique de la chaîne base <-> planificateur (aujourd'hui : essai manuel, cf. « Navigation »).
 - [ ] Rotation sur place aux points de passage : le planificateur garantit le passage du robot de profil
       (215 mm), pas sa rotation (rayon ~310 mm autour du point de référence) près d'un obstacle.
 

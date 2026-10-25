@@ -10,6 +10,7 @@ from core.config_store import ConfigError, ConfigStore
 from core.match_state import MatchError, MatchState, TEAM_COLORS
 from core.localisation import Localisation
 from core.planif import Chaleur
+from core.navigation import Navigateur
 from utils.loc_recorder import LocRecorder
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -83,6 +84,11 @@ adversaires = {}
 chaleur = Chaleur()
 # Dernier chemin planifié (strat/actions.py : aller) : {"points": [[x, y]...], "cible": [x, y, theta]}
 plan_courant = None
+# Planification : la base envoie ses plans (Base/Planif) ; le robot garde un navigateur de secours,
+# alimenté par les mêmes observations (adversaires, pierres, LiDAR), si la base se tait.
+navigateur = Navigateur(cfg.get("planif", {}))
+plan_base = None      # (heure de réception, message « plan » de la base)
+pierres = []          # [(x, y, theta)] vues par la caméra zénithale (dernière image)
 # Événements de stratégie (goto, plan, action, retour...) : boîte noire + base
 evenements = deque(maxlen=1000)
 
@@ -112,6 +118,7 @@ def noter_adversaire(id_, x, y, t):
         chaleur.observer(x, y, t)
     if prec is None or t - prec[0] >= 0.02:
         adversaires[id_] = (t, x, y, vx, vy)
+    navigateur.observer_vision({"adversaires": [{"id": id_, "x": x, "y": y}]}, t)
 
 # Fusion odométrie ESP + caméra : robot_pos est la pose fusionnée (repère table),
 # l'ESP garde son propre repère (cf. core/localisation.py)

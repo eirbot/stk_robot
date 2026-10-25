@@ -67,6 +67,7 @@ class LidarCollisionThread(threading.Thread):
         shared.lidar_points = [(round(x), round(y)) for _, x, y in obstacles.sector_points(scan, pose, montage)] \
             if pose is not None else []
         shared.lidar_points_t = now
+        shared.navigateur.observer_lidar(shared.lidar_points, now)
         return scan
 
     def _send_frame(self, scan):

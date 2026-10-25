@@ -29,6 +29,7 @@ class RobotActions:
         self.retour = None    # (x, y, theta) réels, marge_s : retour de fin de match (retour_fin)
         self.en_retour = False
         self.approche_reussie = False
+        self._plan_local = None
         self._durees = self._charger_durees()
         self.modele_temps = temps_match.ajuster(self._durees)
 
@@ -183,26 +184,68 @@ class RobotActions:
             self.en_retour = False
 
     # --- Déplacement avec évitement (planificateur) --------------------------------------------
-    def carte(self):
-        """Carte de coûts actuelle (core/planif.py) : obstacles fixes, adversaires, LiDAR, heat map."""
-        now = time.time()
-        points = shared.lidar_points if now - shared.lidar_points_t < 0.5 else []
-        return planif.construire(shared.cfg.get("planif", {}), shared.adversaires_recents(1.0, now),
-                                 points, shared.chaleur, now)
+    # Le plan vient de la base (Base/Planif : caméra zénithale, adversaires prédits, pierres, LiDAR ;
+    # 10 Hz) ; si la base se tait plus de PLAN_BASE_MAX_S, le robot replanifie lui-même avec le même
+    # code (core/navigation.py). Exécution (config planif.execution) :
+    #   "suivi" : suivi de trajectoire continu (core/suivi.py, consignes V à 20 Hz), puis GoTo final ;
+    #   "goto"  : un GoTo par segment, replanifié à chaque point de passage.
+    PLAN_BASE_MAX_S = 0.4
+    PERIODE_SUIVI_S = 0.05
+    PERIODE_PLAN_LOCAL_S = 0.25
 
-    def _publier_plan(self, carte, plan, cible):
-        shared.plan_courant = {"points": [[round(x), round(y)] for x, y in plan.points], "cible": list(cible)}
-        if shared.zmq_client_instance:
-            shared.zmq_client_instance.send_event("plan", {**shared.plan_courant, "grille": carte.resume(100.0),
-                                                           "pas_mm": carte.res * max(1, round(100.0 / carte.res))})
-        shared.evenement("plan", points=shared.plan_courant["points"])
+    def _pose_extrapolee(self, v, w):
+        """Pose fusionnée avancée de l'âge de la dernière trame odométrie (10 Hz) à la vitesse commandée."""
+        pose = shared.loc.pose() or (shared.robot_pos["x"], shared.robot_pos["y"], shared.robot_pos["theta"])
+        t_odo = getattr(hardware.esp, "last_odom_time", None) if hardware.esp else None
+        dt = min(0.15, max(0.0, time.time() - t_odo)) if t_odo else 0.0
+        x, y, th = pose
+        th2 = th + w * dt
+        return (x + v * dt * math.cos(math.radians((th + th2) / 2)),
+                y + v * dt * math.sin(math.radians((th + th2) / 2)), th2)
 
-    def aller(self, x, y, theta, real=False, manual=False, timeout_s=10.0):
-        """Va à (x, y, theta) en contournant les obstacles (planificateur A* sur la carte de coûts).
+    def _marge_adversaire(self, pose, now):
+        """Distance (mm) entre le robot et la zone d'un adversaire, maintenant et dans 0,5 s (le suivi
+        ralentit en dessous de quelques centimètres). Pistes de Kalman du navigateur embarqué."""
+        c = {**planif.DEFAUTS, **shared.cfg.get("planif", {})}
+        r = c["rayon_adversaire_mm"] + c["rayon_robot_mm"]
+        best = math.inf
+        for p in shared.navigateur.suivi.actives(now):
+            for dt in (0.0, 0.5):
+                px, py, _ = p.position(now + dt)
+                best = min(best, math.hypot(px - pose[0], py - pose[1]) - r)
+        return best
 
-        Replanifie à chaque point de passage, et quand l'ESP s'arrête (obstacle LiDAR) ou que le
-        segment suivant n'est plus libre (adversaire). Renvoie True une fois arrivé, False si aucun
-        chemin n'a été trouvé pendant timeout_s (la stratégie décide alors quoi faire)."""
+    def _publier_plan(self, plan, cible, source):
+        shared.plan_courant = {"points": [[round(x), round(y)] for x, y in plan.points], "cible": list(cible),
+                               "source": source}
+        if source == "robot" and shared.zmq_client_instance:
+            shared.zmq_client_instance.send_event("plan", {**shared.plan_courant, "ok": True})
+        shared.evenement("plan", points=shared.plan_courant["points"], source=source)
+
+    def _plan(self, nav_id, pose, now):
+        """(points, marge adversaire mm, source) du plan à suivre maintenant, ou None si pas de chemin."""
+        recu = shared.plan_base
+        if recu and recu[1].get("id") == nav_id and now - recu[0] <= self.PLAN_BASE_MAX_S:
+            m = recu[1]
+            if not m.get("ok"):
+                return None
+            marge = m.get("marge_adversaire_mm")
+            return [tuple(p) for p in m["points"]], (math.inf if marge is None else marge), "base"
+        # secours : planificateur embarqué, recalculé à PERIODE_PLAN_LOCAL_S
+        if now - getattr(self, "_t_plan_local", 0.0) >= self.PERIODE_PLAN_LOCAL_S or self._plan_local is None:
+            self._t_plan_local = now
+            nav = shared.navigateur
+            nav.cfg = shared.cfg.get("planif", {})
+            nav.observer_pose(*pose, now)
+            plan, _ = nav.planifier(now, pose)
+            self._plan_local = plan
+        p = self._plan_local
+        return ([tuple(q) for q in p.points], p.marge_adversaire_mm, "robot") if p is not None else None
+
+    def aller(self, x, y, theta, real=False, manual=False, timeout_s=10.0, ignorer_pres_cible_mm=None):
+        """Va à (x, y, theta) en contournant obstacles, pierres et adversaires (prédits), en
+        replanifiant en continu. ignorer_pres_cible_mm : pierres / points LiDAR ignorés près de la cible
+        (on va prendre la pierre). Renvoie True une fois arrivé, False si aucun chemin pendant timeout_s."""
         self._check_abort(manual=manual)
         if not manual:
             self._verifier_temps()
@@ -210,32 +253,104 @@ class RobotActions:
         if not hardware.esp:
             print(f"[SIMU] ALLER virtuel vers ({cx}, {cy}, {ctheta})")
             return True
-        debut_sans_chemin = None
+        cfg = dict(shared.cfg.get("planif", {}))
+        if ignorer_pres_cible_mm is not None:
+            cfg["ignorer_pres_cible_mm"] = ignorer_pres_cible_mm
+        self._nav_id = getattr(self, "_nav_id", 0) + 1
+        nav_id, cible = self._nav_id, (cx, cy, ctheta)
+        pose = shared.loc.pose() or (shared.robot_pos["x"], shared.robot_pos["y"], shared.robot_pos["theta"])
+        shared.navigateur.cfg = shared.cfg.get("planif", {})
+        shared.navigateur.demander(nav_id, cible, cfg)
+        self._plan_local = None
+        if shared.zmq_client_instance:
+            shared.zmq_client_instance.send_event("nav_demande", {"id": nav_id, "cible": list(cible), "cfg": cfg,
+                                                                  "pose": list(pose)})
+        shared.evenement("nav", x=round(cx), y=round(cy), theta=round(ctheta, 1))
+        try:
+            if cfg.get("execution", "suivi") == "goto":
+                return self._aller_goto(nav_id, cible, manual, timeout_s)
+            return self._aller_suivi(nav_id, cible, manual, timeout_s, cfg)
+        finally:
+            shared.navigateur.terminer(nav_id)
+            if shared.zmq_client_instance:
+                shared.zmq_client_instance.send_event("nav_fin", {"id": nav_id})
+
+    def _aller_suivi(self, nav_id, cible, manual, timeout_s, cfg):
+        from core import suivi as suivi_mod
+        cx, cy, ctheta = cible
+        reglages = {k: cfg[k] for k in suivi_mod.DEFAUTS if k in cfg}
+        suiveur, chemin, source = None, None, None
+        v = w = 0.0
+        sans_chemin = None
+        try:
+            while True:
+                t_tour = time.time()
+                self._check_abort(manual=manual)
+                pose = self._pose_extrapolee(v, w)
+                res = self._plan(nav_id, pose, t_tour)
+                if res is None:
+                    v = w = 0.0
+                    hardware.esp.set_speed(0, 0)
+                    sans_chemin = sans_chemin or t_tour
+                    if t_tour - sans_chemin > timeout_s:
+                        print(f"[ACTION] Aucun chemin vers ({cx:.0f}, {cy:.0f}) depuis {timeout_s:.0f} s : abandon")
+                        shared.evenement("aller_echec", x=round(cx), y=round(cy))
+                        return False
+                    time.sleep(self.PERIODE_SUIVI_S)
+                    continue
+                sans_chemin = None
+                points, _, src = res
+                if points != chemin:
+                    if suiveur is None:
+                        suiveur = suivi_mod.Suivi(points, reglages)
+                    else:
+                        suiveur.changer_chemin(points)
+                    if source != src:
+                        print(f"[ACTION] Plan fourni par : {src}")
+                    chemin, source = points, src
+                    self._publier_plan(planif.Plan(points, 0.0, 0.0), cible, src)
+                obstacle = math.inf
+                if time.time() - shared.lidar_points_t < 0.5:
+                    obstacle = suivi_mod.obstacle_devant(shared.lidar_points, pose)
+                cmd = suiveur.commande(pose, self.PERIODE_SUIVI_S, obstacle, self._marge_adversaire(pose, t_tour))
+                if cmd.etat == "arrive":
+                    break
+                v, w = cmd.v, cmd.w
+                hardware.esp.set_speed(v, w)
+                time.sleep(max(0.0, self.PERIODE_SUIVI_S - (time.time() - t_tour)))
+        finally:
+            hardware.esp.set_speed(0, 0)
+        # Fin : GoTo de l'ESP pour la position et le cap exacts (il gère sa propre précision)
+        return self.goto(cx, cy, ctheta, manual=manual, real=True, retry=True, rattrapage=True)
+
+    def _aller_goto(self, nav_id, cible, manual, timeout_s):
+        cx, cy, ctheta = cible
+        sans_chemin = None
         while True:
             self._check_abort(manual=manual)
-            pose = shared.pose_fiable() or shared.loc.pose()
+            now = time.time()
+            pose = shared.loc.pose()
             if pose is None:
                 return self.goto(cx, cy, ctheta, manual=manual, real=True)
             if math.hypot(cx - pose[0], cy - pose[1]) < 15 and abs(_angle_diff(ctheta, pose[2])) < 3:
                 return True
-            t_plan = time.time()
-            carte = self.carte()
-            plan = planif.planifier(carte, (pose[0], pose[1]), (cx, cy))
-            if plan is None:
-                debut_sans_chemin = debut_sans_chemin or time.time()
-                if time.time() - debut_sans_chemin > timeout_s:
+            self._plan_local = None
+            res = self._plan(nav_id, pose, now)
+            if res is None:
+                sans_chemin = sans_chemin or now
+                if now - sans_chemin > timeout_s:
                     print(f"[ACTION] Aucun chemin vers ({cx:.0f}, {cy:.0f}) depuis {timeout_s:.0f} s : abandon")
                     shared.evenement("aller_echec", x=round(cx), y=round(cy))
                     return False
                 time.sleep(0.3)   # l'adversaire va peut-être bouger
                 continue
-            debut_sans_chemin = None
-            print(f"[ACTION] Chemin vers ({cx:.0f}, {cy:.0f}) : {len(plan.points) - 1} segment(s), "
-                  f"{plan.longueur:.0f} mm, calculé en {(time.time() - t_plan) * 1000:.0f} ms")
-            self._publier_plan(carte, plan, (cx, cy, ctheta))
+            sans_chemin = None
+            points, _, src = res
+            plan = planif.Plan(points, 0.0, 0.0)
+            self._publier_plan(plan, cible, src)
             # Premier segment seulement : on replanifie à chaque point de passage
-            px, py = plan.points[1]
-            dernier = len(plan.points) == 2
+            px, py = points[1] if len(points) > 1 else (cx, cy)
+            dernier = len(points) <= 2
             cap = ctheta if dernier else plan.caps(ctheta)[0]
             if not self.goto(px, py, cap, manual=manual, real=True, retry=False, rattrapage=dernier):
                 time.sleep(0.3)   # obstacle : l'ESP s'est arrêté, on replanifie avec le LiDAR

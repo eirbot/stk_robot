@@ -29,12 +29,21 @@ func pipelineReceptionRobot() {
 		if err := json.Unmarshal([]byte(msg), &msgObj); err != nil {
 			isGeneric = false
 		}
-		if noteRobotMessage() {
+		if !(isGeneric && messageDeLaBase(msgObj.Type)) && noteRobotMessage() {
 			fmt.Println("[ROBOT] En ligne")
 			broadcastState()
 		}
 
 		if isGeneric {
+			if pourLePlanif(msgObj.Type) || msgObj.Type == "telemetry" {
+				envoyerAuPlanif(msgObj.Type, msgObj.Data)
+			}
+			if msgObj.Type == "plan" {
+				// Planificateur de la base -> robot (et pages : chemin sur la carte 3D)
+				envoyerAuRobot("plan", msgObj.Data)
+				globalHub.Broadcast([]byte(msg))
+				continue
+			}
 			if msgObj.Type == "telemetry" {
 				var tel RobotTelemetry
 				if err := json.Unmarshal(msgObj.Data, &tel); err == nil {
@@ -61,6 +70,7 @@ func pipelineReceptionRobot() {
 			} else if msgObj.Type == "vision_update" {
 				// 8. Télémétrie Caméra Zénithale isolée de l'odométrie roues
 				var vPose VisionPose
+				envoyerAuPlanif("vision", msgObj.Data)
 				if err := json.Unmarshal(msgObj.Data, &vPose); err == nil {
 					globalState.Lock()
 					globalState.VisionPose = vPose

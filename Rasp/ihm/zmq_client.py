@@ -68,7 +68,7 @@ class ZmqClient(threading.Thread):
     # et un joystick oublié annulerait les GoTo de la stratégie.
     MANUAL_COMMANDS = ("cmd_vel", "goto", "set_robot_pos", "cmd_actuator", "calibration")
     # Messages fréquents, non affichés (chaque print repart en new_log vers l'IHM)
-    QUIET_COMMANDS = ("ping", "cmd_vel", "vision_pose")
+    QUIET_COMMANDS = ("ping", "cmd_vel", "vision_pose", "plan")
 
     def _handlers(self):
         return {
@@ -82,6 +82,7 @@ class ZmqClient(threading.Thread):
             "vision_pose": self._on_vision_pose,
             "set_robot_pos": self._on_set_robot_pos,
             "calibration": self._on_calibration,
+            "plan": self._on_plan,
             "play_audio": lambda p: shared.audio.play(p.get("filename") if isinstance(p, dict) else p),
             "stop_audio": lambda p: shared.audio.stop(),
             "set_volume": lambda p: shared.audio.set_volume(int(p.get("volume", 50))),
@@ -220,12 +221,20 @@ class ZmqClient(threading.Thread):
             return
         shared.vision_poses.append(mesure)
         self._fuse_camera(mesure)
-        # Robots adverses vus par la même image (Base/Vision/vision_deporte_worker.py)
+        # Pierres et robots adverses vus par la même image (Base/Vision/vision_deporte_worker.py)
+        if "pierres" in payload:
+            shared.navigateur.observer_vision({"pierres": payload.get("pierres") or []}, mesure[0])
+            shared.pierres = shared.navigateur.pierres
         for adv in payload.get("adversaires") or []:
             try:
                 shared.noter_adversaire(int(adv["id"]), float(adv["x"]), float(adv["y"]), mesure[0])
             except (KeyError, TypeError, ValueError):
                 continue
+
+    def _on_plan(self, payload):
+        """Plan du planificateur de la base (Base/Planif) pour la navigation en cours (strat/actions.py)."""
+        if isinstance(payload, dict):
+            shared.plan_base = (time.time(), payload)
 
     def _on_calibration(self, payload):
         """Calibration automatique de la fusion (strat/calibration.py) : start / stop."""

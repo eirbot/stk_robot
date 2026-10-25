@@ -35,6 +35,9 @@ def run_strategy(name, team, timeout=60.0):
     from core import frames
 
     hardware.start(shared.cfg)  # faux ESP (robot_sim.install_fakes)
+    # Déplacements instantanés : un GoTo par segment (le suivi continu se teste en temps réel,
+    # test/test_deplacement_dynamique.py)
+    shared.cfg.setdefault("planif", {})["execution"] = "goto"
 
     shared.match.ready(tirette_inserted=False)
     shared.match.apply_config({"team": team})

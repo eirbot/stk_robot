@@ -18,7 +18,8 @@ import urllib.request
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 BASE = os.path.join(ROOT, "Base")
 # Ports dédiés : le test tourne même si une base est déjà lancée sur 8080/5555/5556
-PORTS = {"STK_HTTP_PORT": "18080", "STK_ZMQ_ROBOT_PORT": "15555", "STK_ZMQ_BASE_PORT": "15556"}
+PORTS = {"STK_HTTP_PORT": "18080", "STK_ZMQ_ROBOT_PORT": "15555", "STK_ZMQ_BASE_PORT": "15556",
+         "STK_ZMQ_PLANIF_PORT": "15557"}
 API = "http://127.0.0.1:" + PORTS["STK_HTTP_PORT"]
 STRAT_NAME = "test_e2e"
 STRAT_FILE = os.path.join(ROOT, "Rasp", "strat", "strategies", STRAT_NAME + ".py")
@@ -74,7 +75,7 @@ class TestBaseRobot(unittest.TestCase):
                     'def run(robot):\n'
                     '    robot.set_pos(150, 1150, 0)\n'
                     '    robot.goto(700, 1250, 90)\n')
-        env = dict(os.environ, STK_NO_VISION="1", **PORTS)
+        env = dict(os.environ, STK_NO_VISION="1", STK_NO_PLANIF="1", **PORTS)
         cls.base = subprocess.Popen([binary], cwd=BASE, env=env,
                                     stdout=open(os.path.join(cls.tmp, "base.log"), "w"), stderr=subprocess.STDOUT)
         cls.robot = subprocess.Popen([sys.executable, os.path.join(ROOT, "tools", "robot_sim.py"),

@@ -85,6 +85,13 @@ func main() {
 	}
 	fmt.Printf("[ZMQ PUB] Canal d'ordres initialisé (Port %s)...\n", zmqBasePort)
 
+	// Canal du planificateur de trajectoire (Base/Planif) et son processus
+	if err := initPlanifPublisher(); err != nil {
+		fmt.Printf("[PLANIF] Prise %s indisponible : %v (pas de planificateur sur la base)\n", zmqPlanifPort, err)
+	} else {
+		go superviserPlanif()
+	}
+
 	// Lancement de l'écoute du robot en tâche de fond
 	go pipelineReceptionRobot()
 	go watchRobotLink()

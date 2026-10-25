@@ -20,12 +20,15 @@ sys.path.insert(0, robot_sim.RASP); os.chdir(robot_sim.RASP)
 import hardware, ihm.shared as shared, strat.actions as actions
 actions.DUREES_PATH = os.path.join(os.environ["ROBOT_TELEMETRY_DIR"], "durees.jsonl")
 hardware.start(shared.cfg)
+shared.cfg.setdefault("planif", {})["execution"] = EXECUTION
 shared.match.ready(tirette_inserted=False); shared.match.apply_config({"team": TEAM}); shared.match.start()
 r = actions.RobotActions()
 out = {}
 r.set_pos(1000, -1200, 90)
-shared.noter_adversaire(5, 1000, 0 if TEAM == "BLEUE" else 0, time.time())
+shared.noter_adversaire(5, 1000, 0, time.time())
+t0 = time.time()
 out["aller"] = r.aller(1000, 1200, 90)
+out["duree"] = time.time() - t0
 out["gotos"] = [c[1:] for c in hardware.esp.calls if c[0] == "goto"]
 out["pose"] = [shared.robot_pos[k] for k in ("x", "y", "theta")]
 r.retour_fin(300, -1200, 0, marge_s=3)
@@ -42,8 +45,8 @@ print(json.dumps(out))
 '''
 
 
-def run(team):
-    code = f"ROOT = {ROOT!r}\nTEAM = {team!r}\n" + SCRIPT
+def run(team, execution="goto"):
+    code = f"ROOT = {ROOT!r}\nTEAM = {team!r}\nEXECUTION = {execution!r}\n" + SCRIPT
     p = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=60)
     lignes = [l for l in p.stdout.splitlines() if l.startswith("{")]
     if not lignes:
@@ -52,6 +55,15 @@ def run(team):
 
 
 class TestDeplacementDynamique(unittest.TestCase):
+    def test_suivi_continu(self):
+        """Suivi de trajectoire en temps réel (consignes V), plan local (pas de base) : arrive au bout."""
+        r = run("BLEUE", "suivi")
+        self.assertTrue(r["aller"])
+        self.assertAlmostEqual(r["pose"][0], 1000, delta=2)
+        self.assertAlmostEqual(r["pose"][1], 1200, delta=2)
+        self.assertLess(r["duree"], 15.0)
+        self.assertTrue(r["retour_fin"])
+
     def test_contourne_adversaire_et_rentre(self):
         for team in ("BLEUE", "JAUNE"):
             with self.subTest(equipe=team):

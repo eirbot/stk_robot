@@ -40,6 +40,7 @@ class ESPMotors:
         # Dernier instant où l'odométrie a bougé (sert à savoir si le robot est immobile)
         self.last_motion_time = time.time()
         self.last_rx_time = None       # dernière trame reçue de l'ESP (check-list avant match)
+        self.last_odom_time = None     # dernière trame « T » (suivi de trajectoire : pose extrapolée)
         self._last_pose = None
 
         # Battement de cœur / watchdog liaison ESP
@@ -210,6 +211,7 @@ class ESPMotors:
                     self._last_pose = (x, y, theta)
                     # Pose fusionnée (repère table) pour l'IHM et la stratégie
                     t = time.time()
+                    self.last_odom_time = t
                     shared.loc_log.write("o", t, x, y, theta)
                     tx, ty, ttheta = shared.loc.on_odom(t, x, y, theta)
                     shared.robot_pos.update({'x': tx, 'y': ty, 'theta': ttheta})

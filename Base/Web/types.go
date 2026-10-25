@@ -57,13 +57,23 @@ type VisionPose struct {
 	Theta       float64      `json:"theta"` // En degrés
 	Detected    bool         `json:"detected"`
 	Adversaires []Adversaire `json:"adversaires,omitempty"` // robots adverses vus sur la même image
+	Pierres     []Pierre     `json:"pierres,omitempty"`     // pierres (tag 13, face du haut)
+}
+
+// Pierre vue d'en haut (repère table, mm ; Theta = axe long de la boîte, degrés)
+type Pierre struct {
+	X     float64 `json:"x"`
+	Y     float64 `json:"y"`
+	Z     float64 `json:"z"`
+	Theta float64 `json:"theta"`
 }
 
 // Robot adverse vu par la caméra zénithale (repère table, mm) : planificateur du robot
 type Adversaire struct {
-	ID int     `json:"id"`
-	X  float64 `json:"x"`
-	Y  float64 `json:"y"`
+	ID    int     `json:"id"`
+	X     float64 `json:"x"`
+	Y     float64 `json:"y"`
+	Theta float64 `json:"theta"`
 }
 
 // État Global Unifié (fusion de l'IHM et du matériel)

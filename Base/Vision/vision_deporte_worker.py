@@ -7,7 +7,7 @@ et la base (serveur Go).
 
 Expose la même interface que l'ancien vision_worker C++ :
   - HTTP MJPEG / API REST sur le port 8082 (/stream, /api/status, ...)
-  - ZMQ PUSH tcp://localhost:5555 : {"type":"vision_update","data":{x,y,theta,detected}}
+  - ZMQ PUSH tcp://localhost:5555 : {"type":"vision_update","data":{x,y,theta,detected,adversaires,pierres}}
   - ZMQ SUB  tcp://localhost:5556 : ordres de la base (calibrate_vision)
 
 Lancement (fait automatiquement par base_stk) :
@@ -48,6 +48,12 @@ TAG_ID_ROBOT = 2
 # Même taille que notre tag (arucoRobot) ; leur pose est calculée par computePosition (allPoses).
 ADVERSAIRE_TAG_IDS = tuple(i for i in range(1, 11) if i != TAG_ID_ROBOT)
 arucoDirectory.update({str(i): arucoDirectory[str(TAG_ID_ROBOT)] for i in ADVERSAIRE_TAG_IDS})
+# Pierres 2027 : tag 13 sur les 4 grandes faces ; vue de dessus, seule la face du haut compte.
+TAG_ID_PIERRE = 13
+TAILLE_TAG_PIERRE_MM = float(os.environ.get("VISION_TAG_PIERRE_MM", "50"))   # à mesurer sur une vraie pierre
+PIERRE_AXE_TAG_DEG = float(os.environ.get("VISION_PIERRE_AXE_TAG_DEG", "0"))  # axe long de la pierre / axe x du tag
+_c = TAILLE_TAG_PIERRE_MM / 2
+arucoDirectory[str(TAG_ID_PIERRE)] = np.array([[-_c, _c, 0.0], [_c, _c, 0.0], [_c, -_c, 0.0], [-_c, -_c, 0.0]])
 TABLE_TAG_IDS = (20, 21, 22, 23)
 
 # Résolution de la calibration (cameraParams.npz) : les intrinsèques sont
@@ -66,6 +72,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "Rasp"))
 from core.frames import camera_to_table  # noqa: E402
 
 
+def _vers_table(compute_pos, pos_monde, R_monde_tag):
+    """Pose monde (computePosition) -> (x, y, z mm, cap degrés, axe z du tag) dans le repère table/robot."""
+    R_wt = compute_pos.R_world_table
+    pos_table = R_wt.inv().apply(np.asarray(pos_monde) - compute_pos.posTable)
+    R_table_tag = R_wt.inv() * R_monde_tag
+    ax = R_table_tag.apply([1.0, 0.0, 0.0])
+    cap = math.degrees(math.atan2(ax[1], ax[0]))
+    x, y, cap = table_to_base(pos_table, cap)
+    return x, y, float(pos_table[2]) * 1000.0, cap, R_table_tag.apply([0.0, 0.0, 1.0])
+
+
 def adversaires_table(compute_pos):
     """Robots adverses (tags ADVERSAIRE_TAG_IDS) dans le repère table/robot (mm), comme notre robot :
     allPoses est en repère monde, ramené sur la table par posTable / R_world_table."""
@@ -74,9 +91,33 @@ def adversaires_table(compute_pos):
         p = getattr(compute_pos, "allPoses", {}).get(str(i))
         if p is None:
             continue
-        pos_table = compute_pos.R_world_table.inv().apply(np.asarray(p[0]) - compute_pos.posTable)
-        x, y, _ = table_to_base(pos_table, 0.0)
-        out.append({"id": i, "x": round(float(x), 1), "y": round(float(y), 1)})
+        x, y, _, cap, _ = _vers_table(compute_pos, p[0], Rotation.from_quat(p[1], scalar_first=True))
+        out.append({"id": i, "x": round(float(x), 1), "y": round(float(y), 1), "theta": round(float(cap), 1)})
+    return out
+
+
+def pierres_table(compute_pos, detections, ids):
+    """Pierres (tag 13 face vers le haut), une par détection : computePosition ne garde qu'une pose
+    par numéro de tag, or toutes les pierres portent le 13. detections[k] (solvePnP) va avec ids[k].
+    [{x, y, z, theta}] repère table/robot ; theta = axe long de la boîte ; doublons (piles) fusionnés."""
+    cam = getattr(compute_pos, "allPoses", {}).get("cam")
+    if cam is None:
+        return []
+    R_monde_cam = Rotation.from_quat(cam[1], scalar_first=True)
+    out = []
+    for k, i in enumerate(ids):
+        if int(i) != TAG_ID_PIERRE or k >= len(detections):
+            continue
+        rvec, tvec = np.array(detections[k][1:]).reshape(2, 3)
+        R_monde_tag = R_monde_cam * Rotation.from_rotvec(rvec)
+        pos_monde = R_monde_cam.apply(tvec / 1000.0) + np.asarray(cam[0])
+        x, y, z, cap, normale = _vers_table(compute_pos, pos_monde, R_monde_tag)
+        if abs(normale[2]) < 0.8:            # face de côté vue en biais : position peu fiable
+            continue
+        if any(math.hypot(x - p["x"], y - p["y"]) < 80 for p in out):
+            continue
+        out.append({"x": round(float(x), 1), "y": round(float(y), 1), "z": round(z, 1),
+                    "theta": round(float(cap + PIERRE_AXE_TAG_DEG), 1)})
     return out
 
 
@@ -445,7 +486,8 @@ def main():
         if robot is not None:
             msg = {"type": "vision_update",
                    "data": {"x": robot[0], "y": robot[1], "theta": robot[2], "detected": True,
-                            "adversaires": adversaires_table(compute_pos)}}
+                            "adversaires": adversaires_table(compute_pos),
+                            "pierres": pierres_table(compute_pos, detector.detectedArucos, known_ids)}}
             try:
                 push.send_json(msg, flags=zmq.NOBLOCK)
             except zmq.Again:

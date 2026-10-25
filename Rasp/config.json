@@ -57,6 +57,11 @@
     },
     "lidar_mode": "MATCH",
     "planif": {
+        "execution": "suivi",
+        "v_max_mm_s": 700,
+        "v_nominale_mm_s": 700,
+        "tampon_mm": 50,
+        "ignorer_pres_cible_mm": 0,
         "res_mm": 30,
         "rayon_robot_mm": 215,
         "marge_douce_mm": 250,

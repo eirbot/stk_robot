@@ -31,6 +31,8 @@ var (
 	httpPort     = envOr("STK_HTTP_PORT", "8080")
 	zmqRobotPort = envOr("STK_ZMQ_ROBOT_PORT", "5555") // robot -> base (PULL)
 	zmqBasePort  = envOr("STK_ZMQ_BASE_PORT", "5556")  // base -> robot (PUB)
+	// base -> planificateur (PUB, Base/Planif/planif_worker.py)
+	zmqPlanifPort = envOr("STK_ZMQ_PLANIF_PORT", "5557")
 )
 
 func envOr(key, def string) string {

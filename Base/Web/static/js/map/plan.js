@@ -1,17 +1,22 @@
-// Carte 3D : chemin planifié par le robot (événement « plan », Rasp/strat/actions.py : aller), carte de
-// coûts du planificateur (heat map : orange = surcoût, rouge = interdit) et robots adverses vus par la
-// caméra zénithale (vision_update.adversaires).
+// Carte 3D : ce que voit le planificateur de trajectoire.
+//   « plan » (base : Base/Planif, ou robot en secours) : chemin suivi ;
+//   « carte_planif » (base, 2 Hz) : carte de coûts (orange = surcoût, rouge = interdit), trajectoires
+//   prédites des adversaires (points de plus en plus pâles, anneau = incertitude), pierres ;
+//   vision_update.adversaires : robots adverses vus par la caméra zénithale.
 // Fichiers de la carte chargés dans l'ordre par templates/map.html (portée globale partagée).
 
 let planGroup = null;
 let advGroup = null;
+let carteGroup = null;
 
 function initPlanGroups() {
     if (planGroup || typeof scene === 'undefined' || !scene) return;
     planGroup = new THREE.Group();
     advGroup = new THREE.Group();
+    carteGroup = new THREE.Group();
     scene.add(planGroup);
     scene.add(advGroup);
+    scene.add(carteGroup);
 }
 
 function viderGroupe(g) {
@@ -55,7 +60,7 @@ function updatePlan(data) {
     if (!planGroup || !data) return;
     viderGroupe(planGroup);
     if (Array.isArray(data.grille) && data.grille.length && data.pas_mm) {
-        planGroup.add(heatMapMesh(data.grille, data.pas_mm));
+        planGroup.add(heatMapMesh(data.grille, data.pas_mm));   // plan du robot (secours) : sa carte
     }
     if (Array.isArray(data.points) && data.points.length > 1) {
         const pts = data.points.map(([x, y]) => { const p = robotToThree(x, y); return new THREE.Vector3(p.x, p.y, 12); });
@@ -83,5 +88,42 @@ function updateAdversaires(liste) {
     });
 }
 
+function updateCartePlanif(data) {
+    initPlanGroups();
+    if (!carteGroup || !data) return;
+    viderGroupe(carteGroup);
+    if (Array.isArray(data.grille) && data.grille.length && data.pas_mm) {
+        carteGroup.add(heatMapMesh(data.grille, data.pas_mm));
+    }
+    // Trajectoires prédites (filtre de Kalman de la base) : t, x, y, sigma
+    (data.predictions || []).forEach(p => {
+        const n = p.trajectoire.length;
+        p.trajectoire.forEach(([t, x, y, sig], k) => {
+            const q = robotToThree(x, y);
+            const a = 0.9 * (1 - k / (n + 1));
+            const pt = new THREE.Mesh(new THREE.SphereGeometry(22, 10, 10),
+                new THREE.MeshBasicMaterial({ color: 0xff3b3b, transparent: true, opacity: a }));
+            pt.position.set(q.x, q.y, 30);
+            carteGroup.add(pt);
+            if (k % 4 === 0 && sig > 30) {
+                const ring = new THREE.Mesh(new THREE.RingGeometry(sig - 6, sig, 40),
+                    new THREE.MeshBasicMaterial({ color: 0xff3b3b, transparent: true, opacity: a * 0.5, side: THREE.DoubleSide }));
+                ring.position.set(q.x, q.y, 6);
+                carteGroup.add(ring);
+            }
+        });
+    });
+    // Pierres (boîtes 320 x 110 mm, vues d'en haut ; theta = axe long)
+    (data.pierres || []).forEach(([x, y, th]) => {
+        const q = robotToThree(x, y);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(320, 110, 110),
+            new THREE.MeshLambertMaterial({ color: 0xc8a165 }));
+        m.position.set(q.x, q.y, 55);
+        m.rotation.z = (th - 90) * Math.PI / 180;   // même convention que thetaToThreeRad (frames.js)
+        carteGroup.add(m);
+    });
+}
+
 window.socket.on('plan', updatePlan);
+window.socket.on('carte_planif', updateCartePlanif);
 window.socket.on('vision_update', (d) => updateAdversaires(d && d.detected ? d.adversaires : []));

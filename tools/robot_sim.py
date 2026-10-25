@@ -66,6 +66,10 @@ class FakeESPMotors:
 
     def goto(self, x, y, theta, manual=False):
         self.calls.append(("goto", round(x, 3), round(y, 3), round(theta, 3)))
+        en_vitesse = getattr(self, "_v_thread", None)
+        if en_vitesse:                      # un G annule la vitesse : on attend l'arrêt
+            self._consigne = (0.0, 0.0, 0.0)
+            en_vitesse.join(2.0)
         self._stop.clear()
         shared = self._shared()
         if self._odo is None:
@@ -89,11 +93,49 @@ class FakeESPMotors:
         self._publish(x, y, theta)
         return True
 
+    VELOCITY_TIMEOUT_S = 0.5      # comme le firmware (VELOCITY_TIMEOUT_MS)
+    ACCEL_MM_S2 = 1400.0
+
     def set_speed(self, vx, vtheta):
-        self.calls.append(("set_speed", vx, vtheta))
+        """Consigne « V » : intégrée à 50 Hz (rampe, arrêt sans nouvelle consigne), trames T à 10 Hz."""
+        self.calls.append(("set_speed", round(vx), round(vtheta)))
+        if vx or vtheta:
+            self._stop.clear()
+        self._consigne = (float(vx), float(vtheta), time.time())
+        if (vx or vtheta) and not getattr(self, "_v_thread", None):
+            self._v_thread = threading.Thread(target=self._integrer, daemon=True)
+            self._v_thread.start()
+
+    def _integrer(self):
+        shared = self._shared()
+        if self._odo is None:
+            pos = shared.robot_pos
+            self._odo = (pos["x"], pos["y"], pos["theta"])
+        v = w = 0.0
+        dt, n = 0.02, 0
+        while True:
+            cv, cw, t = self._consigne
+            if time.time() - t > self.VELOCITY_TIMEOUT_S or self._stop.is_set():
+                cv = cw = 0.0
+            v += max(-self.ACCEL_MM_S2 * dt, min(self.ACCEL_MM_S2 * dt, cv - v))
+            w = cw
+            x, y, th = self._odo
+            th += w * dt
+            x += v * math.cos(math.radians(th)) * dt
+            y += v * math.sin(math.radians(th)) * dt
+            self._odo = (x, y, th)
+            n += 1
+            if n % 5 == 0:
+                self._publish(x, y, th)
+            if cv == 0.0 and cw == 0.0 and abs(v) < 1e-3:
+                self._publish(x, y, th)
+                self._v_thread = None
+                return
+            time.sleep(dt)
 
     def stop_robot(self):
         self.calls.append(("stop_robot",))
+        self._consigne = (0.0, 0.0, time.time())
         self._stop.set()
 
 

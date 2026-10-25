@@ -7,6 +7,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "Rasp"))
 from core import planif  # noqa: E402
 from core.planif import INF  # noqa: E402
+from core import suivi_adversaire as sa  # noqa: E402
 
 
 def dist_segment(p, a, b):
@@ -117,6 +118,82 @@ class TestPlanifier(unittest.TestCase):
         c = planif.construire({}, adversaires=[(1000, 0, 0, 0)], points_lidar=[(500, 500)])
         self.assertFalse(c.libre(1000, 0))
         self.assertFalse(c.libre(500, 500))
+
+
+def piste(x, y, vx, vy, n=10, dt=0.05):
+    p = sa.PisteAdversaire(5, x, y, 0.0)
+    for k in range(1, n + 1):
+        p.observer(x + vx * k * dt, y + vy * k * dt, k * dt)
+    return p, n * dt
+
+
+class TestPierres(unittest.TestCase):
+    def test_rect_oriente(self):
+        c = planif.Carte()
+        c.ajouter_rect_oriente(1000, 0, 320, 110, 90)        # axe long le long de Y
+        self.assertEqual(c.cout_xy(1000, 150), INF)           # dans la boîte (demi-longueur 160)
+        self.assertEqual(c.cout_xy(1000, 160 + 180), INF)     # + rayon du robot (215)
+        self.assertTrue(c.libre(1000, 160 + 260))
+        self.assertTrue(c.libre(1000 + 55 + 260, 0))
+
+    def test_pierres_ignorees_pres_cible_et_sur_robot(self):
+        cfg = {"ignorer_pres_cible_mm": 300}
+        c = planif.construire(cfg, pierres=[(1000, 500, 0), (1000, -500, 0)], cible=(1000, 700))
+        self.assertTrue(c.libre(1000, 500))                   # la pierre qu'on va prendre
+        self.assertFalse(c.libre(1000, -500))
+        c2 = planif.construire({}, points_lidar=[(1000, 100), (500, 500)], robot=(1000, 0))
+        self.assertTrue(c2.libre(1000, 100))                  # point LiDAR sur le robot lui-même
+        self.assertFalse(c2.libre(500, 500))
+
+
+class TestTemps(unittest.TestCase):
+    def test_sans_adversaire_ligne_droite(self):
+        p = planif.planifier_temps(planif.Carte(), (500, -1000, 0), (500, 1000), None, 90)
+        self.assertEqual(p.points, [(500, -1000), (500, 1000)])
+        v, w = planif.DEFAUTS["v_nominale_mm_s"], planif.DEFAUTS["w_nominale_deg_s"]
+        self.assertAlmostEqual(p.duree, 90 / w + 2000 / v)    # rotation vers Y+ puis ligne
+
+    def test_dynamique_evaluer(self):
+        p, t = piste(1000, 0, 0, 0)
+        dyn = planif.Dynamique([p], t)
+        self.assertTrue(dyn.evaluer(1000, 300, 0.5)[0])
+        interdit, sur = dyn.evaluer(1000, 800, 0.5)
+        self.assertFalse(interdit)
+        self.assertGreater(sur, 0)
+        self.assertEqual(dyn.evaluer(1000, 300, 10.0), (False, 0.0))   # au-delà de l'horizon
+
+    def test_passe_derriere_un_adversaire_qui_traverse(self):
+        # adversaire qui traverse vers X+ ; le robot monte vers Y+ et doit passer derrière (X plus petit)
+        p, t = piste(400, 0, 600, 0)
+        c = planif.Carte()
+        plan = planif.planifier_temps(c, (1000, -1100, 90), (1000, 1100), planif.Dynamique([p], t, c.cfg), 90)
+        self.assertIsNotNone(plan)
+        croisement = [x for (x, y) in plan.points if abs(y) < 600]
+        self.assertTrue(croisement and min(croisement) < 950, plan.points)
+        # jamais dans la zone de l'adversaire (sur l'horizon de prédiction)
+        self.assertGreater(planif.Dynamique([p], t, c.cfg).marge_min(plan.points, plan.temps), 0)
+
+    def test_adversaire_arrete_contourne(self):
+        p, t = piste(1000, 0, 0, 0)
+        c = planif.Carte()
+        plan = planif.planifier_temps(c, (1000, -1100, 90), (1000, 1100), planif.Dynamique([p], t, c.cfg), 90)
+        self.assertGreater(len(plan.points), 2)
+        self.assertGreater(planif.Dynamique([p], t, c.cfg).marge_min(plan.points, plan.temps), 0)
+
+    def test_hysteresis(self):
+        c = planif.Carte()
+        ancien = planif.planifier_temps(c, (500, -1000, 90), (500, 1000), None, 90)
+        nouveau = planif.PlanTemps([(500, -800), (520, 1000)], [0, 2.6], ancien.duree * 0.95, 1800)
+        plan, change = planif.choisir_plan(ancien, nouveau, c, None, (500, -800, 90), 90)
+        self.assertFalse(change)                                   # gain < 15 % : on garde l'ancien
+        self.assertEqual(plan.points[0], (500, -800))
+        plus_court = planif.PlanTemps([(500, -800), (500, 1000)], [0, 1.0], 1.0, 1800)
+        self.assertTrue(planif.choisir_plan(ancien, plus_court, c, None, (500, -800, 90), 90)[1])
+        # ancien chemin bloqué par un nouvel obstacle : on change
+        c.ajouter_disque(500, 300, 100)
+        self.assertTrue(planif.choisir_plan(ancien, nouveau, c, None, (500, -800, 90), 90)[1])
+        # robot écarté du chemin : on change
+        self.assertTrue(planif.choisir_plan(ancien, nouveau, planif.Carte(), None, (900, -800, 90), 90)[1])
 
 
 if __name__ == "__main__":

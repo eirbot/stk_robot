@@ -21,6 +21,7 @@ CHEMIN
 """
 
 import heapq
+import json
 import math
 from dataclasses import dataclass, field
 
@@ -42,6 +43,17 @@ DEFAUTS = {
     "poids_chaleur": 2.0,
     "tolerance_arrivee_mm": 120.0,
     "obstacles": [],                # [{"rect": [x0, y0, x1, y1]} | {"cercle": [x, y, r]}], repère table
+    # Planification dans le temps (planifier_temps) : adversaires prédits (core/suivi_adversaire.py)
+    "v_nominale_mm_s": 700.0,       # vitesse de croisière du suivi de trajectoire
+    "w_nominale_deg_s": 180.0,      # vitesse de rotation (coût des virages)
+    "horizon_s": 4.0,               # au-delà : plus rien (trop incertain)
+    "k_sigma": 0.5,                 # zone interdite autour de la position prédite = rayon + k_sigma x
+    "sigma_dur_max_mm": 100.0,      #  incertitude, plafonnée : le reste de l'incertitude = surcoût
+    "tampon_mm": 50.0,              # en plus pour CRÉER un chemin ; pour GARDER le chemin courant, sans
+                                    # tampon : pas d'hésitation pour quelques millimètres
+    "poids_dynamique": 8.0,
+    "dimensions_pierre_mm": [320.0, 110.0],
+    "ignorer_pres_cible_mm": 0.0,   # pierres / points LiDAR ignorés près de la cible (on va les prendre)
 }
 
 
@@ -60,6 +72,13 @@ class Carte:
                 self.ajouter_rect(*o["rect"])
             elif "cercle" in o:
                 self.ajouter_disque(*o["cercle"])
+
+    def copie(self):
+        """Copie indépendante (la carte fixe est calculée une fois, puis copiée à chaque replanification)."""
+        c = Carte.__new__(Carte)
+        c.cfg, c.res, c.nx, c.ny, c.r = self.cfg, self.res, self.nx, self.ny, self.r
+        c.cout = list(self.cout)
+        return c
 
     # --- coordonnées ---------------------------------------------------------------------
     def cellule(self, x, y):
@@ -124,6 +143,26 @@ class Carte:
                     self.cout[i * self.ny + j] = INF
                 elif d < self.r + marge:
                     self.cout[i * self.ny + j] += p * (1.0 - (d - self.r) / marge)
+
+    def ajouter_rect_oriente(self, cx, cy, longueur, largeur, angle_deg, marge=None, poids=None):
+        """Rectangle centré en (cx, cy), côté `longueur` le long de angle_deg (pierres vues d'en haut)."""
+        c, sn = math.cos(math.radians(angle_deg)), math.sin(math.radians(angle_deg))
+        hl, hw = longueur / 2.0, largeur / 2.0
+        m = self.cfg["marge_douce_mm"] if marge is None else marge
+        p = self.cfg["poids_doux"] if poids is None else poids
+
+        def dist(a, b):
+            u = (a - cx) * c + (b - cy) * sn
+            v = -(a - cx) * sn + (b - cy) * c
+            return math.hypot(max(abs(u) - hl, 0.0), max(abs(v) - hw, 0.0))
+        r = math.hypot(hl, hw)
+        self._appliquer(dist, cx - r, cy - r, cx + r, cy + r, 0.0, m, p)
+
+    def ajouter_pierres(self, pierres):
+        """Pierres vues par la caméra zénithale : [(x, y, theta)], théta = axe long de la boîte."""
+        lg, la = self.cfg["dimensions_pierre_mm"]
+        for x, y, th in pierres:
+            self.ajouter_rect_oriente(x, y, lg, la, th)
 
     def ajouter_adversaire(self, x, y, vx=0.0, vy=0.0):
         c = self.cfg
@@ -352,12 +391,301 @@ def planifier(carte, depart, arrivee):
     return Plan(lisse, longueur, total * carte.res, g != g0, cells)
 
 
-def construire(cfg, adversaires=(), points_lidar=(), chaleur=None, t=0.0):
-    """Carte complète : cfg = section planif de la config ; adversaires = [(x, y, vx, vy)]."""
-    carte = Carte(cfg)
+_CARTES_FIXES = {}
+
+
+def carte_fixe(cfg):
+    """Bords + obstacles fixes, mémorisés par configuration (copie à modifier)."""
+    cle = json.dumps(cfg or {}, sort_keys=True, default=str)
+    if cle not in _CARTES_FIXES:
+        if len(_CARTES_FIXES) > 8:
+            _CARTES_FIXES.clear()
+        _CARTES_FIXES[cle] = Carte(cfg)
+    return _CARTES_FIXES[cle].copie()
+
+
+def construire(cfg, adversaires=(), points_lidar=(), chaleur=None, t=0.0, pierres=(), cible=None, robot=None):
+    """Carte complète : cfg = section planif de la config ; adversaires = [(x, y, vx, vy)] posés comme
+    obstacles fixes (planifier) ; pour planifier_temps, passer adversaires=() et une Dynamique.
+    cible : (x, y), on ignore pierres et points LiDAR à moins de ignorer_pres_cible_mm (on va les
+    prendre) ; robot : (x, y), on ignore les points LiDAR sur le robot lui-même."""
+    carte = carte_fixe(cfg)
+    r_ign = carte.cfg["ignorer_pres_cible_mm"]
+
+    def garder(x, y, rayon_robot=0.0):
+        if cible is not None and r_ign > 0 and math.hypot(x - cible[0], y - cible[1]) < r_ign:
+            return False
+        return not (robot is not None and rayon_robot and math.hypot(x - robot[0], y - robot[1]) < rayon_robot)
+    carte.ajouter_pierres([p for p in pierres if garder(p[0], p[1], 260.0)])
     for a in adversaires:
         carte.ajouter_adversaire(*a)
-    carte.ajouter_points(points_lidar)
+    carte.ajouter_points([p for p in points_lidar if garder(p[0], p[1], 260.0)])
     if chaleur is not None:
         carte.ajouter_chaleur(chaleur, t)
     return carte
+
+
+# =============================================================================================
+# PLANIFICATION DANS LE TEMPS : adversaires prédits
+# =============================================================================================
+# A* sur les cellules où le coût d'un arc est une DURÉE (s) : distance / vitesse x surcoût de la
+# cellule, + rotation (changement de direction par rapport à l'arc d'arrivée) / vitesse de rotation.
+# À l'instant d'arrivée prévu dans chaque cellule, on regarde où sera chaque adversaire (piste de
+# Kalman) : interdit si on y est en même temps que lui (rayon + incertitude plafonnée), surcoût autour
+# (plus large quand la prédiction est incertaine).
+# Le robot passe donc DERRIÈRE un adversaire qui traverse, et ne se laisse pas bloquer par un
+# endroit que l'adversaire aura quitté quand il y arrivera.
+
+class Dynamique:
+    """Adversaires prédits vus par planifier_temps (pistes de core/suivi_adversaire.py)."""
+
+    def __init__(self, pistes, t0, cfg=None, rayon_robot_mm=None):
+        c = {**DEFAUTS, **(cfg or {})}
+        self.pistes = list(pistes)
+        self.t0 = t0
+        r_robot = c["rayon_robot_mm"] if rayon_robot_mm is None else rayon_robot_mm
+        self.r_dur = c["rayon_adversaire_mm"] + r_robot
+        self.marge = c["marge_adversaire_mm"]
+        self.w = c["poids_dynamique"]
+        self.h = c["horizon_s"]
+        self.sig_dur = c["sigma_dur_max_mm"]
+        self.k = c["k_sigma"]
+        self.tampon = c["tampon_mm"]
+        self._cache = {}
+
+    def _positions(self, t_rel):
+        cle = int(t_rel * 10)                         # 0,1 s
+        pos = self._cache.get(cle)
+        if pos is None:
+            pos = [p.position(self.t0 + min(cle / 10.0, self.h)) for p in self.pistes]
+            self._cache[cle] = pos
+        return pos
+
+    def evaluer(self, x, y, t_rel, tampon=True):
+        """(interdit, surcoût) pour le robot en (x, y) à t_rel secondes d'ici."""
+        if not self.pistes or t_rel > self.h:
+            return False, 0.0
+        sur = 0.0
+        decroit = 1.0 - t_rel / self.h
+        r_dur = self.r_dur + (self.tampon if tampon else 0.0)
+        for px, py, sig in self._positions(t_rel):
+            d = math.hypot(x - px, y - py)
+            if d < r_dur + self.k * min(sig, self.sig_dur):
+                return True, 0.0
+            portee = self.r_dur + self.marge + sig
+            if d < portee:
+                sur += self.w * decroit * (1.0 - max(0.0, d - self.r_dur) / (portee - self.r_dur))
+        return False, sur
+
+    def marge_min(self, points, temps, pas_mm=50.0):
+        """Plus petite distance (mm, au-delà de la zone interdite) entre le chemin et un adversaire,
+        échantillonnée le long des segments (instants interpolés), dans l'horizon de prédiction."""
+        best = INF
+        for (a, b), (ta, tb) in zip(zip(points, points[1:]), zip(temps, temps[1:])):
+            d = math.hypot(b[0] - a[0], b[1] - a[1])
+            n = max(1, int(d / pas_mm))
+            for k in range(n + 1):
+                f = k / n
+                t = ta + (tb - ta) * f
+                if t > self.h:
+                    return best
+                x, y = a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f
+                for px, py, _ in self._positions(t):
+                    best = min(best, math.hypot(x - px, y - py) - self.r_dur)
+        return best
+
+
+@dataclass
+class PlanTemps:
+    points: list                     # [(x, y)] départ inclus
+    temps: list                      # instant prévu à chaque point (s depuis le calcul)
+    duree: float
+    longueur: float
+    arrivee_deplacee: bool = False
+    marge_adversaire_mm: float = INF
+
+    def caps(self, theta_final):
+        return Plan(self.points, self.longueur, 0.0).caps(theta_final)
+
+
+_DIRS = ((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1))   # i (X), j (Y) ; d x 45°
+
+
+def _rotation_s(a_deg, b_deg, w):
+    d = abs((b_deg - a_deg + 180.0) % 360.0 - 180.0)
+    return d / w
+
+
+def _temps_chemin(points, theta0, theta_final, v, w):
+    """Instants de passage (s) le long d'une polyligne : rotation sur place à chaque sommet puis ligne."""
+    t, cap, out = 0.0, theta0, [0.0]
+    for a, b in zip(points, points[1:]):
+        nc = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0]))
+        t += _rotation_s(cap, nc, w) + math.hypot(b[0] - a[0], b[1] - a[1]) / v
+        cap = nc
+        out.append(t)
+    if theta_final is not None:
+        return out, t + _rotation_s(cap, theta_final, w)
+    return out, t
+
+
+def segment_libre_temps(carte, dyn, a, b, t_a, v, cout_max=INF, tampon=True):
+    """Segment statiquement libre ET sans croiser un adversaire prédit, parcouru à v depuis t_a."""
+    d = math.hypot(b[0] - a[0], b[1] - a[1])
+    n = max(1, int(d / (carte.res * 0.5)))
+    for k in range(n + 1):
+        f = k / n
+        x, y = a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f
+        c = carte.cout_xy(x, y)
+        if c == INF or c > cout_max:
+            return False
+        if dyn is not None and dyn.evaluer(x, y, t_a + d * f / v, tampon)[0]:
+            return False
+    return True
+
+
+def planifier_temps(carte, depart, arrivee, dyn=None, theta_final=None):
+    """PlanTemps de depart (x, y, theta) à arrivee (x, y), ou None. dyn : Dynamique (adversaires)."""
+    cfg = carte.cfg
+    v, w = float(cfg["v_nominale_mm_s"]), float(cfg["w_nominale_deg_s"])
+    ny, cout, res = carte.ny, carte.cout, carte.res
+    i_s, j_s = carte.cellule(depart[0], depart[1])
+    s = _plus_proche_libre(carte, i_s * ny + j_s, 20)
+    gi, gj = carte.cellule(arrivee[0], arrivee[1])
+    g0 = gi * ny + gj
+    g = _plus_proche_libre(carte, g0, int(cfg["tolerance_arrivee_mm"] / res))
+    if s is None or g is None:
+        return None
+    theta0 = depart[2] if len(depart) > 2 and depart[2] is not None else None
+    gi, gj = divmod(g, ny)
+
+    def h(k):
+        i, j = divmod(k, ny)
+        di, dj = abs(i - gi), abs(j - gj)
+        return ((di + dj) + (SQRT2 - 2.0) * min(di, dj)) * res / v
+
+    g_score = {s: 0.0}               # coût (s, surcoûts et rotations compris)
+    t_reel = {s: 0.0}                # heure de passage prévue (s)
+    cap_arrivee = {s: theta0}
+    parent = {s: None}
+    tas = [(h(s), 0.0, s)]
+    ferme = set()
+    dt_pas = (res / v, res * SQRT2 / v)
+    while tas:
+        _, gk, k = heapq.heappop(tas)
+        if k in ferme:
+            continue
+        if k == g:
+            break
+        ferme.add(k)
+        i, j = divmod(k, ny)
+        ck = cout[k]
+        cap_k = cap_arrivee[k]
+        tk = t_reel[k]
+        for d, (di, dj) in enumerate(_DIRS):
+            a, b = i + di, j + dj
+            if not (0 <= a < carte.nx and 0 <= b < ny):
+                continue
+            n = a * ny + b
+            cn = cout[n]
+            if cn == INF or n in ferme:
+                continue
+            diag = di != 0 and dj != 0
+            if diag and (cout[(i + di) * ny + j] == INF or cout[i * ny + j + dj] == INF):
+                continue
+            cap_n = d * 45.0
+            rot = _rotation_s(cap_k, cap_n, w) if cap_k is not None else 0.0
+            # Heure : distance seule (+ rotation initiale, réelle) ; les marches de 45° de la grille
+            # disparaissent au lissage, les compter retarderait le robot et fausserait l'adversaire.
+            t_arr = tk + dt_pas[diag] + (rot if k == s else 0.0)
+            cout_arc = dt_pas[diag] * (ck + cn) * 0.5 + rot
+            if dyn is not None:
+                x, y = carte.centre(a, b)
+                interdit, sur = dyn.evaluer(x, y, t_arr)
+                if interdit:
+                    continue
+                cout_arc += sur * dt_pas[diag]
+            ng = gk + cout_arc
+            if ng < g_score.get(n, INF):
+                g_score[n] = ng
+                t_reel[n] = t_arr
+                parent[n] = k
+                cap_arrivee[n] = cap_n
+                heapq.heappush(tas, (ng + h(n), ng, n))
+    if g not in parent:
+        return None
+    cells = []
+    k = g
+    while k is not None:
+        cells.append(k)
+        k = parent[k]
+    cells.reverse()
+    pts = [carte.centre(*divmod(k, ny)) for k in cells]
+    couts = [cout[k] for k in cells]
+    tps = [t_reel[k] for k in cells]
+    pts[0] = (depart[0], depart[1])
+    pts[-1] = (arrivee[0], arrivee[1]) if g == g0 else pts[-1]
+
+    # Lissage : on relie deux points quand le segment est libre ET ne croise pas l'adversaire prédit,
+    # à l'heure où le robot y passera sur le chemin LISSÉ (plus court que le zigzag de l'A*, donc
+    # plus tôt) : heure recalculée au fil du chemin, rotation sur place comprise.
+    out, idx = [pts[0]], 0
+    t_cur, cap_cur = 0.0, theta0
+    while idx < len(pts) - 1:
+        k = len(pts) - 1
+        while k > idx + 1:
+            a, b = pts[idx], pts[k]
+            cap = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0]))
+            t0 = t_cur + (_rotation_s(cap_cur, cap, w) if cap_cur is not None else 0.0)
+            if (dyn is None or not dyn.evaluer(a[0], a[1], t0)[0]) and \
+                    segment_libre_temps(carte, dyn, a, b, t0, v, max(couts[idx:k + 1]) + 0.25):
+                break
+            k -= 1
+        a, b = pts[idx], pts[k]
+        cap = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0]))
+        t_cur += (_rotation_s(cap_cur, cap, w) if cap_cur is not None else 0.0) + math.hypot(b[0] - a[0], b[1] - a[1]) / v
+        cap_cur = cap
+        out.append(b)
+        idx = k
+    temps, duree = _temps_chemin(out, theta0 if theta0 is not None else 0.0, theta_final, v, w)
+    longueur = sum(math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(out, out[1:]))
+    marge = dyn.marge_min(out, temps) if dyn is not None and dyn.pistes else INF
+    return PlanTemps(out, temps, duree, longueur, g != g0, marge)
+
+
+def reste_du_plan(plan, pose):
+    """Partie du plan encore à parcourir depuis pose (x, y) : [pose] + points après le plus proche."""
+    pts = plan.points
+    best, k_best = INF, 0
+    for k, (a, b) in enumerate(zip(pts, pts[1:])):
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        l2 = dx * dx + dy * dy or 1.0
+        f = max(0.0, min(1.0, ((pose[0] - a[0]) * dx + (pose[1] - a[1]) * dy) / l2))
+        d = math.hypot(pose[0] - a[0] - f * dx, pose[1] - a[1] - f * dy)
+        if d < best:
+            best, k_best = d, k
+    return [(pose[0], pose[1])] + list(pts[k_best + 1:]), best
+
+
+def choisir_plan(ancien, nouveau, carte, dyn, pose, theta_final=None, gain_min=0.15, ecart_max_mm=150.0):
+    """Hystérésis : garde l'ancien chemin (sa partie restante) tant qu'il est encore valable et que le
+    nouveau ne fait pas gagner au moins gain_min (15 %) de temps : évite d'hésiter entre passer à
+    gauche ou à droite d'un adversaire à chaque recalcul. Renvoie (plan, change)."""
+    if ancien is None:
+        return nouveau, True
+    nouveau_ok = nouveau is not None
+    reste, ecart = reste_du_plan(ancien, pose)
+    if ecart > ecart_max_mm or len(reste) < 2:
+        return (nouveau, True) if nouveau_ok else (None, True)
+    v = float(carte.cfg["v_nominale_mm_s"])
+    w = float(carte.cfg["w_nominale_deg_s"])
+    temps, duree = _temps_chemin(reste, pose[2] if len(pose) > 2 else 0.0, theta_final, v, w)
+    valable = all(segment_libre_temps(carte, dyn, a, b, t, v, tampon=False)
+                  for a, b, t in zip(reste, reste[1:], temps))
+    if not valable:
+        return (nouveau, True) if nouveau_ok else (None, True)
+    if nouveau_ok and nouveau.duree < (1.0 - gain_min) * duree:
+        return nouveau, True
+    longueur = sum(math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(reste, reste[1:]))
+    marge = dyn.marge_min(reste, temps) if dyn is not None and dyn.pistes else INF
+    return PlanTemps(reste, temps, duree, longueur, ancien.arrivee_deplacee, marge), False
