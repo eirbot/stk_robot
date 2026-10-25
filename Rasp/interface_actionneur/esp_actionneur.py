@@ -67,15 +67,6 @@ class ESPActionneurs:
 
     def init_robot(self):
         self.send("I")
-        # Attend que l'ESP ait fini et que le flag soit levé
-        # self.cmd_done_event.wait(timeout=5.0)
-        # if not self.cmd_done_event.is_set():
-        #      print("[ACTIONNEURS] ❌ Timeout - L'ESP n'a pas répondu à temps.")
-        #      return False
-
-        # # On reset le flag pour la prochaine commande
-        # self.cmd_done_event.clear()
-        # return True
 
     def tourner(self, actionneur_id):
         cmd = "T" + " " + str(actionneur_id)
@@ -101,178 +92,40 @@ class ESPActionneurs:
         cmd = "P" + " " + str(actionneur_id) + " " + str(sens)
         self.send(cmd)
 
+    # --- Poses combinées ---------------------------------------------------------------
+    # Séquences de l'année 2025 (Kapla, thermomètre) vidées : les noms restent (IHM, boutons,
+    # Blockly les appellent), le contenu est à redéfinir pour 2027 avec les primitives
+    # ci-dessus (ascenseur, pivoter, grab, release, tourner).
+
+    def _a_definir(self, nom):
+        print(f"[ACTIONNEURS] {nom} : séquence à définir (2027)")
+
     def pose_match(self):
+        """Position de départ du match."""
         self.init_robot()
         self.pose_camera()
 
     def pose_camera(self):
-        self.ascenseur(1, 170)
-        self.ascenseur(2, 170)
-        self.ascenseur(3, 170)
-        self.ascenseur(4, 170)
-
-        self.pivoter(1, 1)
-        self.pivoter(4, 1)
-        self.pivoter(2, 1)
-        self.pivoter(3, 1)
-
-        self.grab(1)
-        self.grab(2)
-        self.grab(3)
-        self.grab(4)
-
-        # self.send("C")
-        
-        # self.cmd_done_event.wait(timeout=5.0)
-        # if not self.cmd_done_event.is_set():
-        #      print("[ACTIONNEURS] ❌ Timeout - L'ESP n'a pas répondu à temps.")
-        #      return False
-
-        # # On reset le flag pour la prochaine commande
-        # self.cmd_done_event.clear()
-        # return True
+        self._a_definir("pose_camera")
 
     def pose_ranger(self):
-        self.ascenseur(1, 0)
-        self.ascenseur(2, 0)
-        self.ascenseur(3, 0)
-        self.ascenseur(4, 0)
-
-        self.pivoter(1, 1)
-        self.pivoter(4, 1)
-        self.pivoter(2, 1)
-        self.pivoter(3, 1)
-
-        self.grab(1)
-        self.grab(2)
-        self.grab(3)
-        self.grab(4)
-
-        # self.send("C")
-
-        # self.cmd_done_event.wait(timeout=5.0)
-        # if not self.cmd_done_event.is_set():
-        #      print("[ACTIONNEURS] ❌ Timeout - L'ESP n'a pas répondu à temps.")
-        #      return False
-
-        # # On reset le flag pour la prochaine commande
-        # self.cmd_done_event.clear()
-        # return True
+        self._a_definir("pose_ranger")
 
     def pose_deploy(self):
-        self.ascenseur(1, 100)
-        self.ascenseur(2, 100)
-        self.ascenseur(3, 100)
-        self.ascenseur(4, 100)
+        self._a_definir("pose_deploy")
 
-        self.pivoter(2, 0)
-        self.pivoter(3, 0)
-        self.pivoter(1, 0)
-        self.pivoter(4, 0)
-
-        self.release(1)
-        self.release(2)
-        self.release(3)
-        self.release(4)
-        
-        # self.send("C")
-
-        # self.cmd_done_event.wait(timeout=5.0)
-        # if not self.cmd_done_event.is_set():
-        #      print("[ACTIONNEURS] ❌ Timeout - L'ESP n'a pas répondu à temps.")
-        #      return False
-
-        # # On reset le flag pour la prochaine commande
-        # self.cmd_done_event.clear()
-        # return True
-    
     def pose_grab(self):
-        self.ascenseur(1, 0)
-        self.ascenseur(2, 0)
-        self.ascenseur(3, 0)
-        self.ascenseur(4, 0)
+        self._a_definir("pose_grab")
 
-        self.grab(1)
-        self.grab(2)
-        self.grab(3)
-        self.grab(4)
-        
-        # self.send("C")
-
-        # self.cmd_done_event.wait(timeout=5.0)
-        # if not self.cmd_done_event.is_set():
-        #      print("[ACTIONNEURS] ❌ Timeout - L'ESP n'a pas répondu à temps.")
-        #      return False
-
-        # # On reset le flag pour la prochaine commande
-        # self.cmd_done_event.clear()
-        # return True
-    
     def pose_retourne(self, actionneur_ids):
-        self.ascenseur(1, 100)
-        self.ascenseur(2, 100)
-        self.ascenseur(3, 100)
-        self.ascenseur(4, 100)
+        self._a_definir("pose_retourne")
 
-        self.pivoter(1, 1)
-        self.pivoter(4, 1)
-        self.pivoter(2, 1)
-        self.pivoter(3, 1)
-
-        for actionneur_id in actionneur_ids:
-            self.tourner(actionneur_id)
-
-        self.pivoter(2, 0)
-        self.pivoter(3, 0)
-        self.pivoter(1, 0)
-        self.pivoter(4, 0)
-
-        # self.send("C")
-
-        # self.cmd_done_event.wait(timeout=5.0)
-        # if not self.cmd_done_event.is_set():
-        #      print("[ACTIONNEURS] ❌ Timeout - L'ESP n'a pas répondu à temps.")
-        #      return False
-
-        # # On reset le flag pour la prochaine commande
-        # self.cmd_done_event.clear()
-        # return True
-        
     def pose_poser(self):
-        self.ascenseur(1, 0)
-        self.ascenseur(2, 0)
-        self.ascenseur(3, 0)
-        self.ascenseur(4, 0)
-
-        self.release(1)
-        self.release(2)
-        self.release(3)
-        self.release(4)
-        
-        # self.send("C")
-
-        # self.cmd_done_event.wait(timeout=5.0)
-        # if not self.cmd_done_event.is_set():
-        #      print("[ACTIONNEURS] ❌ Timeout - L'ESP n'a pas répondu à temps.")
-        #      return False
-
-        # # On reset le flag pour la prochaine commande
-        # self.cmd_done_event.clear()
-        # return True
+        self._a_definir("pose_poser")
 
     def pose_temperature(self, is_yellow):
-        if is_yellow:
-            self.ascenseur(4, 170)
-            self.pivoter(4, 1)
-            self.release(4)
-            self.ascenseur(4, 100)
-        else:
-            self.ascenseur(1, 170)
-            self.pivoter(1, 1)
-            self.release(1)
-            self.ascenseur(1, 100)
-        
-        
+        self._a_definir("pose_temperature")
+
     # --- Tâche de fond (Thread) ---
     
     def _receive_loop(self):

@@ -5,7 +5,8 @@ les refontes sont acceptées.
 
 ## État du dépôt
 
-- Branche `base_deporte` poussée et à jour (tout est commité). Aucun test sur le vrai matériel.
+- Branche `base_deporte` : 3 commits locaux NON poussés (2026-10-25) : échelle caméra (02b83a8), firmware
+  moteurs réécrit (6bb0374), rangement (`ESP/`). Rien de tout ça n'est déployé ni testé sur le robot.
 - Tests : `tools/run_tests.sh` (tout passe : 67 Python, 4 JS, Go). `--rapide` saute test_strategies (~70 s).
 - Commit `4fbf9d8` (« le tux ») poussé et **déployé sur la base** le 2026-10-19 : service `base_stk` installé
   et actif. Anciennes modifs locales de la base : `git stash` + `~/sauvegarde_base_20261019.tgz` ; stratégie
@@ -15,7 +16,9 @@ les refontes sont acceptées.
 - Réseau (2026-10-19) : la base sort sur internet via le PC (NAT `-o wlp192s0` dans `/etc/ufw/before.rules` ;
   `ufw reload` ne recharge pas la table nat : règle ajoutée à la main avec iptables). dnsmasq de la base
   plantait au démarrage (adresse pas encore là) : `bind-dynamic` au lieu de `bind-interfaces`.
-- Sur ce PC, `test_robot_integration` échoue faute de `numpy` dans le Python système (environnement, pas le code).
+- Sur ce PC, `test_robot_integration` et `test_strategies` échouent faute de `numpy` dans le Python système.
+  Suite Python complète avec numpy : `uv run --project Base/Vision/vision_deporte --with pyzmq python -m unittest
+  discover -s test -p 'test_*.py'` (89 tests OK le 2026-10-25).
 
 ## Fait (récent, du plus ancien au plus récent)
 
@@ -67,7 +70,7 @@ les refontes sont acceptées.
 
 ### Calibration odométrie + caméra sur le vrai robot (2026-10-19)
 - Rotation : 10 tours demandés (cmd_vel 90°/s, 40 s) -> 10 tours + 60° réels. Entraxe firmware
-  `ecartRoues` 345 -> 339,3 mm (`src/common.h`, commit e9bab55, ESP moteurs flashé depuis la base).
+  `ecartRoues` 345 -> 339,3 mm (ancien `src/common.h`, aujourd'hui `config::WHEEL_BASE_MM` ; commit e9bab55, ESP moteurs flashé depuis la base).
   Après : odométrie et caméra d'accord à 5° près sur 10 tours (avant : 55°).
 - Caméra : bruit à l'arrêt 11,8 mm / 0,13° ; tag du robot bien centré (4 mm de l'axe de rotation).
   Réglages appliqués sur le robot : `vision_odom.latence_s` 0,333, `cam_sigma_mm` 11,8, `cam_sigma_deg` 0,2.
@@ -187,8 +190,8 @@ les refontes sont acceptées.
   `run_tests.sh` (écrit pour pytest) : corrigé.
 
 ### Réécriture du firmware moteurs (en cours, commencée le 2026-10-24)
-- Nouveau firmware dans `src/motors/` ; l'env `Motor` le compile (C++17), ancien code supprimé de `src/`
-  (`git rm`, non commité). **Ne pas flasher l'ESP moteurs avant d'avoir adapté `esp_motors.py`** : le
+- Nouveau firmware dans `ESP/src/motors/` ; l'env `Motor` le compile (C++17), ancien code supprimé
+  (commit 6bb0374). **Ne pas flasher l'ESP moteurs avant d'avoir adapté `esp_motors.py`** : le
   protocole a changé (`G id x y theta`, `D id` / `A id`, `E`), l'ancien code Rasp ne marcherait plus.
 - Décisions : Arduino + fonctions ESP-IDF/FreeRTOS (UART IDF, files) ; une seule tâche commande les moteurs ;
   chaque segment part de l'odométrie ; arrêt aussi en rotation si `L 1` ; profil trapèze FastAccelStepper ;
@@ -203,8 +206,20 @@ les refontes sont acceptées.
   doit correspondre au menu MStep des drivers) ; 256 refusé à la compilation (fréquence de pas trop haute).
 - Un nouveau `G` pendant un GoTo le remplace (`A ancien_id` puis départ vers la nouvelle cible).
 - Pas d'ESP32 sous la main pour l'instant : tout est vérifié par compilation + tests PC, essais réels plus tard.
-- Tests firmware : `pio test -e native` (dossier `firmware_tests/`, lancés aussi par `tools/run_tests.sh`).
+- Tests firmware : `pio test -d ESP -e native` (dossier `ESP/test/`, lancés aussi par `tools/run_tests.sh`).
   Chaque nouveau fichier pur s'ajoute au `build_src_filter` de l'env native.
+
+### Rangement du dépôt (2026-10-25)
+- Firmware dans `ESP/` : `ESP/platformio.ini`, `ESP/src/motors`, `ESP/src/actuators`, `ESP/test`, `.clangd` /
+  `.clang-tidy`. Suivis : flash depuis la base (`espProjectDir()` dans settings.go, compile dans `ESP/`),
+  `tools/deploy.sh`, `tools/run_tests.sh`, Windows Update (`ESP/` = touche l'ESP). La base doit être
+  recompilée (`./Base/build.sh` sur la base) pour flasher depuis `ESP/`.
+  VSCode : l'extension PlatformIO ne voit le projet que si `ESP/` est ouvert comme dossier de travail.
+- Supprimés : `build/` (sorties CMake commitées par erreur, désormais ignorées), `GEMINI.md`,
+  `platformio-core.README.md`, `conv.py`, `include/`, `lib/`, `Base/Vision/vision_worker.py`.
+- Actions 2025 vidées (noms gardés pour Blockly / stratégies / IHM, contenu « à définir (2027) ») :
+  `approcheKapla`, `thermometre`, `prendreKapla`, `poseKapla`, `pousse_kapla` (actions.py) et `pose_*`
+  (esp_actionneur.py). `Rasp/Vision/cam.py` (vision Kapla) n'est plus importé : à supprimer ou refaire.
 
 ## À faire
 

@@ -89,13 +89,16 @@ robot_3a_2026/
 │   ├── utils/                 # Gestion Audio, LEDs, Caméra
 │   └── main_robot.py          # Point d'entrée principal
 │
-├── ⚡ src/                    # --- BAS NIVEAU (C++ / PlatformIO) ---
-│   ├── ClassMotors.cpp        # Asservissement PID vitesse/position
-│   ├── ClassActionneur.cpp    # Gestion des pinces et servos
-│   └── main_motor.cpp         # Boucle principale du microcontrôleur
+├── ⚡ ESP/                    # --- BAS NIVEAU (C++ / PlatformIO) ---
+│   ├── platformio.ini         # Envs Motor, Actionneurs, native (tests PC)
+│   ├── src/motors/            # Firmware moteurs (odométrie, GoTo, liaison série)
+│   ├── src/actuators/         # Firmware actionneurs
+│   └── test/                  # Tests PC du firmware moteurs (pio test -e native)
 │
-├── 📄 docu/                   # Documentation, règles et datasheets
-└── ⚙️ platformio.ini          # Configuration de compilation C++
+├── 🖥 Base/                   # Base déportée : serveur web (Go) et vision zénithale
+├── 🧪 test/                   # Tests Python / JS (tools/run_tests.sh)
+├── 🔧 tools/                  # Déploiement, simulation, réglages
+└── 📄 docu/                   # Documentation, règles et datasheets
 ```
 
 ---

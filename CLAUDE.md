@@ -11,12 +11,15 @@ Répondre en français. Réponses courtes : le résultat, pas le récit des éta
 
 ## Carte du repo (ne pas réexplorer)
 - `Rasp/` : Python sur la Raspberry du robot. `main_robot.py`, `launcher.py`, `ihm/` (shared.py = état global, zmq_client.py = lien base), `strat/` (actions.py = primitives goto/set_pos/symétrie, `strategies/` = stratégies Blockly .xml/.py), `interface_deplacement/esp_motors.py`, `interface_actionneur/`, `LiDAR/` (lidar_udp.cpp + lidar_thread.py, évitement uniquement), `config.json`.
-- `src/`, `include/`, `platformio.ini` : firmware ESP32 (envs `Motor`, `Actionneurs`). Trame odométrie `T x y theta` (ComWithRasp.cpp).
+- `ESP/` : projet PlatformIO des deux ESP32 (`ESP/platformio.ini`, commandes `pio` lancées depuis `ESP/` ou avec `-d ESP`).
+  `ESP/src/motors/` : firmware moteurs (env `Motor`), protocole série dans `protocol.h` (`G id x y theta` -> `D id` / `A id`, trame `T x y theta`) ;
+  code pur testé sur PC (`ESP/test/`, env `native`) ; seuls `steppers`, `motion_task`, `link`, `main` touchent au matériel.
+  `ESP/src/actuators/` : firmware actionneurs (env `Actionneurs`).
 - `Base/Web/` : serveur Go (fiber + zmq4/cgo) -> binaire `Base/base_stk`, compilé par `Base/build.sh`, lancé depuis `Base/`. Pages `templates/*.html` + `static/js/*.js`.
 - `Base/Vision/` : `vision_deporte_worker.py` (caméra zénithale -> pose) + sous-module `vision_deporte/` (uv).
 - `docu/` : règles Eurobot (PDF), protocole LiDAR.
 - `Rasp/core/` : modules purs, testés sans robot : `match_state.py` (seul écrivain de l'état du match), `config_store.py` (config du robot), `frames.py` (repères), `localisation.py` (fusion odométrie + caméra).
-- `tools/` : `deploy.sh`, `run_tests.sh`, `robot_sim.py` (robot simulé), `check_strategy.py`, `regler_fusion.py` (réglage de la fusion depuis un enregistrement), `win95_icons.py` (génère `static/icons/win95.svg`, ne pas éditer le SVG à la main). Tests dans `test/`.
+- `tools/` : `deploy.sh`, `run_tests.sh`, `robot_sim.py` (robot simulé), `check_strategy.py`, `regler_fusion.py` (réglage de la fusion depuis un enregistrement), `win95_icons.py` (génère `static/icons/win95.svg`, ne pas éditer le SVG à la main), `calibrer_camera.py` (échelle/repère caméra). Tests Python/JS dans `test/`.
 
 ## Repère et conventions
 - Repère robot : X = largeur 0..2000 mm, Y = longueur -1500..1500 mm, theta en degrés (0 = X+, 90 = Y+). Symétrie équipe JAUNE : y -> -y, theta -> -theta (`actions.py::_apply_sym`).

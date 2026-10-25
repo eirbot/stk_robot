@@ -137,7 +137,7 @@ func computeUpdateStatus(ctx context.Context, root string) updateStatus {
 						st.TouchesBase = true
 					case strings.HasPrefix(f, "Rasp/"):
 						st.TouchesRobot = true
-					case strings.HasPrefix(f, "src/"), strings.HasPrefix(f, "include/"), f == "platformio.ini":
+					case strings.HasPrefix(f, "ESP/"):
 						st.TouchesESP = true
 					}
 				}

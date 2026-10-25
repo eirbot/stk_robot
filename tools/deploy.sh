@@ -154,12 +154,12 @@ cmd_esp() {
         *) die "Cible ESP inconnue : '$target' (motors ou arms)" ;;
     esac
 
-    local build="$ROOT/.pio/build/$env"
+    local build="$ROOT/ESP/.pio/build/$env"
     local merged="$build/merged.bin"
     local remote_dir="/tmp/esp_flash/$env"
 
     log "ESP $env : compilation PlatformIO"
-    (cd "$ROOT" && run "$PIO" run -e "$env")
+    (cd "$ROOT/ESP" && run "$PIO" run -e "$env")
 
     # Python de PlatformIO (pyserial etc.) si présent, sinon python3
     local py=python3

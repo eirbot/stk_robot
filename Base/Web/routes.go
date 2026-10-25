@@ -671,16 +671,16 @@ func setupRoutes(app *fiber.App) {
 			})
 		}
 
-		// 1. Détermination du répertoire racine du projet (contenant platformio.ini)
-		projectRoot := findProjectRoot()
+		// 1. Projet PlatformIO (ESP/platformio.ini)
+		espDir := espProjectDir()
 
 		// 2. Détermination du chemin vers le binaire pio (cf. settings.go)
 		pioPath := findPio()
 
 		// 3. Compilation avec PlatformIO pour l'environnement demandé
-		fmt.Printf("[FLASH] Démarrage compilation PlatformIO pour '%s' dans %s...\n", envName, projectRoot)
+		fmt.Printf("[FLASH] Démarrage compilation PlatformIO pour '%s' dans %s...\n", envName, espDir)
 		buildCmd := exec.CommandContext(ctx, pioPath, "run", "-e", envName)
-		buildCmd.Dir = projectRoot
+		buildCmd.Dir = espDir
 		buildOut, err := buildCmd.CombinedOutput()
 		if err != nil {
 			fmt.Printf("[FLASH] Échec de la compilation:\n%s\n", string(buildOut))
@@ -709,7 +709,7 @@ func setupRoutes(app *fiber.App) {
 			})
 		}
 
-		localBinPattern := filepath.Join(projectRoot, ".pio", "build", envName, "*.bin")
+		localBinPattern := filepath.Join(espDir, ".pio", "build", envName, "*.bin")
 		binFiles, _ := filepath.Glob(localBinPattern)
 		if len(binFiles) == 0 {
 			return c.JSON(fiber.Map{

@@ -33,7 +33,7 @@ echo "=== Go (Base/Web) ==="
 
 echo "=== Firmware moteurs (pio test -e native) ==="
 if command -v pio >/dev/null; then
-    pio test -e native || FAIL=1
+    pio test -d ESP -e native || FAIL=1
 else
     echo "pio absent : tests firmware sautés"
 fi

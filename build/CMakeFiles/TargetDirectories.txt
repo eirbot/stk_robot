@@ -1,3 +1,0 @@
-/home/guig/Documents/Eirbot/stk_robot/build/CMakeFiles/vision_worker.dir
-/home/guig/Documents/Eirbot/stk_robot/build/CMakeFiles/edit_cache.dir
-/home/guig/Documents/Eirbot/stk_robot/build/CMakeFiles/rebuild_cache.dir

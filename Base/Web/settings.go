@@ -41,11 +41,14 @@ func envOr(key, def string) string {
 }
 
 func isProjectRoot(dir string) bool {
-	return fileExists(filepath.Join(dir, "platformio.ini")) && fileExists(filepath.Join(dir, "Rasp", "main_robot.py"))
+	return fileExists(filepath.Join(dir, "ESP", "platformio.ini")) && fileExists(filepath.Join(dir, "Rasp", "main_robot.py"))
 }
 
+// Projet PlatformIO des firmwares ESP32 (platformio.ini, src/, .pio/build/)
+func espProjectDir() string { return filepath.Join(findProjectRoot(), "ESP") }
+
 // Racine du dépôt stk_robot : $STK_PROJECT_ROOT, sinon on remonte depuis le binaire (Base/base_stk)
-// puis depuis le dossier de travail jusqu'à trouver platformio.ini + Rasp/main_robot.py
+// puis depuis le dossier de travail jusqu'à trouver ESP/platformio.ini + Rasp/main_robot.py
 func findProjectRoot() string {
 	if p := os.Getenv("STK_PROJECT_ROOT"); p != "" {
 		return p

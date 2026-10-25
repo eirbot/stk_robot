@@ -19,18 +19,6 @@ except Exception as e:
     print(f"⚠️ Attention : Erreur de chargement du module Actionneur ({e}) -> Mode simulation")
     actionneurs = None
 
-# --- VISION KAPLAS ---
-try:
-    # On importe ta nouvelle classe cam
-    from Vision.cam import cam
-    print("[VISION] Lancement de la caméra...")
-    # On initialise avec l'état défini dans la config
-    cam_enabled = shared.cfg.get('camera', {}).get('enabled', True)
-    vision_cam = cam(use_camera=cam_enabled)
-except Exception as e:
-    print(f"  Attention : Erreur de chargement du module Vision ({e}) -> Mode aveugle")
-    vision_cam = None
-
 try:
     # On essaie d'importer la classe ESPMotors
     from interface_deplacement.esp_motors import ESPMotors
@@ -180,93 +168,21 @@ class RobotActions:
         else:
             print("[SIMU] TOGGLE LIDAR virtuel")
 
-    def approcheKapla(self) -> bool:
-        """Approche visuelle des Kaplas. Retourne True si l'alignement a réussi, False sinon."""
+    # --- Actions de jeu ----------------------------------------------------------------
+    # Actions de 2025 (Kapla, thermomètre) vidées : les noms restent (blocs Blockly,
+    # stratégies existantes), le contenu est à redéfinir pour 2027.
+
+    def _a_definir(self, nom):
         self._check_abort()
-        print("[ACTION] Recalage visuel : Latéral (Y) puis Profondeur (X)...")
-        self.approche_reussie = False
+        print(f"[ACTION] {nom} : action à définir (2027)")
 
-        if not vision_cam:
-            print("[VISION] Caméra indisponible, mouvement à l'aveugle.")
-            x_robot, y_robot, theta_robot = shared.robot_pos['x'], shared.robot_pos['y'], shared.robot_pos['theta']
-            x = x_robot - math.cos(math.radians(theta_robot)) * 100
-            y = y_robot - math.sin(math.radians(theta_robot)) * 100
-            self.goto(x, y, theta_robot)
-            self.goto(0, 0, 0)
-            return False
-
-        MAX_TENTATIVES = 3
-        x_garde, y_garde, theta_garde = shared.robot_pos['x'], shared.robot_pos['y'], shared.robot_pos['theta']
-
-        for tentative_globale in range(MAX_TENTATIVES):
-            self._check_abort()
-            print(f"\n[VISION] === Tentative globale {tentative_globale + 1}/{MAX_TENTATIVES} ===")
-                
-            # ----- ÉTAPE 2 : LECTURE POSITION DEPUIS LA GARDE -----
-            if vision_cam.check_aruco_position():
-                print("[VISION] ✅ Alignement parfait depuis la garde ! Approche finale...")
-                self.approche_reussie = True
-                return True
-
-            if not vision_cam.is_salvagable():
-                print("[VISION] ArUco non visible depuis la garde, on abandonne cette tentative.")
-                return False
-
-            err_x, err_y, err_angle = vision_cam.get_errors()
-
-            if err_x is None:
-                print("[VISION] ArUco non visible depuis la garde, on abandonne cette tentative.")
-                return False
-
-            vision_cam.save_debug(prefix=f"garde_T{tentative_globale+1}")
-            print(f"[VISION] ❌ Non aligné (Y={err_y:.1f}mm, A={err_angle:.1f}°). Recul + Recalage...")
-            
-            # Recul de 180mm
-            x_actuel, y_actuel, theta_actuel = shared.robot_pos['x'], shared.robot_pos['y'], shared.robot_pos['theta']
-            theta_rad = math.radians(theta_actuel)
-            recul = 180
-            self.goto(x_actuel - recul * math.cos(theta_rad), y_actuel - recul * math.sin(theta_rad), theta_actuel, real=True)
-            time.sleep(0.5)
-
-            # Correction Y et angle uniquement
-            x_actuel, y_actuel, theta_actuel = shared.robot_pos['x'], shared.robot_pos['y'], shared.robot_pos['theta']
-            theta_rad = math.radians(theta_actuel)
-            cible_x = x_actuel - (err_y*0.9) * math.sin(theta_rad)
-            cible_y = y_actuel + (err_y*0.9) * math.cos(theta_rad)
-            self.goto(cible_x, cible_y, theta_actuel, real=True)
-            time.sleep(0.5)
-
-            # Avance de 180mm
-            x_actuel, y_actuel, theta_actuel = shared.robot_pos['x'], shared.robot_pos['y'], shared.robot_pos['theta']
-            theta_rad = math.radians(theta_actuel)
-            avance = 180
-            self.goto(x_actuel + (avance+err_x*0.9) * math.cos(theta_rad), y_actuel + (avance+err_x*0.9) * math.sin(theta_rad), theta_actuel+err_angle*0.9, real=True)
-            time.sleep(0.5)
-
-            # On reboucle : on va ré-avancer à la garde et re-vérifier
-
-        print("[VISION] ❌ ÉCHEC : Impossible de s'aligner après toutes les tentatives !")
-        self.approche_reussie = False
+    def approcheKapla(self) -> bool:
+        """Approche visuelle d'un élément de jeu. Retourne True si l'alignement a réussi."""
+        self._a_definir("approcheKapla")
         return False
 
     def thermometre(self):
-        """Déploie le thermomètre (actionneur selon la couleur d'équipe)."""
-        self._check_abort()
-        print(f"[ACTION] Déploiement Thermomètre (Équipe {'JAUNE' if self.is_yellow else 'BLEUE'})...")
-        if actionneurs:
-            actionneurs.pose_temperature(self.is_yellow)
-        else:
-            print("[SIMU] Thermomètre (pas d'actionneurs)")
-
-        self.attendre(1)
-        x_actuel, y_actuel, theta_actuel = shared.robot_pos['x'], shared.robot_pos['y'], shared.robot_pos['theta']
-
-        self.goto(x_actuel, 1025, -90, real=False)
-
-        if actionneurs:
-            actionneurs.pose_camera()
-        else:
-            print("Feur")
+        self._a_definir("thermometre")
 
     def attendre(self, secondes: float):
         """Attend un nombre de secondes (interruptible par abort)."""
@@ -342,82 +258,14 @@ class RobotActions:
         return True
 
     def prendreKapla(self):
-        self._check_abort()
-        print(f"[ACTION] Analyse couleurs pour les 4 Kaplas (Equipe JAUNE={self.is_yellow})...")
-        
-        if vision_cam:
-            # On déclenche une nouvelle capture et analyse
-            actionneurs.pose_deploy()
-
-            vision_cam.check_aruco_position()
-            vision_cam.save_debug(prefix="prise")
-            
-            actionneurs.pose_grab()
-
-            # On récupère le tableau de booléens (True = bonne couleur)
-            bonnes_couleurs = vision_cam.get_colors(self.is_yellow)
-            actionneurs_ids = [i+1 for i in range(len(bonnes_couleurs)) if not bonnes_couleurs[i]]
-            actionneurs.pose_retourne(actionneurs_ids)
-            
-        time.sleep(1)
+        self._a_definir("prendreKapla")
 
     def poseKapla(self):
-        self._check_abort()
-        actionneurs.pose_poser()
-        actionneurs.pose_camera()
+        self._a_definir("poseKapla")
 
     def pousse_kapla(self):
-        self._check_abort()
-        print("[ACTION] Pousse Kapla")
-        if vision_cam:
-            # On récupère le tableau de booléens (True = bonne couleur)
-            print(vision_cam.check_aruco_position())
-            vision_cam.save_debug(prefix="pousse")
-            bonnes_couleurs = vision_cam.get_colors_pousse(self.is_yellow)
-            if len(bonnes_couleurs) < 3:
-                print(f"[VISION] Detection incomplète ({len(bonnes_couleurs)}/3), complétion par défaut.")
-                while len(bonnes_couleurs) < 4:
-                    bonnes_couleurs.append(True)
+        self._a_definir("pousse_kapla")
 
-        else:
-            print("[VISION/SIMU] Simulation des Kaplas (Caméra non dispo).")
-            bonnes_couleurs = [True, True, True, True]
-        
-        x_actuel = shared.robot_pos['x']
-        y_actuel = shared.robot_pos['y']
-        theta_actuel = shared.robot_pos['theta']
-        theta_rad = math.radians(theta_actuel)
-
-        print("bonnes_couleurs = ", bonnes_couleurs)
-
-        avancer_mm = 25
-        if bonnes_couleurs[0] == True:
-            print("bonnes_couleurs[0] = True")
-            avancer_mm += 0
-            if bonnes_couleurs[1] == True:
-                print("bonnes_couleurs[1] = True")
-                avancer_mm += 50 # on met les 2 premier kaplas
-            else :
-                print("bonnes_couleurs[1] = False")
-                if bonnes_couleurs[2] == True:
-                    avancer_mm += 100 # on met les 3 premier kaplas
-                # pas de else on ne met que le premier kapla
-        else :
-            print("bonnes_couleurs[0] = False")
-            if bonnes_couleurs[1] == True and bonnes_couleurs[2] == True :
-                print("bonnes_couleurs[1] = True and bonnes_couleurs[2] = True")
-                avancer_mm += 100 # on met les 3 premier kaplas
-            else :
-                print("bonnes_couleurs[1] = False and bonnes_couleurs[2] = False")
-                avancer_mm += 250 # on met les 3 dernier kaplas
-        
-        print("avancer_mm =", avancer_mm)
-
-        x_kapla = x_actuel + avancer_mm * math.cos(theta_rad)
-        y_kapla = y_actuel + avancer_mm * math.sin(theta_rad)
-
-        self.goto(x_kapla, y_kapla, theta_actuel, real=True)
-        
     def GoBase(self):
         self.is_returning = True
         shared.state["is_returning"] = True
