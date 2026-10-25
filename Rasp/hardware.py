@@ -11,20 +11,20 @@ en important strat.actions / ihm.shared).
 
 esp = None          # ESPMotors : ESP des roues (interface_deplacement/esp_motors.py)
 actionneurs = None  # ESPActionneurs : ESP des actionneurs (interface_actionneur/esp_actionneur.py)
-camera = None       # LibCamera : caméra embarquée (flux MJPEG)
-
-CAMERA_RESOLUTION = (1640, 1232)
-CAMERA_FRAMERATE = 10
+camera = None       # LibCamera : caméra embarquée (flux MJPEG, image grise de la détection)
+vision = None       # VisionAruco : tags ArUco vus par la caméra embarquée (Vision/aruco.py)
 
 _started = False
+_cfg = {}           # config du robot (même dict que shared.cfg, toujours à jour)
 
 
 def start(cfg):
     """Ouvre les deux ESP et, si la config le demande, la caméra. Sans effet au 2e appel."""
-    global esp, actionneurs, _started
+    global esp, actionneurs, _started, _cfg
     if _started:
         return
     _started = True
+    _cfg = cfg
 
     try:
         from interface_actionneur.esp_actionneur import ESPActionneurs
@@ -46,16 +46,30 @@ def start(cfg):
 
 
 def set_camera_enabled(enabled):
-    """Démarre ou arrête la caméra embarquée (réglage `camera.enabled`)."""
-    global camera
+    """Démarre ou arrête la caméra embarquée et sa détection ArUco (section `camera` de la config)."""
+    global camera, vision
     if enabled and camera is None:
+        c = _cfg.get("camera") or {}
         try:
             from utils.sensors.camera_libcamera import LibCamera
-            camera = LibCamera(resolution=CAMERA_RESOLUTION, framerate=CAMERA_FRAMERATE).start()
+            camera = LibCamera(resolution=tuple(c.get("resolution", (1640, 1232))), framerate=c.get("fps", 10),
+                               affichage=tuple(c.get("affichage", (820, 616))),
+                               rotation_180=c.get("rotation_180", True), tuning=c.get("tuning"),
+                               controles=c.get("controles"), webcam_id=c.get("webcam")).start()
         except Exception as e:
             print(f"[CAM] Erreur initialisation caméra : {e}")
             camera = None
+        if camera is not None:
+            try:
+                from Vision.aruco import VisionAruco
+                vision = VisionAruco(camera, c)
+            except Exception as e:
+                print(f"[VISION] ArUco indisponible : {e}")
+                vision = None
     elif not enabled and camera is not None:
+        if vision is not None:
+            vision.stop()
+            vision = None
         try:
             camera.stop()
         except Exception as e:

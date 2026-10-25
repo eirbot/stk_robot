@@ -16,9 +16,9 @@ les refontes sont acceptées.
 - Réseau (2026-10-19) : la base sort sur internet via le PC (NAT `-o wlp192s0` dans `/etc/ufw/before.rules` ;
   `ufw reload` ne recharge pas la table nat : règle ajoutée à la main avec iptables). dnsmasq de la base
   plantait au démarrage (adresse pas encore là) : `bind-dynamic` au lieu de `bind-interfaces`.
-- Sur ce PC, `test_robot_integration` et `test_strategies` échouent faute de `numpy` dans le Python système.
-  Suite Python complète avec numpy : `uv run --project Base/Vision/vision_deporte --with pyzmq python -m unittest
-  discover -s test -p 'test_*.py'` (89 tests OK le 2026-10-25).
+- Env uv à la racine (`pyproject.toml` : numpy, OpenCV headless, pyzmq) : `tools/run_tests.sh` lance les tests
+  Python avec `uv run python` si uv est là (le python3 de ce PC n'a pas numpy). 129 tests Python OK le 2026-10-25.
+- Caméra embarquée refaite (2026-10-25) : **non commitée, non essayée sur le robot** (robot injoignable).
 
 ## Fait (récent, du plus ancien au plus récent)
 
@@ -285,6 +285,29 @@ les refontes sont acceptées.
 - Outil de vérification utilisé (non commité, à refaire si besoin) : Chromium headless piloté par CDP
   (`uv run --with websockets`), base locale sur des ports libres (`STK_HTTP_PORT=28080`...).
 
+### Caméra embarquée : ArUco réutilisable + optimisé Pi 4 (2026-10-25)
+- `Rasp/Vision/cam.py` (2025, inutilisé, valeurs en pixels codées en dur) supprimé, remplacé par :
+  - `core/vision_geom.py` (pur, `test/test_vision_geom.py`) : modèle caméra (intrinsèques + distorsion OpenCV +
+    montage sur le robot), pose d'un tag dans le repère robot (X avant, Y gauche, Z haut). Pas de PnP libre :
+    orientation imposée (`vertical` = 2027, normale horizontale ; `horizontal` = 2025), LM sur la reprojection
+    des 4 coins, z connu / inconnu / liste de hauteurs, rotation du tag dans son plan essayée. Le trapèze
+    donne bien l'angle : bruit 0,5 px sur les coins -> < 3° et < 5 mm à 50 cm sur une image (médiane ensuite).
+    ~0,3 ms par tag sur PC : pas besoin de C++ (la détection est déjà du C++ dans OpenCV).
+  - `Vision/aruco.py` : `DetecteurAruco` (recherche sur image réduite, coins affinés en pleine résolution,
+    fenêtres de suivi, 2 seuillages, 2 threads OpenCV ; « ArUco 3 » désactivé : coins faux de 5-7 px) et
+    `VisionAruco` = `hardware.vision` (thread à la demande ; `mesurer(ids, n)` = médiane, `derniere()`,
+    `PoseTag.distance / .y / .ecart_angle / .point_devant(d) / .vers_table(pose)`). Test sur images
+    synthétiques `test/test_vision_aruco.py` (OpenCV, coins à 0,25-0,5 px).
+  - `utils/sensors/camera_libcamera.py` : flux YUV420 (gris = plan Y, sans conversion), flux d'affichage séparé
+    converti seulement si regardé, rotation 180° par le capteur, `queue=False`. Webcam PC si `camera.webcam`.
+  - `Vision/mjpeg_streamer.py` : une image encodée par image caméra (avant : la même 2 fois), `?aruco=1` dessine
+    les tags (active la détection), `/snapshot` = gris pleine résolution.
+  - `tools/calibrer_camera_robot.py` : capture des photos de damier via `/snapshot` + calibrateCamera
+    -> `camera.intrinseques` (validé sur images synthétiques).
+- Image rosée : l'ancien code demandait « BGR888 » (= octets R,G,B dans picamera2) puis inversait : l'ordre
+  final était a priori correct. Avec YUV420 la question disparaît ; si c'est encore rosé, ce n'est pas une
+  inversion mais un module NoIR / mauvais réglage -> `camera.tuning` (ex. `imx219_noir.json`).
+
 ## À faire
 
 ### Sur le matériel (priorité, rien de tout ça n'a été essayé)
@@ -296,6 +319,13 @@ les refontes sont acceptées.
 - [ ] Vérifier un match complet : tirette, fin à 100 s, réarmement par la tirette après un match,
       équipe/LEDs, mode test, écran 7" du robot.
 - [ ] Recharger / vérifier la batterie (alerte < 18 V, rétablie > 19,5 V : seuils peut-être à revoir).
+- [ ] Caméra embarquée : `config.json` n'est pas déployé -> recopier la section `camera` (resolution, montage,
+      aruco.tags...) dans celui du robot. Vérifier sur la Pi : version d'OpenCV, démarrage YUV420 + lores,
+      couleur (rosé ?), `ms/image` affiché par `http://<robot>:8081/stream?aruco=1`.
+- [ ] Caméra : calibrer (`tools/calibrer_camera_robot.py`), mesurer `camera.montage` (position, tangage) et la
+      **taille réelle du tag 13** des pierres (50 mm mis par défaut, le règlement ne la donne pas).
+- [ ] Primitive de stratégie « s'aligner sur une pierre » (mesurer -> petit GoTo relatif -> avancer) dans
+      `strat/actions.py`, + bouton `?aruco=1` dans Debug pour la caméra embarquée.
 
 ### Code
 ### Revue de code firmware -> Rasp -> base (2026-10-24, rien de corrigé)

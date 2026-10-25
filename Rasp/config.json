@@ -11,10 +11,21 @@
     "avoidance": true,
     "camera": {
         "enabled": true,
-        "fps": 20,
-        "height": 240,
-        "id": 0,
-        "width": 320
+        "resolution": [1640, 1232],
+        "fps": 10,
+        "affichage": [820, 616],
+        "rotation_180": true,
+        "tuning": null,
+        "champ_horizontal_deg": 62.2,
+        "intrinseques": null,
+        "montage": {"x": 0, "y": 0, "z": 300, "lacet": 0, "tangage": 20, "roulis": 0},
+        "aruco": {
+            "dictionnaire": "DICT_4X4_50",
+            "echelle": 0.5,
+            "tags": {
+                "13": {"taille_mm": 50, "orientation": "vertical", "z": null}
+            }
+        }
     },
     "gpio": {
         "pins": {

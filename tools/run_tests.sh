@@ -6,9 +6,12 @@ ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 cd "$ROOT"
 FAIL=0
 
+# Env uv du dépôt (pyproject.toml : numpy, OpenCV, pyzmq) si uv est installé, sinon python3 système
+if command -v uv >/dev/null 2>&1; then PY="uv run --quiet python"; else PY="python3"; fi
+
 echo "=== Python (test/) ==="
 if [ "${1:-}" = "--rapide" ]; then
-    python3 - <<'PY' || FAIL=1
+    $PY - <<'PY' || FAIL=1
 import sys, unittest
 suite = unittest.defaultTestLoader.discover("test", pattern="test_*.py")
 def drop(s):
@@ -22,7 +25,7 @@ def drop(s):
 sys.exit(0 if unittest.TextTestRunner(verbosity=1).run(drop(suite)).wasSuccessful() else 1)
 PY
 else
-    python3 -m unittest discover -s test -p 'test_*.py' || FAIL=1
+    $PY -m unittest discover -s test -p 'test_*.py' || FAIL=1
 fi
 
 echo "=== JavaScript (node --test) ==="
