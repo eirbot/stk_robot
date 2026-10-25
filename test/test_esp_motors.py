@@ -1,8 +1,10 @@
-"""Test du battement de cœur Rasp -> ESP moteurs et de la trame watchdog "W".
+"""Tests de Rasp/interface_deplacement/esp_motors.py (liaison série avec l'ESP moteurs) :
+battement de cœur, watchdog « W », GoTo numérotés (D id / A id), trames E, ESP absent, fusion.
 
 Aucun matériel : les modules `serial` et `ihm.shared` sont simulés.
-Lancement : `python3 -m pytest test/test_esp_heartbeat.py` ou `python3 test/test_esp_heartbeat.py`.
+Lancement : `python3 -m pytest test/test_esp_motors.py` ou `python3 test/test_esp_motors.py`.
 """
+import re
 import importlib.util
 import os
 import queue
@@ -76,6 +78,8 @@ def load_module():
 
     shared.set_known_pose = set_known_pose
     shared.loc_log = types.SimpleNamespace(write=lambda *a: None)
+    shared.logs = []
+    shared.send_log = lambda msg, log_type="info": shared.logs.append((msg, log_type))
     ihm.shared = shared
     sys.modules["ihm"] = ihm
     sys.modules["ihm.shared"] = shared
@@ -100,6 +104,29 @@ def wait_for(cond, timeout=1.0):
             return True
         time.sleep(0.01)
     return cond()
+
+
+def sent_lines(esp):
+    return [l for _, l in esp.ser.sent()]
+
+
+def wait_goto(esp, timeout=1.0):
+    """Attend l'envoi d'un G ; renvoie (id, x, y, theta) du dernier envoyé."""
+    def last_goto():
+        gotos = [l for l in sent_lines(esp) if l.startswith("G ")]
+        return gotos[-1] if gotos else None
+
+    assert wait_for(lambda: last_goto() is not None, timeout), f"pas de G envoyé : {sent_lines(esp)}"
+    m = re.fullmatch(r"G (\d+) (\S+) (\S+) (\S+)", last_goto())
+    assert m, f"G mal formé : {last_goto()}"
+    return int(m.group(1)), float(m.group(2)), float(m.group(3)), float(m.group(4))
+
+
+def start_goto(esp, x, y, theta, **kw):
+    result = {}
+    th = threading.Thread(target=lambda: result.update(ok=esp.goto(x, y, theta, **kw)), daemon=True)
+    th.start()
+    return th, result
 
 
 def test_heartbeat_periodique():
@@ -175,8 +202,9 @@ def test_trame_watchdog_et_trames_existantes():
         assert th.is_alive()
         beats_during = [l for t, l in esp.ser.sent() if l == "K"]
         assert len(beats_during) >= 5
-        assert ("G 500 500 0" in [l for _, l in esp.ser.sent()])
-        esp.ser.rx.put("D")
+        goto_id, x, y, theta = wait_goto(esp)
+        assert (x, y, theta) == (500.0, 500.0, 0.0)
+        esp.ser.rx.put(f"D {goto_id}")
         th.join(2)
         assert result.get("ok") is True and not esp.watchdog_tripped
     finally:
@@ -189,23 +217,135 @@ def test_fusion_goto_et_odometrie():
     esp = mod.ESPMotors()
     esp.start()
     try:
-        # « S » arrondi à l'entier, la fusion garde la valeur exacte
-        esp.set_pos(1000.4, 0.0, 10.4)
-        assert ("S 1000 0 10" in [l for _, l in esp.ser.sent()])
-        esp.ser.rx.put("T 1000.00 0.00 10.00")
+        # « S » envoyé en décimal ; le repère odo de la fusion = la valeur envoyée
+        esp.set_pos(1000.44, 0.0, 10.4)
+        assert "S 1000.4 0.0 10.40" in sent_lines(esp)
+        esp.ser.rx.put("T 1000.40 0.00 10.40")
         assert wait_for(lambda: abs(shared.robot_pos["theta"] - 10.4) < 1e-6)
-        assert abs(shared.robot_pos["x"] - 1000.4) < 1e-6
+        assert abs(shared.robot_pos["x"] - 1000.44) < 1e-6
 
         # La caméra voit le robot 50 mm plus loin en X (correction forcée, robot immobile)
-        shared.loc.on_camera(time.time(), 1050.4, 0.0, 10.4, gain=1.0)
-        result = {}
-        th = threading.Thread(target=lambda: result.update(ok=esp.goto(1050.4, 0.0, 10.4)), daemon=True)
-        th.start()
+        shared.loc.on_camera(time.time(), 1050.44, 0.0, 10.4, gain=1.0)
+        th, result = start_goto(esp, 1050.44, 0.0, 10.4)
         # Cible table = pose actuelle : l'ESP reçoit sa propre pose odo
-        assert wait_for(lambda: "G 1000 0 10" in [l for _, l in esp.ser.sent()])
-        esp.ser.rx.put("D")
+        goto_id, x, y, theta = wait_goto(esp)
+        assert abs(x - 1000.4) < 0.06 and abs(y) < 0.06 and abs(theta - 10.4) < 0.006
+        esp.ser.rx.put(f"D {goto_id}")
         th.join(2)
         assert result.get("ok") is True
+    finally:
+        esp.stop()
+
+
+def test_goto_annule():
+    mod, _ = load_module()
+    esp = mod.ESPMotors()
+    esp.start()
+    try:
+        th, result = start_goto(esp, 100, 0, 0)
+        goto_id, *_ = wait_goto(esp)
+        esp.ser.rx.put(f"A {goto_id}")
+        th.join(2)
+        assert result.get("ok") is False
+    finally:
+        esp.stop()
+
+
+def test_reponse_d_un_ancien_goto_ignoree():
+    """Le « A » en retard d'un GoTo précédent ne termine pas le GoTo en cours."""
+    mod, _ = load_module()
+    esp = mod.ESPMotors()
+    esp.start()
+    try:
+        th1, r1 = start_goto(esp, 100, 0, 0)
+        id1, *_ = wait_goto(esp)
+        esp.ser.rx.put(f"A {id1}")
+        th1.join(2)
+        th2, r2 = start_goto(esp, 200, 0, 0)
+        assert wait_for(lambda: sum(l.startswith("G ") for l in sent_lines(esp)) == 2)
+        id2 = int([l for l in sent_lines(esp) if l.startswith("G ")][-1].split()[1])
+        assert id2 != id1
+        esp.ser.rx.put(f"A {id1}")   # réponse en double / en retard de l'ancien
+        esp.ser.rx.put("D 999999")   # numéro inconnu
+        time.sleep(0.3)
+        assert th2.is_alive(), "un D / A d'un autre GoTo a terminé le GoTo en cours"
+        esp.ser.rx.put(f"D {id2}")
+        th2.join(2)
+        assert r2.get("ok") is True
+    finally:
+        esp.stop()
+
+
+def test_deux_goto_simultanes():
+    """GoTo manuel pendant un autre : chacun reçoit SA réponse (l'ESP annule le premier)."""
+    mod, _ = load_module()
+    esp = mod.ESPMotors()
+    esp.start()
+    try:
+        th1, r1 = start_goto(esp, 100, 0, 0)
+        assert wait_for(lambda: sum(l.startswith("G ") for l in sent_lines(esp)) == 1)
+        th2, r2 = start_goto(esp, 200, 0, 0, manual=True)
+        assert wait_for(lambda: sum(l.startswith("G ") for l in sent_lines(esp)) == 2)
+        id1, id2 = [int(l.split()[1]) for l in sent_lines(esp) if l.startswith("G ")]
+        esp.ser.rx.put(f"A {id1}")
+        esp.ser.rx.put(f"D {id2}")
+        th1.join(2)
+        th2.join(2)
+        assert r1.get("ok") is False and r2.get("ok") is True
+    finally:
+        esp.stop()
+
+
+def test_arret_du_match_pendant_goto():
+    mod, shared = load_module()
+    esp = mod.ESPMotors()
+    esp.start()
+    try:
+        th, result = start_goto(esp, 100, 0, 0)
+        wait_goto(esp)
+        shared.state["match_running"] = False
+        th.join(2)
+        assert result.get("ok") is False
+        assert "H" in sent_lines(esp)
+    finally:
+        esp.stop()
+
+
+def test_goto_sans_reponse_expire():
+    mod, _ = load_module()
+    mod.GOTO_TIMEOUT_S = 0.5
+    esp = mod.ESPMotors()
+    esp.start()
+    try:
+        th, result = start_goto(esp, 100, 0, 0)
+        th.join(2)
+        assert result.get("ok") is False
+        assert "H" in sent_lines(esp)
+    finally:
+        esp.stop()
+
+
+def test_esp_absent():
+    """Port série non ouvert : erreur claire au lieu d'attendre la fin du match."""
+    mod, _ = load_module()
+    esp = mod.ESPMotors()  # start() pas appelé : aucun port
+    assert not esp.connected
+    try:
+        esp.goto(100, 0, 0)
+    except mod.ESPError as e:
+        assert "non connecté" in str(e)
+    else:
+        raise AssertionError("ESPError attendue")
+
+
+def test_trame_erreur_journalisee():
+    mod, shared = load_module()
+    esp = mod.ESPMotors()
+    esp.start()
+    try:
+        esp.ser.rx.put("E commande inconnue")
+        assert wait_for(lambda: esp.errors == ["commande inconnue"])
+        assert ("ESP moteurs : commande inconnue", "err") in shared.logs
     finally:
         esp.stop()
 

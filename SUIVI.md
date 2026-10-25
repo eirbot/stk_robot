@@ -1,6 +1,6 @@
 # Suivi du projet — à lire en début de session, à mettre à jour en fin de tâche
 
-Dernière mise à jour : 2026-10-19. Compétition dans plus de 200 jours (pas avant ~mai 2027) :
+Dernière mise à jour : 2026-10-25. Compétition dans plus de 200 jours (pas avant ~mai 2027) :
 les refontes sont acceptées.
 
 ## État du dépôt
@@ -64,6 +64,25 @@ les refontes sont acceptées.
   `playPrev()` / `playNext()` (appelées par la page Sons) n'existaient pas : ajoutées.
 - Affichage téléphone ; mode test (pas d'arrêt à 100 s) ; notifications (`toast()`) ; pastille
   « Robot hors ligne » ; versions du code dans Debug.
+
+### Calibration odométrie + caméra sur le vrai robot (2026-10-19)
+- Rotation : 10 tours demandés (cmd_vel 90°/s, 40 s) -> 10 tours + 60° réels. Entraxe firmware
+  `ecartRoues` 345 -> 339,3 mm (`src/common.h`, commit e9bab55, ESP moteurs flashé depuis la base).
+  Après : odométrie et caméra d'accord à 5° près sur 10 tours (avant : 55°).
+- Caméra : bruit à l'arrêt 11,8 mm / 0,13° ; tag du robot bien centré (4 mm de l'axe de rotation).
+  Réglages appliqués sur le robot : `vision_odom.latence_s` 0,333, `cam_sigma_mm` 11,8, `cam_sigma_deg` 0,2.
+- **Défaut trouvé dans la vision** (`Base/Vision/vision_deporte/.../computePosition.py`, dépôt d'antonythiery) :
+  le repère monde est lié au robot, la pose de la table y bouge quand le robot bouge, et elle est filtrée
+  (`passe_bas_expo`, 0,3) -> ~0,2 s de retard -> ~290 mm d'erreur pendant une rotation à 90°/s (exact à
+  l'arrêt). Explique la latence apparente 0,33 s, les 94 % de rejets de la fusion et les +19,6 % d'« erreur
+  d'odométrie » de regler_fusion (diamètre des roues : NE PAS corriger sur cette base).
+  Contournement **sur la base uniquement** (non poussé, sous-module modifié localement) : coefficient 1.0.
+  À faire : remonter à Antony ; solution propre = filtrer la table dans le repère caméra (fixe) et
+  utiliser la rotation filtrée ligne 113 (rotation brute aujourd'hui).
+- Vérifié avec le coefficient 1.0 : bruit à l'arrêt σ 9,8 / 3,9 mm, 0,32° ; 10 tours -> odométrie 3609°,
+  caméra 3608° ; position caméra pendant la rotation à ~8 mm de la position à l'arrêt (avant : 290 mm).
+  Robot posé en (880, 10, 0), caméra (870, 38) : ~28 mm en y à confirmer ailleurs (vision_odom.repere).
+- Reste : `carre` puis `tools/regler_fusion.py` (latence, rejets), test 1 m au mètre (diamètre des roues).
 
 ### Windows Update : robot proposé à tort / pas redémarré (2026-10-19)
 - Le robot était déclaré en retard dès que le commit changeait (même pour des fichiers de la base) ; le
@@ -164,14 +183,34 @@ les refontes sont acceptées.
 - Réglage automatique : le robot enregistre odométrie brute + caméra (`Rasp/utils/loc_recorder.py`,
   `Rasp/logs/localisation/`) ; `tools/regler_fusion.py` en déduit latence, bruit caméra, dérive et
   erreur d'échelle des roues, et rejoue l'enregistrement pour comparer (validé sur données synthétiques).
-- Simulateur et tests : `test/test_localisation.py`, `test/test_regler_fusion.py` ; `test_esp_heartbeat.py` n'était pas lancé par
+- Simulateur et tests : `test/test_localisation.py`, `test/test_regler_fusion.py` ; `test_esp_motors.py` (ex-`test_esp_heartbeat.py`) n'était pas lancé par
   `run_tests.sh` (écrit pour pytest) : corrigé.
+
+### Réécriture du firmware moteurs (en cours, commencée le 2026-10-24)
+- Nouveau firmware dans `src/motors/` ; l'env `Motor` le compile (C++17), ancien code supprimé de `src/`
+  (`git rm`, non commité). **Ne pas flasher l'ESP moteurs avant d'avoir adapté `esp_motors.py`** : le
+  protocole a changé (`G id x y theta`, `D id` / `A id`, `E`), l'ancien code Rasp ne marcherait plus.
+- Décisions : Arduino + fonctions ESP-IDF/FreeRTOS (UART IDF, files) ; une seule tâche commande les moteurs ;
+  chaque segment part de l'odométrie ; arrêt aussi en rotation si `L 1` ; profil trapèze FastAccelStepper ;
+  tests PC (env `native`, Unity, 61 tests).
+- Fichiers : config.h, kinematics, pose.h + odometry, goto_planner, protocol (+ LineReader, RaspWatchdog),
+  wheel_driver.h + steppers, motion (machine d'états pure) + motion_task (FreeRTOS), link (UART, T à 10 Hz,
+  watchdog), main.cpp. `esp_motors.py` adapté (GoTo numérotés, flottants, trames E, `ESPError` si l'ESP
+  est absent, GoTo abandonné après 30 s sans réponse ; `test/test_esp_motors.py`, 11 tests).
+  À flasher ENSEMBLE : firmware moteurs + code Rasp. Reste : checklist sur le robot (vérifier :
+  rotation +90° vers +Y, broches 16/4 = roue droite, lignes de boot de l'ESP ignorées par la Rasp).
+- Drivers MKS SERVO42D en boucle fermée CR_CLOSE (CR_vFOC : à-coups). Micro-pas 16 gardé (`config::MICROSTEPS`,
+  doit correspondre au menu MStep des drivers) ; 256 refusé à la compilation (fréquence de pas trop haute).
+- Un nouveau `G` pendant un GoTo le remplace (`A ancien_id` puis départ vers la nouvelle cible).
+- Pas d'ESP32 sous la main pour l'instant : tout est vérifié par compilation + tests PC, essais réels plus tard.
+- Tests firmware : `pio test -e native` (dossier `firmware_tests/`, lancés aussi par `tools/run_tests.sh`).
+  Chaque nouveau fichier pur s'ajoute au `build_src_filter` de l'env native.
 
 ## À faire
 
 ### Sur le matériel (priorité, rien de tout ça n'a été essayé)
 - [ ] Déployer le **robot** (la base est faite ; le protocole d'état a changé, les deux doivent suivre).
-- [ ] Flasher l'ESP moteurs (`tools/deploy.sh esp motors`) ; vérifier : pas de faux déclenchement du
+- [ ] ESP moteurs flashé le 2026-10-19 (entraxe) ; reste à vérifier : pas de faux déclenchement du
       watchdog en match (`watchdog_count` dans esp_motors), arrêt si on débranche l'USB, pas de reprise
       au rebranchement. Si faux déclenchements : passer `RASP_TIMEOUT_MS` à 400-500.
 - [ ] Définir le PIN dans `Base/pin.txt` sur la base.
@@ -180,6 +219,25 @@ les refontes sont acceptées.
 - [ ] Recharger / vérifier la batterie (alerte < 18 V, rétablie > 19,5 V : seuils peut-être à revoir).
 
 ### Code
+### Revue de code firmware -> Rasp -> base (2026-10-24, rien de corrigé)
+- [ ] **Firmware GoTo** (`GoToPosition.cpp`) : part de sa pose « supposée », pas de l'odométrie (cap = cap
+      demandé, jamais relu ; pose non mise à jour après un joystick `V` ; `UpdateFinalPoseAfterStop` faux après
+      `H`). Angles tronqués à l'entier (`(int)abs(pangle)`) -> jusqu'à ~2° d'erreur de cap par GoTo, qui
+      s'accumule sans que la fusion le voie. Corriger : `mot.GetPosition()` au début de `Go()`, arrondir.
+- [ ] Firmware : `WaitUntilDone` peut répondre « D » trop tôt (file vide + moteurs pas encore lancés au
+      début du dernier segment). `TransferQueueBuffer` / `RestoreQueueBuffer` : code mort.
+- [ ] LiDAR : `clear_delay` ne retarde que l'affichage, l'ESP repart tout de suite (`lidar_thread.py`) ;
+      seul le point le plus proche par tour est envoyé (un mur latéral masque un robot devant) ; secteurs
+      latéraux classés « arrière ».
+- [ ] ESP moteurs absent : `esp` existe avec `ser=None`, les GoTo attendent jusqu'à la fin du match.
+- [ ] Commandes manuelles (goto, cmd_vel, set_robot_pos) acceptées pendant un match ; un « A » en retard
+      après un `H` peut terminer le GoTo suivant.
+- [ ] `approcheKapla` sans caméra : symétrie appliquée à une pose réelle puis `goto(0, 0, 0)` (bord de table).
+- [ ] Fermer la fenêtre webview de l'écran robot arrête tout le programme (`main_robot.py`, `sys.exit`).
+- [ ] Vision : pas de `CAP_PROP_BUFFERSIZE=1` (images en retard) ni d'âge de l'image envoyé.
+- [ ] Ménage : `EndOfMatchException` / `GoBase` auto jamais déclenchés, code 2025 (Kapla, thermomètre),
+      actionneurs sans accusé de réception.
+
 - [ ] Régler la fusion sur le vrai robot : rouler 2-3 min caméra allumée (déplacements, rotations,
       arrêts de quelques secondes), récupérer `Documents/robot_stk/logs/localisation/loc_*.csv` et lancer
       `tools/regler_fusion.py <fichier> --appliquer <config.json du robot>` (config.json n'est pas déployé).

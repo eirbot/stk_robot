@@ -31,5 +31,12 @@ node --test test/*.test.mjs || FAIL=1
 echo "=== Go (Base/Web) ==="
 (cd Base/Web && go vet ./... && go test ./...) || FAIL=1
 
+echo "=== Firmware moteurs (pio test -e native) ==="
+if command -v pio >/dev/null; then
+    pio test -e native || FAIL=1
+else
+    echo "pio absent : tests firmware sautés"
+fi
+
 [ $FAIL -eq 0 ] && echo "TOUS LES TESTS PASSENT" || echo "ÉCHEC"
 exit $FAIL

@@ -3,14 +3,24 @@ import threading
 import time
 import ihm.shared as shared  # On importe ton shared pour y stocker X, Y, Theta
 
-# Protocole série avec l'ESP moteurs (une commande par ligne, voir src/ComWithRasp.hpp) :
-#   Rasp -> ESP : G x y theta, V vx vtheta, S x y theta, L etat, H, K (battement de cœur)
-#   ESP -> Rasp : T x y theta (odométrie), D (GoTo fini), A (GoTo annulé),
-#                 W (watchdog liaison : l'ESP n'a rien reçu depuis 300 ms et a coupé les moteurs)
+# Protocole série avec l'ESP moteurs (une commande par ligne ; référence : src/motors/protocol.h) :
+#   Rasp -> ESP : G id x y theta (GoTo), V vx omega, S x y theta, L etat, H, K (battement de cœur)
+#   ESP -> Rasp : T x y theta (odométrie), D id (GoTo id fini), A id (GoTo id annulé),
+#                 W (watchdog liaison : l'ESP n'a rien reçu depuis 300 ms et a coupé les moteurs),
+#                 E message (commande refusée par l'ESP)
+# Nombres décimaux avec un point. Chaque GoTo a son numéro : un « A » en retard d'un ancien
+# GoTo ne termine jamais le GoTo en cours. Un nouveau G pendant un GoTo le remplace (l'ESP
+# répond « A ancien »).
 # Tout octet envoyé est un signe de vie : "K" n'est émis que si aucune autre commande
 # n'est partie depuis HEARTBEAT_PERIOD. Après un "W", rien ne reprend seul côté ESP :
 # il faut renvoyer une commande (G, V...).
 HEARTBEAT_PERIOD = 0.1  # s, à garder bien sous le délai du watchdog ESP (300 ms)
+# Aucun D / A au bout de ce délai (ESP redémarré, trame perdue) : GoTo considéré annulé
+GOTO_TIMEOUT_S = 30.0
+
+
+class ESPError(Exception):
+    """ESP moteurs absent (port série non ouvert) : aucun déplacement possible."""
 
 class ESPMotors:
     def __init__(self, port='/dev/esp_motors', baudrate=115200):
@@ -22,8 +32,11 @@ class ESPMotors:
         self.tx_lock = threading.Lock() 
         self.running = False
         self.rx_thread = None
-        self.cmd_done_event = threading.Event()
-        self.cmd_aborted = False
+        # GoTo en attente de D / A : numéro -> {"event", "ok"}
+        self._goto_lock = threading.Lock()
+        self._goto_waiters = {}
+        self._next_goto_id = 1
+        self.errors = []  # dernières trames « E » de l'ESP
         # Dernier instant où l'odométrie a bougé (sert à savoir si le robot est immobile)
         self.last_motion_time = time.time()
         self._last_pose = None
@@ -83,29 +96,47 @@ class ESPMotors:
 
     # --- Fonctions simplifiées pour tes autres threads ---
     
+    @property
+    def connected(self):
+        return self.ser is not None and self.ser.is_open
+
     def goto(self, x, y, theta, manual=False):
-        """GoTo en repère table : converti dans le repère odométrie de l'ESP (fusion caméra)."""
-        self.cmd_done_event.clear()
-        self.cmd_aborted = False
+        """GoTo en repère table : converti dans le repère odométrie de l'ESP (fusion caméra).
+        Renvoie True si l'ESP a répondu « D », False s'il a été annulé (A, arrêt du match,
+        délai dépassé). Lève ESPError si l'ESP n'est pas branché."""
+        if not self.connected:
+            raise ESPError(f"ESP moteurs non connecté ({self.port}) : déplacement impossible")
+        with self._goto_lock:
+            goto_id = self._next_goto_id
+            self._next_goto_id = goto_id % 1_000_000 + 1
+            waiter = {"event": threading.Event(), "ok": False}
+            self._goto_waiters[goto_id] = waiter
         ox, oy, otheta = shared.loc.to_odom(x, y, theta)
-        self.send(f"G {round(ox)} {round(oy)} {round(otheta)}")
-        
-        # On attend la fin, mais on vérifie régulièrement si le match est fini ou si un arrêt est demandé
-        while not self.cmd_done_event.wait(0.2):
-            if manual:
-                # En mode manuel, on ne stoppe que si l'état FSM est explicitement STOPPED
-                if shared.state.get("fsm_state") == "STOPPED":
-                    print("[MOTORS] 🛑 Arrêt demandé pendant déplacement manuel, envoi STOP")
-                    self.stop_robot()
-                    return False
-            else:
-                # Si le match autonome est stoppé (IHM ou Bouton Stop)
-                if not shared.state.get("match_running", False):
+        self.send(f"G {goto_id} {ox:.1f} {oy:.1f} {otheta:.2f}")
+
+        try:
+            t_end = time.monotonic() + GOTO_TIMEOUT_S
+            # On attend la fin, en vérifiant régulièrement si le match est fini ou si un arrêt est demandé
+            while not waiter["event"].wait(0.2):
+                if manual:
+                    # En mode manuel, on ne stoppe que si l'état FSM est explicitement STOPPED
+                    if shared.state.get("fsm_state") == "STOPPED":
+                        print("[MOTORS] 🛑 Arrêt demandé pendant déplacement manuel, envoi STOP")
+                        self.stop_robot()
+                        return False
+                elif not shared.state.get("match_running", False):
+                    # Si le match autonome est stoppé (IHM ou Bouton Stop)
                     print("[MOTORS] 🛑 Match arrêté pendant mouvement, envoi STOP")
                     self.stop_robot()
                     return False
-        
-        return not self.cmd_aborted
+                if time.monotonic() > t_end:
+                    print(f"[MOTORS] ⚠️ GoTo {goto_id} sans réponse de l'ESP après {GOTO_TIMEOUT_S:.0f} s : annulé")
+                    self.stop_robot()
+                    return False
+            return waiter["ok"]
+        finally:
+            with self._goto_lock:
+                self._goto_waiters.pop(goto_id, None)
 
     def set_speed(self, vx, vtheta):
         """
@@ -122,12 +153,12 @@ class ESPMotors:
         self.send("H")
 
     def set_pos(self, x, y, theta):
-        """Pose connue en repère table. L'ESP parse des entiers (toInt) : la fusion
-        rattrape l'arrondi (repère odo = ce que l'ESP a reçu)."""
-        odo = (round(x), round(y), round(theta))
+        """Pose connue en repère table. Le repère odo de la fusion = exactement ce que
+        l'ESP reçoit (valeurs arrondies à l'envoi)."""
+        odo = (round(x, 1), round(y, 1), round(theta, 2))
         self._last_pose = None
         shared.set_known_pose(x, y, theta, odo_pose=odo)
-        self.send(f"S {odo[0]} {odo[1]} {odo[2]}")
+        self.send(f"S {odo[0]:.1f} {odo[1]:.1f} {odo[2]:.2f}")
         
     def set_lidar_state(self, val):
         self.send(f"L {val}")
@@ -182,16 +213,27 @@ class ESPMotors:
                     shared.robot_pos.update({'x': tx, 'y': ty, 'theta': ttheta})
             except ValueError:
                 print(f"[MOTORS] ⚠️ Erreur de parsing Odométrie : {msg}")
-        elif msg == "D":
-            # Le mouvement est terminé avec succès
-            self.cmd_aborted = False
-            self.cmd_done_event.set()
-        elif msg == "A":
-            # Le mouvement a été annulé (timeout obstacle)
-            self.cmd_aborted = True
-            self.cmd_done_event.set()
+        elif msg.startswith(("D ", "A ")):
+            # Fin du GoTo n° id : D = terminé, A = annulé (H, V, nouveau G, obstacle persistant...)
+            try:
+                goto_id = int(msg[2:])
+            except ValueError:
+                print(f"[MOTORS] ⚠️ Trame illisible : {msg}")
+                return
+            with self._goto_lock:
+                waiter = self._goto_waiters.get(goto_id)
+            if waiter is not None:  # sinon : GoTo déjà abandonné côté Rasp, réponse en retard
+                waiter["ok"] = msg[0] == "D"
+                waiter["event"].set()
+        elif msg.startswith("E "):
+            # Commande refusée par l'ESP : visible dans les journaux de l'IHM
+            erreur = msg[2:]
+            self.errors = (self.errors + [erreur])[-20:]
+            print(f"[MOTORS] ❌ ESP : {erreur}")
+            if hasattr(shared, "send_log"):
+                shared.send_log(f"ESP moteurs : {erreur}", "err")
         elif msg == "W":
-            # L'ESP n'a rien reçu pendant 300 ms : moteurs coupés, GoTo annulé (un "A" suit
+            # L'ESP n'a rien reçu pendant 300 ms : moteurs coupés, GoTo annulé (un "A id" suit
             # si un GoTo tournait). Rien ne reprend seul : il faut renvoyer une commande.
             self.watchdog_count += 1
             self.watchdog_tripped = True
