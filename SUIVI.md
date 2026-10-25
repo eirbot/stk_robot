@@ -237,6 +237,12 @@ les refontes sont acceptées.
   `is_returning`, constantes mortes. `test_integration.py` (écrit/effacé par le test) n'est plus suivi par git.
 - Son coupé dans les tests et le simulateur (`audio.enabled` false ; `tools/robot_sim.py --son` pour l'entendre).
 
+### zmq_client : table de commandes (2026-10-25)
+- `_handle_msg` : table « type -> méthode » (`_on_config`, `_on_action`, `_on_actuator`...) au lieu de 180 lignes de elif.
+- Commandes manuelles (cmd_vel, goto, set_robot_pos, cmd_actuator) refusées pendant un match (règlement : robot
+  autonome ; un joystick égaré annulait les GoTo de la stratégie), signalé dans les journaux (au plus toutes les 2 s).
+  Test : `test_6_commandes_manuelles_refusees_pendant_match`.
+
 ## À faire
 
 ### Sur le matériel (priorité, rien de tout ça n'a été essayé)

@@ -190,6 +190,27 @@ class TestIntegrationRobot(unittest.TestCase):
         for key in ("fsm_state", "team", "strat_id", "timer_str", "tirette"):
             self.assertIn(key, snap)
 
+    def test_6_commandes_manuelles_refusees_pendant_match(self):
+        self.send("action", "reset")
+        self.send("action", "start")
+        self.assertTrue(self.wait_for(lambda: self.shared.match.running))
+        self.esp.calls.clear()
+        self.act.calls.clear()
+        self.send("cmd_vel", {"vx": 200, "vtheta": 0})
+        self.send("goto", {"x": 1000, "y": 0, "theta": 0})
+        self.send("set_robot_pos", {"x": 0, "y": 0, "theta": 0})
+        self.send("cmd_actuator", {"cmd": "grab", "id": 1})
+        time.sleep(0.1)
+        # (la stratégie, elle, fait son propre set_pos / goto)
+        manual = [c for c in self.esp.calls
+                  if c[0] == "set_speed" or c in (("set_pos", 0, 0, 0), ("goto", 1000, 0, 0))]
+        self.assertEqual(manual, [], "commande manuelle exécutée pendant le match")
+        self.assertNotIn(("grab", 1), self.act.calls)
+        self.send("action", "stop")
+        # Hors match : de nouveau acceptées
+        self.send("cmd_vel", {"vx": 200, "vtheta": 0})
+        self.assertIn(("set_speed", 200.0, 0.0), self.esp.calls)
+
 
 if __name__ == "__main__":
     unittest.main()

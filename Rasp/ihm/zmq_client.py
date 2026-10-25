@@ -38,6 +38,7 @@ class ZmqClient(threading.Thread):
         self.sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
         
         self.running = True
+        self._last_refusal = 0.0
         self.last_sent_state = {}
         self.last_publish_time = 0.0
         self.force_publish = True
@@ -62,184 +63,147 @@ class ZmqClient(threading.Thread):
                 print(f"[ZMQ CLIENT] Erreur réception : {e}")
                 time.sleep(1)
 
+    # --- Ordres de la base -------------------------------------------------------------
+    # Commandes manuelles refusées pendant un match : le robot doit être autonome (règlement),
+    # et un joystick oublié annulerait les GoTo de la stratégie.
+    MANUAL_COMMANDS = ("cmd_vel", "goto", "set_robot_pos", "cmd_actuator")
+    # Messages fréquents, non affichés (chaque print repart en new_log vers l'IHM)
+    QUIET_COMMANDS = ("ping", "cmd_vel", "vision_pose")
+
+    def _handlers(self):
+        return {
+            "ping": self._on_ping,
+            "config_update": self._on_config,
+            "config_edit": self._on_config,
+            "action": self._on_action,
+            "cmd_vel": self._on_cmd_vel,
+            "cmd_actuator": self._on_actuator,
+            "goto": self._on_goto,
+            "vision_pose": self._on_vision_pose,
+            "set_robot_pos": self._on_set_robot_pos,
+            "play_audio": lambda p: shared.audio.play(p.get("filename") if isinstance(p, dict) else p),
+            "stop_audio": lambda p: shared.audio.stop(),
+            "set_volume": lambda p: shared.audio.set_volume(int(p.get("volume", 50))),
+        }
+
     def _handle_msg(self, msg_str):
         try:
             packet = json.loads(msg_str)
-            cmd_type = packet.get("type")
-            payload = packet.get("payload")
-            if not cmd_type:
-                return
-
-            # Diagnostic du lien base <-> robot (Base/Web/robotping.go) : réponse immédiate, sans log
-            if cmd_type == "ping":
-                self.send_event("pong", payload)
-                return
-
-            # cmd_vel (20 Hz) et vision_pose (cadence caméra) : ne pas les afficher (chaque print repart en new_log vers l'IHM)
-            if cmd_type not in ("cmd_vel", "vision_pose"):
-                print(f"[ZMQ CLIENT] Commande reçue : {cmd_type} -> {payload}")
-            
-            if cmd_type in ("config_update", "config_edit"):
-                # config_update : {clé: valeur, ...} ; config_edit : {"key": "a.b", "val": v}
-                if isinstance(payload, dict) and "key" in payload and "val" in payload:
-                    payload = {payload["key"]: payload["val"]}
-                if payload:
-                    _, err = shared.update_config_from_server(payload)
-                    if err:
-                        shared.send_log(f"Réglage refusé : {err}", "err")
-                    self.force_publish = True
-
-            elif cmd_type == "action":
-                # L'état du match n'est modifié que par shared.match (core/match_state.py)
-                act = payload
-                try:
-                    if act in ("start", "tirette"):
-                        shared.match.start()
-                    elif act == "stop":
-                        shared.match.stop()
-                    elif act == "reset":
-                        shared.match.reset()
-                    elif act == "team":
-                        shared.match.toggle_team()
-                except shared.MatchError as e:
-                    print(f"[ZMQ CLIENT] Action {act} refusée : {e}")
-                    shared.send_log(f"Action {act} refusée : {e}", "err")
-                self.force_publish = True
-                if act == "init":
-                    print("[ZMQ CLIENT] Action INIT reçue (Pose match)")
-                    try:
-                        actionneurs = hardware.actionneurs
-                        if actionneurs:
-                            threading.Thread(target=actionneurs.pose_match, daemon=True).start()
-                    except Exception as e:
-                        print(f"[ZMQ CLIENT] Erreur action init : {e}")
-
-
-            elif cmd_type == "cmd_vel":
-                try:
-                    vx = float(payload.get("vx", payload.get("v", 0.0)))
-                    vtheta = float(payload.get("vtheta", payload.get("w", 0.0)))
-                    esp = hardware.esp
-                    if esp:
-                        esp.set_speed(vx, vtheta)
-                except Exception as e:
-                    print(f"[ZMQ CLIENT] Erreur cmd_vel : {e}")
-
-            elif cmd_type == "cmd_actuator":
-                try:
-                    actionneurs = hardware.actionneurs
-                    if not actionneurs:
-                        print("[ZMQ CLIENT] ⚠️ Actionneurs non disponibles (mode simulation)")
-                    else:
-                        act_cmd = payload.get("cmd") if isinstance(payload, dict) else str(payload)
-                        print(f"[ZMQ CLIENT] 🦾 Ordre Actionneur : {act_cmd} ({payload})")
-                        
-                        # Presets globaux (lancés dans un thread dédié pour ne jamais bloquer la boucle ZMQ)
-                        if act_cmd == "pose_match":
-                            threading.Thread(target=actionneurs.pose_match, daemon=True).start()
-                        elif act_cmd == "pose_camera":
-                            threading.Thread(target=actionneurs.pose_camera, daemon=True).start()
-                        elif act_cmd == "pose_ranger":
-                            threading.Thread(target=actionneurs.pose_ranger, daemon=True).start()
-                        elif act_cmd == "pose_deploy":
-                            threading.Thread(target=actionneurs.pose_deploy, daemon=True).start()
-                        elif act_cmd == "pose_grab":
-                            threading.Thread(target=actionneurs.pose_grab, daemon=True).start()
-                        elif act_cmd == "pose_poser":
-                            threading.Thread(target=actionneurs.pose_poser, daemon=True).start()
-                        elif act_cmd == "init" or act_cmd == "init_robot":
-                            threading.Thread(target=actionneurs.init_robot, daemon=True).start()
-                        elif act_cmd == "pose_temperature":
-                            is_yellow = shared.state.get("team") == "JAUNE"
-                            threading.Thread(target=actionneurs.pose_temperature, args=(is_yellow,), daemon=True).start()
-                        
-                        # Contrôles unitaires
-                        elif act_cmd == "ascenseur":
-                            act_id = int(payload.get("id", 1))
-                            hauteur = int(payload.get("hauteur", payload.get("height", 0)))
-                            actionneurs.ascenseur(act_id, hauteur)
-                        elif act_cmd == "grab":
-                            act_id = int(payload.get("id", 1))
-                            actionneurs.grab(act_id)
-                        elif act_cmd == "release":
-                            act_id = int(payload.get("id", 1))
-                            actionneurs.release(act_id)
-                        elif act_cmd == "grab_all":
-                            for i in range(1, 5):
-                                actionneurs.grab(i)
-                        elif act_cmd == "release_all":
-                            for i in range(1, 5):
-                                actionneurs.release(i)
-                        elif act_cmd == "pivoter":
-                            act_id = int(payload.get("id", 1))
-                            sens = int(payload.get("sens", 0))
-                            actionneurs.pivoter(act_id, sens)
-                        elif act_cmd == "tourner":
-                            act_id = int(payload.get("id", 1))
-                            actionneurs.tourner(act_id)
-                        elif act_cmd == "raw":
-                            raw_cmd = str(payload.get("raw", ""))
-                            if raw_cmd:
-                                actionneurs.send(raw_cmd)
-                except Exception as e:
-                    print(f"[ZMQ CLIENT] Erreur cmd_actuator : {e}")
-
-            elif cmd_type == "goto":
-                try:
-                    x = float(payload.get("x", 0))
-                    y = float(payload.get("y", 0))
-                    theta = float(payload.get("theta", 0))
-                    print(f"[ZMQ CLIENT] GOTO manuel -> ({x}, {y}, {theta})")
-                    # Lancement dans un thread séparé pour ne PAS bloquer la réception ZMQ (traitement immédiat du STOP)
-                    threading.Thread(target=self._run_manual_goto, args=(x, y, theta), daemon=True).start()
-                except Exception as e:
-                    print(f"[ZMQ CLIENT] Erreur lancement goto : {e}")
-
-            elif cmd_type == "vision_pose":
-                try:
-                    mesure = (time.time(), float(payload["x"]), float(payload["y"]), float(payload["theta"]))
-                except (KeyError, TypeError, ValueError):
-                    mesure = None
-                if mesure:
-                    shared.vision_poses.append(mesure)
-                    self._fuse_camera(mesure)
-
-            elif cmd_type == "set_robot_pos":
-                try:
-                    x = float(payload.get("x", 0))
-                    y = float(payload.get("y", 0))
-                    theta = float(payload.get("theta", 0))
-                    print(f"[ZMQ CLIENT] SET_POS command -> ({x}, {y}, {theta})")
-                    esp = hardware.esp
-                    if esp:
-                        esp.set_pos(x, y, theta)  # remet aussi la fusion à zéro
-                    else:
-                        shared.set_known_pose(x, y, theta)
-                except Exception as e:
-                    print(f"[ZMQ CLIENT] Erreur set_robot_pos : {e}")
-
-            elif cmd_type == "play_audio":
-                try:
-                    filename = payload.get("filename") or payload
-                    shared.audio.play(filename)
-                except Exception as e:
-                    print(f"[ZMQ CLIENT] Erreur play_audio : {e}")
-
-            elif cmd_type == "stop_audio":
-                try:
-                    shared.audio.stop()
-                except Exception as e:
-                    print(f"[ZMQ CLIENT] Erreur stop_audio : {e}")
-
-            elif cmd_type == "set_volume":
-                try:
-                    vol = int(payload.get("volume", 50))
-                    shared.audio.set_volume(vol)
-                except Exception as e:
-                    print(f"[ZMQ CLIENT] Erreur set_volume : {e}")
-
+        except ValueError:
+            print(f"[ZMQ CLIENT] Message illisible : {msg_str[:80]}")
+            return
+        cmd_type = packet.get("type")
+        payload = packet.get("payload")
+        handler = self._handlers().get(cmd_type)
+        if handler is None:
+            if cmd_type:
+                print(f"[ZMQ CLIENT] Commande inconnue : {cmd_type}")
+            return
+        if cmd_type not in self.QUIET_COMMANDS:
+            print(f"[ZMQ CLIENT] Commande reçue : {cmd_type} -> {payload}")
+        if cmd_type in self.MANUAL_COMMANDS and shared.match.running:
+            self._refuse(cmd_type)
+            return
+        try:
+            handler(payload)
         except Exception as e:
-            print(f"[ZMQ CLIENT] Erreur traitement message : {e}")
+            print(f"[ZMQ CLIENT] Erreur {cmd_type} : {e}")
+
+    def _refuse(self, cmd_type):
+        """Commande manuelle pendant un match : refusée, signalée au plus toutes les 2 s (cmd_vel à 20 Hz)."""
+        now = time.time()
+        if now - self._last_refusal >= 2.0:
+            self._last_refusal = now
+            print(f"[ZMQ CLIENT] {cmd_type} refusé : match en cours")
+            shared.send_log(f"Commande manuelle ({cmd_type}) refusée pendant un match", "err")
+
+    def _on_ping(self, payload):
+        # Diagnostic du lien base <-> robot (Base/Web/robotping.go)
+        self.send_event("pong", payload)
+
+    def _on_config(self, payload):
+        # config_update : {clé: valeur, ...} ; config_edit : {"key": "a.b", "val": v}
+        if isinstance(payload, dict) and "key" in payload and "val" in payload:
+            payload = {payload["key"]: payload["val"]}
+        if payload:
+            _, err = shared.update_config_from_server(payload)
+            if err:
+                shared.send_log(f"Réglage refusé : {err}", "err")
+            self.force_publish = True
+
+    def _on_action(self, act):
+        # L'état du match n'est modifié que par shared.match (core/match_state.py)
+        match_actions = {"start": shared.match.start, "tirette": shared.match.start, "stop": shared.match.stop,
+                         "reset": shared.match.reset, "team": shared.match.toggle_team}
+        try:
+            if act in match_actions:
+                match_actions[act]()
+            elif act == "init" and hardware.actionneurs:
+                threading.Thread(target=hardware.actionneurs.pose_match, daemon=True).start()
+        except shared.MatchError as e:
+            print(f"[ZMQ CLIENT] Action {act} refusée : {e}")
+            shared.send_log(f"Action {act} refusée : {e}", "err")
+        self.force_publish = True
+
+    def _on_cmd_vel(self, payload):
+        if hardware.esp:
+            vx = float(payload.get("vx", payload.get("v", 0.0)))
+            vtheta = float(payload.get("vtheta", payload.get("w", 0.0)))
+            hardware.esp.set_speed(vx, vtheta)
+
+    def _on_actuator(self, payload):
+        act = hardware.actionneurs
+        if not act:
+            print("[ZMQ CLIENT] ⚠️ Actionneurs non disponibles (mode simulation)")
+            return
+        p = payload if isinstance(payload, dict) else {"cmd": str(payload)}
+        cmd = p.get("cmd")
+        act_id = int(p.get("id", 1))
+        # Séquences : dans un thread, pour ne jamais bloquer la réception (STOP traité aussitôt)
+        sequences = {
+            "pose_match": act.pose_match, "pose_camera": act.pose_camera, "pose_ranger": act.pose_ranger,
+            "pose_deploy": act.pose_deploy, "pose_grab": act.pose_grab, "pose_poser": act.pose_poser,
+            "init": act.init_robot, "init_robot": act.init_robot,
+            "pose_temperature": lambda: act.pose_temperature(shared.state.get("team") == "JAUNE"),
+        }
+        # Commandes unitaires : un seul envoi série, immédiat
+        unit = {
+            "ascenseur": lambda: act.ascenseur(act_id, int(p.get("hauteur", p.get("height", 0)))),
+            "grab": lambda: act.grab(act_id),
+            "release": lambda: act.release(act_id),
+            "grab_all": lambda: [act.grab(i) for i in range(1, 5)],
+            "release_all": lambda: [act.release(i) for i in range(1, 5)],
+            "pivoter": lambda: act.pivoter(act_id, int(p.get("sens", 0))),
+            "tourner": lambda: act.tourner(act_id),
+            "raw": lambda: act.send(str(p["raw"])) if p.get("raw") else None,
+        }
+        print(f"[ZMQ CLIENT] 🦾 Ordre actionneur : {cmd} ({payload})")
+        if cmd in sequences:
+            threading.Thread(target=sequences[cmd], daemon=True).start()
+        elif cmd in unit:
+            unit[cmd]()
+        else:
+            print(f"[ZMQ CLIENT] Ordre actionneur inconnu : {cmd}")
+
+    def _on_goto(self, payload):
+        x, y, theta = float(payload.get("x", 0)), float(payload.get("y", 0)), float(payload.get("theta", 0))
+        # Thread séparé : la réception ZMQ ne doit pas attendre la fin du déplacement (STOP)
+        threading.Thread(target=self._run_manual_goto, args=(x, y, theta), daemon=True).start()
+
+    def _on_vision_pose(self, payload):
+        try:
+            mesure = (time.time(), float(payload["x"]), float(payload["y"]), float(payload["theta"]))
+        except (KeyError, TypeError, ValueError):
+            return
+        shared.vision_poses.append(mesure)
+        self._fuse_camera(mesure)
+
+    def _on_set_robot_pos(self, payload):
+        x, y, theta = float(payload.get("x", 0)), float(payload.get("y", 0)), float(payload.get("theta", 0))
+        if hardware.esp:
+            hardware.esp.set_pos(x, y, theta)  # remet aussi la fusion à zéro
+        else:
+            shared.set_known_pose(x, y, theta)
 
     def _fuse_camera(self, mesure):
         """Pose caméra zénithale -> correction continue de la pose (core/localisation.py)."""
@@ -254,10 +218,9 @@ class ZmqClient(threading.Thread):
 
     def _run_manual_goto(self, x, y, theta):
         try:
-            esp = hardware.esp
-            if esp:
-                # Coordonnées manuelles absolues : pas de symétrie JAUNE et pas d'écrasement de is_returning
-                esp.goto(x, y, theta, manual=True)
+            if hardware.esp:
+                # Coordonnées manuelles absolues : pas de symétrie JAUNE
+                hardware.esp.goto(x, y, theta, manual=True)
             else:
                 print(f"[ZMQ CLIENT] GOTO simulé ({x}, {y}, {theta})")
         except Exception as e:
