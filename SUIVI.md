@@ -256,6 +256,7 @@ les refontes sont acceptées.
   `mujocoModelsDir()` dans vision.go), lus par `static/js/mujoco_model.js` (XML + STL binaires, sans
   dépendance). Tapis de jeu texturé, bordures, pieds ; robot détaillé (31 Mo, pas chargé sur l'écran du robot).
   Boîtes de secours aux vraies dimensions si les modèles manquent. Vérifié par capture Chromium headless.
+  `/models` servi SANS compression : avec, Fiber écrivait un `.fiber.gz` par fichier dans le sous-module.
 - Encombrement réel du robot (modèle MuJoCo, `tools/encombrement_robot.py`) : avant 245,5 mm, arrière 102 mm
   (l'axe des roues n'est pas au centre), demi-largeur 188,2 mm, hauteur 450 mm. Dans `frames.py` / `frames.js`
   (`ROBOT_*`, `robot_corners`), testé des deux côtés. Strat Studio : robot dessiné à l'échelle (avant 320 x 370

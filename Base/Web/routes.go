@@ -72,9 +72,10 @@ func setupRoutes(app *fiber.App) {
 		CacheDuration: 1 * time.Second,
 	})
 
-	// Modèles MuJoCo de vision_deporte (table, robot) : affichés tels quels par la carte 3D (map.js)
+	// Modèles MuJoCo de vision_deporte (table, robot) : affichés tels quels par la carte 3D (map.js).
+	// Sans Compress : Fiber écrirait une copie .fiber.gz de chaque fichier dans le sous-module.
 	if dir := mujocoModelsDir(); dir != "" {
-		app.Static("/models", dir, fiber.Static{Compress: true, MaxAge: 3600})
+		app.Static("/models", dir, fiber.Static{MaxAge: 3600})
 	}
 
 	// Pages HTML avec en-têtes anti-blocage et revalidation
