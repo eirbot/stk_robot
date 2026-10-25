@@ -63,6 +63,10 @@ class TestBaseRobot(unittest.TestCase):
     def setUpClass(cls):
         cls.tmp = tempfile.mkdtemp(prefix="e2e_")
         cls.cache_existed = os.path.exists(CACHE_FILE)
+        cls.base = cls.robot = None
+        # Si setUpClass échoue plus bas, tearDownClass n'est pas appelé : sans ce nettoyage,
+        # la base et le robot simulé restaient lancés et bloquaient les ports des tests suivants
+        cls.addClassCleanup(cls._stop_processes)
         binary = os.path.join(cls.tmp, "base_stk")
         subprocess.run(["go", "build", "-o", binary, "."], cwd=os.path.join(BASE, "Web"), check=True)
         with open(STRAT_FILE, "w", encoding="utf-8") as f:
@@ -80,14 +84,18 @@ class TestBaseRobot(unittest.TestCase):
         wait_state(lambda s: s.get("robot_online"), timeout=15)
 
     @classmethod
-    def tearDownClass(cls):
+    def _stop_processes(cls):
         for p in (cls.robot, cls.base):
-            if p.poll() is None:
+            if p is not None and p.poll() is None:
                 p.terminate()
                 try:
                     p.wait(5)
                 except subprocess.TimeoutExpired:
                     p.kill()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._stop_processes()
         if os.path.exists(STRAT_FILE):
             os.remove(STRAT_FILE)
         if not cls.cache_existed and os.path.exists(CACHE_FILE):

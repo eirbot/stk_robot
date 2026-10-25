@@ -248,8 +248,8 @@ les refontes sont acceptées.
   routes /api/vision, /api/stream_usb), `flash.go` (/api/update_rasp, /api/flash_esp, flashMutex),
   `strategies.go` (liste / lecture / sauvegarde Blockly) ; `fileExists` dans settings.go.
 - `zmq.go` : état allégé construit par `lightStateLocked()` (était recopié 3 fois). `gofmt` propre partout.
-- Tests e2e base + robot sautés sur ce PC : un `base_stk` de test (`/tmp/e2e_1g2nq6jw/base_stk`, lancé le
-  2026-10-24) occupe leurs ports (18080, 15555, 15556) ; à tuer à la main. Le test ne l'a pas arrêté : à vérifier.
+- Tests e2e : quand `setUpClass` échouait (ex. numpy absent côté robot simulé), la base de test restait lancée
+  et occupait les ports 18080 / 15555 / 15556 (tests suivants sautés). Corrigé (`addClassCleanup`).
 
 ### Carte 3D et Strat Studio aux vraies dimensions (2026-10-25)
 - Carte 3D (map.js) : table et robot = modèles MuJoCo de vision_deporte (servis par la base sous `/models/`,
