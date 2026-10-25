@@ -7,7 +7,12 @@ import ihm.shared as shared
 from utils.system_info import get_battery_voltage, get_battery_current, get_cpu_temp
 
 class TelemetryLogger:
-    def __init__(self, log_dir="logs/telemetry", interval=0.1):
+    # Journaux de match (page Replay de la base, qui les lit par ssh : Base/Web/media.go)
+    # ROBOT_TELEMETRY_DIR : autre dossier (tests, simulateur)
+    DEFAULT_DIR = os.environ.get("ROBOT_TELEMETRY_DIR") or os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "telemetry")
+
+    def __init__(self, log_dir=DEFAULT_DIR, interval=0.1):
         self.log_dir = log_dir
         self.interval = interval
         self.running = False
@@ -47,11 +52,14 @@ class TelemetryLogger:
             self.running = False
 
     def stop(self):
+        """Ferme le journal en cours (sans effet s'il n'y en a pas : fin à 100 s puis STOP)."""
         self.running = False
         if self.thread:
             self.thread.join(timeout=1.0)
+            self.thread = None
         if self.file:
             self.file.close()
+            self.file = None
             print("[LOGGER] Enregistrement terminé.")
 
     def _loop(self):

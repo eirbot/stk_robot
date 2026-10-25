@@ -102,6 +102,7 @@ class TestIntegrationRobot(unittest.TestCase):
         with open(cfg_path, "w", encoding="utf-8") as f:
             json.dump(cfg, f)
         os.environ["ROBOT_CONFIG"] = cfg_path
+        os.environ["ROBOT_TELEMETRY_DIR"] = cls.tmp.name
 
         install_fakes()
         sys.path.insert(0, RASP)
@@ -210,6 +211,20 @@ class TestIntegrationRobot(unittest.TestCase):
         # Hors match : de nouveau acceptées
         self.send("cmd_vel", {"vx": 200, "vtheta": 0})
         self.assertIn(("set_speed", 200.0, 0.0), self.esp.calls)
+
+
+    def test_7_commandes_led(self):
+        sent = []
+        original = self.shared.send_led_cmd
+        self.shared.send_led_cmd = sent.append
+        try:
+            self.send("led_cmd", "COLOR:255,0,0")
+            self.send("led_cmd", "PLAY:match_start")
+            self.send("led_cmd", "rm -rf /")          # commande inconnue : refusée
+            self.send("led_cmd", "COLOR:1,2,3\nOFF")  # deux commandes collées : refusée
+        finally:
+            self.shared.send_led_cmd = original
+        self.assertEqual(sent, ["COLOR:255,0,0", "PLAY:match_start"])
 
 
 if __name__ == "__main__":

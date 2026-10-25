@@ -197,6 +197,7 @@ func setupRoutes(app *fiber.App) {
 	})
 
 	setupStrategyRoutes(app)
+	setupMediaRoutes(app)
 
 	// Routes de diagnostic pour le test de connexion (latence et débit)
 	app.Get("/api/ping", func(c *fiber.Ctx) error {

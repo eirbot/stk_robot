@@ -261,8 +261,12 @@ les refontes sont acceptées.
   (`ROBOT_*`, `robot_corners`), testé des deux côtés. Strat Studio : robot dessiné à l'échelle (avant 320 x 370
   centré + image du robot 2025) ; tunnel de trajectoire à la vraie largeur.
 - À vérifier sur le robot : X du modèle MuJoCo = avant du robot (sens de marche quand theta augmente le X).
-- Routes appelées par le JS mais absentes de la base Go (restes de l'ancienne IHM Flask) : `/api/led_animations`,
-  `/api/list_audio_files`, `/api/play_animation`, `/api/play_test` -> menus Blockly vides, LED Studio et Sons cassés.
+- 11 routes appelées par le JS manquaient dans la base Go (restes de l'ancienne IHM Flask : menus Blockly vides,
+  Sons, LED Studio, luminosité, Replay cassés). Recréées dans `Base/Web/media.go` : sons (liste, envoi + scp vers
+  le robot, lecture, arrêt, volume), LED (`led_control`, `play_animation`, `set_brightness`, animations lues /
+  enregistrées puis envoyées au robot), journaux de match (lus sur le robot par ssh). Robot : commandes ZMQ
+  `led_cmd` (liste blanche) et `led_animations` ; le journal de télémétrie démarre / s'arrête avec le match
+  (`Rasp/logs/telemetry/blackbox_*.csv`, jamais démarré avant). Tests Go + `test_7_commandes_led`.
 
 ## À faire
 

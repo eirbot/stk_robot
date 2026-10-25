@@ -24,6 +24,7 @@ import robot_sim  # noqa: E402
 def run_strategy(name, team, timeout=60.0):
     robot_sim.FakeESPMotors.speed_mm_s = 0  # déplacements instantanés
     os.environ["ROBOT_CONFIG"] = robot_sim.prepare_config("127.0.0.1")
+    os.environ.setdefault("ROBOT_TELEMETRY_DIR", os.path.dirname(os.environ["ROBOT_CONFIG"]))
     robot_sim.install_fakes()
     sys.path.insert(0, robot_sim.RASP)
     os.chdir(robot_sim.RASP)

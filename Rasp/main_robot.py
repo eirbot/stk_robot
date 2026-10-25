@@ -10,6 +10,7 @@ import webview
 import hardware
 import ihm.shared as shared
 from strat.main_strat import strat_loop
+from utils.telemetry_logger import telemetry
 
 # e_machine ELF -> platform.machine()
 _ELF_ARCH = {0x3E: "x86_64", 0xB7: "aarch64", 0x28: "armv7l"}
@@ -42,6 +43,7 @@ class RobotEffects:
         if actionneurs:
             actionneurs.debloquer()  # le match précédent a pu les bloquer (fin à 100 s / STOP)
         shared.send_led_cmd("PLAY:match_start")
+        telemetry.start()  # journal du match (page Replay)
 
     def on_match_end(self, reason):
         if reason == "timer":
@@ -55,6 +57,7 @@ class RobotEffects:
             shared.audio.stop()
             shared.audio.play("end")
         shared.send_led_cmd("MATCH_STOP")
+        telemetry.stop()
 
     def on_stop(self):
         esp, actionneurs = self._hw()
@@ -62,6 +65,7 @@ class RobotEffects:
             esp.stop_robot()
         if actionneurs:
             actionneurs.bloquer()
+        telemetry.stop()
 
     def on_reset(self):
         _, actionneurs = self._hw()

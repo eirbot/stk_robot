@@ -84,6 +84,8 @@ class ZmqClient(threading.Thread):
             "play_audio": lambda p: shared.audio.play(p.get("filename") if isinstance(p, dict) else p),
             "stop_audio": lambda p: shared.audio.stop(),
             "set_volume": lambda p: shared.audio.set_volume(int(p.get("volume", 50))),
+            "led_cmd": self._on_led_cmd,
+            "led_animations": self._on_led_animations,
         }
 
     def _handle_msg(self, msg_str):
@@ -184,6 +186,26 @@ class ZmqClient(threading.Thread):
             unit[cmd]()
         else:
             print(f"[ZMQ CLIENT] Ordre actionneur inconnu : {cmd}")
+
+    # Commandes acceptées par le service LED (utils/led_service.py), envoyées par la base
+    LED_COMMANDS = ("OFF", "RELOAD", "COLOR:", "PIXEL:", "PLAY:", "BRIGHTNESS:")
+
+    def _on_led_cmd(self, cmd):
+        if isinstance(cmd, str) and "\n" not in cmd and cmd.startswith(self.LED_COMMANDS):
+            shared.send_led_cmd(cmd)
+        else:
+            print(f"[ZMQ CLIENT] Commande LED refusée : {cmd!r}")
+
+    def _on_led_animations(self, animations):
+        """Animations éditées dans le LED Studio : enregistrées puis rechargées par le service LED."""
+        if not isinstance(animations, dict):
+            return
+        path = os.path.join(shared.ROOT_DIR, "config_led_animations.json")
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(animations, f, indent=4, ensure_ascii=False)
+        os.replace(tmp, path)
+        shared.send_led_cmd("RELOAD")
 
     def _on_goto(self, payload):
         x, y, theta = float(payload.get("x", 0)), float(payload.get("y", 0)), float(payload.get("theta", 0))

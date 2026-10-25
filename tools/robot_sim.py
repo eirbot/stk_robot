@@ -163,6 +163,7 @@ def start_robot(server="127.0.0.1", config_path=None, tirette_inserted=False):
     """Démarre le code robot (client ZMQ, tâches de fond, stratégie) avec du faux matériel.
     Renvoie le module ihm.shared."""
     os.environ["ROBOT_CONFIG"] = config_path or prepare_config(server)
+    os.environ.setdefault("ROBOT_TELEMETRY_DIR", tempfile.mkdtemp(prefix="robot_sim_logs_"))
     install_fakes()
     if RASP not in sys.path:
         sys.path.insert(0, RASP)
