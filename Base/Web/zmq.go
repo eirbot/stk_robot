@@ -46,22 +46,11 @@ func pipelineReceptionRobot() {
 					}
 					globalState.Telemetry = tel
 
-
 					// Allègement trame : pour la télémétrie haute fréquence (10Hz),
 					// on n'embarque pas le dictionnaire Config complet (économise ~88% de bande passante et CPU client)
 					packet, _ := json.Marshal(map[string]interface{}{
 						"type": "state_update",
-						"data": map[string]interface{}{
-							"match_running":     globalState.MatchRunning,
-							"match_finished":    globalState.MatchFinished,
-							"team":              globalState.Team,
-							"timer_str":         globalState.TimerStr,
-							"fsm_state":         globalState.FsmState,
-							"obstacle_detected": globalState.ObstacleDetected,
-							"obstacle_type":     globalState.ObstacleType,
-							"telemetry":         globalState.Telemetry,
-							"vision_pose":       globalState.VisionPose,
-						},
+						"data": lightStateLocked(),
 					})
 					globalState.Unlock()
 
@@ -147,20 +136,9 @@ func pipelineReceptionRobot() {
 						}
 					}
 
-
 					// Paquet allégé (timer_str change toutes les 100 ms en match) :
 					// la Config n'est jointe que si le robot l'a modifiée
-					data := map[string]interface{}{
-						"match_running":     globalState.MatchRunning,
-						"match_finished":    globalState.MatchFinished,
-						"team":              globalState.Team,
-						"timer_str":         globalState.TimerStr,
-						"fsm_state":         globalState.FsmState,
-						"obstacle_detected": globalState.ObstacleDetected,
-						"obstacle_type":     globalState.ObstacleType,
-						"telemetry":         globalState.Telemetry,
-						"vision_pose":       globalState.VisionPose,
-					}
+					data := lightStateLocked()
 					if update.Config != nil {
 						data["config"] = globalState.Config
 					}
@@ -198,22 +176,29 @@ func pipelineReceptionRobot() {
 				globalState.Telemetry = tel
 				packet, _ := json.Marshal(map[string]interface{}{
 					"type": "state_update",
-					"data": map[string]interface{}{
-						"match_running":     globalState.MatchRunning,
-						"match_finished":    globalState.MatchFinished,
-						"team":              globalState.Team,
-						"timer_str":         globalState.TimerStr,
-						"fsm_state":         globalState.FsmState,
-						"obstacle_detected": globalState.ObstacleDetected,
-						"obstacle_type":     globalState.ObstacleType,
-						"telemetry":         globalState.Telemetry,
-					},
+					"data": lightStateLocked(),
 				})
 				globalState.Unlock()
 
 				globalHub.Broadcast(packet)
 			}
 		}
+	}
+}
+
+// État allégé (sans la Config, qui pèse lourd) pour les mises à jour fréquentes (télémétrie à 10 Hz,
+// chrono). À appeler sous globalState.Lock().
+func lightStateLocked() map[string]interface{} {
+	return map[string]interface{}{
+		"match_running":     globalState.MatchRunning,
+		"match_finished":    globalState.MatchFinished,
+		"team":              globalState.Team,
+		"timer_str":         globalState.TimerStr,
+		"fsm_state":         globalState.FsmState,
+		"obstacle_detected": globalState.ObstacleDetected,
+		"obstacle_type":     globalState.ObstacleType,
+		"telemetry":         globalState.Telemetry,
+		"vision_pose":       globalState.VisionPose,
 	}
 }
 

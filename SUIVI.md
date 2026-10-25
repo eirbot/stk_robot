@@ -243,6 +243,14 @@ les refontes sont acceptées.
   autonome ; un joystick égaré annulait les GoTo de la stratégie), signalé dans les journaux (au plus toutes les 2 s).
   Test : `test_6_commandes_manuelles_refusees_pendant_match`.
 
+### Base Go découpée (2026-10-25)
+- `routes.go` (881 -> 383 lignes) : pages, commandes robot, WebSocket. Sortis : `vision.go` (worker vision +
+  routes /api/vision, /api/stream_usb), `flash.go` (/api/update_rasp, /api/flash_esp, flashMutex),
+  `strategies.go` (liste / lecture / sauvegarde Blockly) ; `fileExists` dans settings.go.
+- `zmq.go` : état allégé construit par `lightStateLocked()` (était recopié 3 fois). `gofmt` propre partout.
+- Tests e2e base + robot sautés sur ce PC : un `base_stk` de test (`/tmp/e2e_1g2nq6jw/base_stk`, lancé le
+  2026-10-24) occupe leurs ports (18080, 15555, 15556) ; à tuer à la main. Le test ne l'a pas arrêté : à vérifier.
+
 ## À faire
 
 ### Sur le matériel (priorité, rien de tout ça n'a été essayé)

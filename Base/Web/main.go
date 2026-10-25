@@ -78,7 +78,7 @@ func main() {
 		log.Fatalf("Impossible de créer le socket ZMQ PUB : %v", err)
 	}
 	defer zmqPublisher.Close()
-	
+
 	err = zmqPublisher.Bind("tcp://*:" + zmqBasePort)
 	if err != nil {
 		log.Fatalf("Impossible de lier le socket ZMQ PUB au port %s : %v", zmqBasePort, err)

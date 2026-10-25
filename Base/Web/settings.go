@@ -40,6 +40,11 @@ func envOr(key, def string) string {
 	return def
 }
 
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
 func isProjectRoot(dir string) bool {
 	return fileExists(filepath.Join(dir, "ESP", "platformio.ini")) && fileExists(filepath.Join(dir, "Rasp", "main_robot.py"))
 }
