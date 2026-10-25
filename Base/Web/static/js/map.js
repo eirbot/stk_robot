@@ -32,7 +32,7 @@ const threeToRobot = EirbotFrames.threeToRobot;
 
 let scene, camera, renderer, controls;
 let robotGroup, visionGroup, lidarScanGroup;
-let robotMaterial, visionMaterial;
+let robotMaterial, visionMaterial, footprintMaterial;
 let targetSphere = null;
 
 let robotPos = { x: 1000, y: 0, theta: 0 }; // theta en degrés
@@ -125,6 +125,10 @@ function init3D() {
 // CONSTRUCTION DES OBJETS DE LA SCÈNE
 // -----------------------------------------------------------------------------
 function createTable() {
+    // Table simplifiée (boîtes), remplacée par le modèle MuJoCo dès qu'il est chargé
+    const fallback = new THREE.Group();
+    scene.add(fallback);
+
     // Plateau principal (boîte de 3000 x 2000 x 20 mm)
     const tableGeo = new THREE.BoxGeometry(TABLE_L_MM, TABLE_W_MM, 20);
     const tableMat = new THREE.MeshStandardMaterial({
@@ -136,7 +140,7 @@ function createTable() {
     // Table centrée en (0,0) - Sa surface supérieure est à Z=0
     tableMesh.position.set(0, 0, -10);
     tableMesh.receiveShadow = true;
-    scene.add(tableMesh);
+    fallback.add(tableMesh);
 
     // Bordures de la table (tasseaux protecteurs de 70 mm de haut)
     const borderMat = new THREE.MeshStandardMaterial({ color: 0x090a0d, roughness: 0.9 });
@@ -145,19 +149,19 @@ function createTable() {
 
     const borderSouth = new THREE.Mesh(borderGeoLong, borderMat);
     borderSouth.position.set(0, -TABLE_W_MM / 2 - 5, 15);
-    scene.add(borderSouth);
+    fallback.add(borderSouth);
 
     const borderNorth = new THREE.Mesh(borderGeoLong, borderMat);
     borderNorth.position.set(0, TABLE_W_MM / 2 + 5, 15);
-    scene.add(borderNorth);
+    fallback.add(borderNorth);
 
     const borderWest = new THREE.Mesh(borderGeoWide, borderMat);
     borderWest.position.set(-TABLE_L_MM / 2 - 5, 0, 15);
-    scene.add(borderWest);
+    fallback.add(borderWest);
 
     const borderEast = new THREE.Mesh(borderGeoWide, borderMat);
     borderEast.position.set(TABLE_L_MM / 2 + 5, 0, 15);
-    scene.add(borderEast);
+    fallback.add(borderEast);
 
     // Quadrillage décoratif tous les 100 mm
     const gridColor = 0x2e3846;
@@ -184,98 +188,79 @@ function createTable() {
         gridGroup.add(line);
     }
     scene.add(gridGroup);
+
+    loadMujocoTable(fallback, gridGroup);
+}
+
+// Repère des modèles MuJoCo = repère table/robot en mètres (x 0..2, y -1,5..1,5).
+// Vers la scène : X_three = Y_robot, Y_three = 1000 - X_robot, soit une rotation de -90°
+// autour de Z puis une translation de +1000 en Y (cf. robotToThree).
+function loadMujocoTable(fallback, gridGroup) {
+    if (!window.EirbotMujoco) return;
+    EirbotMujoco.load('/models/table/table.xml', { shadows: true }).then(model => {
+        model.scale.setScalar(1000);
+        model.rotation.z = -Math.PI / 2;
+        model.position.set(0, TABLE_W_MM / 2, 0);
+        scene.add(model);
+        scene.remove(fallback);
+        gridGroup.visible = false;  // le tapis de jeu du modèle remplace le quadrillage
+        console.log("[MAP 3D] Table MuJoCo chargée");
+    }).catch(e => console.warn("[MAP 3D] Modèle de table indisponible, table simplifiée :", e));
+}
+
+// Corps simplifié aux vraies dimensions (EirbotFrames.ROBOT) : l'axe des roues (origine du
+// groupe, X local = avant) est à 102 mm de l'arrière et 245,5 mm de l'avant
+function robotBox(material, noseMaterial) {
+    const R = EirbotFrames.ROBOT;
+    const group = new THREE.Group();
+    const length = R.FRONT_MM + R.BACK_MM;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(length, 2 * R.HALF_WIDTH_MM, 250), material);
+    body.position.set((R.FRONT_MM - R.BACK_MM) / 2, 0, 125);
+    body.castShadow = body.receiveShadow = true;
+    group.add(body);
+    // Nez indiquant l'avant (cône pointant vers +X local)
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(50, 100, 4), noseMaterial);
+    nose.rotation.z = -Math.PI / 2;
+    nose.position.set(R.FRONT_MM, 0, 125);
+    group.add(nose);
+    return group;
+}
+
+// Empreinte au sol (couleur d'équipe), visible aussi sous le modèle détaillé
+function robotFootprint(material) {
+    const R = EirbotFrames.ROBOT;
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(R.FRONT_MM + R.BACK_MM, 2 * R.HALF_WIDTH_MM), material);
+    plate.position.set((R.FRONT_MM - R.BACK_MM) / 2, 0, 1.5);
+    return plate;
 }
 
 function createRobots() {
     // --- ROBOT PRINCIPAL ---
     robotGroup = new THREE.Group();
-
-    // Couleur d'équipe (Bleue par défaut)
-    robotMaterial = new THREE.MeshStandardMaterial({
-        color: 0x007bff,
-        roughness: 0.4,
-        metalness: 0.2
-    });
-
-    // Corps géométrique simple (Box de 300x300x250 mm) reposant sur Z=0
-    const bodyGeo = new THREE.BoxGeometry(300, 300, 250);
-    const bodyMesh = new THREE.Mesh(bodyGeo, robotMaterial);
-    bodyMesh.position.z = 125;
-    bodyMesh.castShadow = true;
-    bodyMesh.receiveShadow = true;
-    robotGroup.add(bodyMesh);
-
-    // Nez indiquant l'avant (Cône rouge pointant vers le +X local, car 0 rad = vers X+)
-    const noseGeo = new THREE.ConeGeometry(50, 100, 4);
+    robotMaterial = new THREE.MeshStandardMaterial({ color: 0x007bff, roughness: 0.4, metalness: 0.2 });
     const noseMat = new THREE.MeshStandardMaterial({ color: 0xff3333, roughness: 0.5 });
-    const noseMesh = new THREE.Mesh(noseGeo, noseMat);
-    noseMesh.rotation.z = -Math.PI / 2; // Oriente le cône vers X+ local
-    noseMesh.position.set(150, 0, 125);
-    noseMesh.castShadow = true;
-    robotGroup.add(noseMesh);
-
-    // Roues (Cylindres noirs sur l'axe Y local, permettant de rouler vers X)
-    const wheelGeo = new THREE.CylinderGeometry(60, 60, 30, 16);
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
-
-    const leftWheel = new THREE.Mesh(wheelGeo, wheelMat);
-    leftWheel.position.set(0, 165, 60);
-    leftWheel.castShadow = true;
-    robotGroup.add(leftWheel);
-
-    const rightWheel = new THREE.Mesh(wheelGeo, wheelMat);
-    rightWheel.position.set(0, -165, 60);
-    rightWheel.castShadow = true;
-    robotGroup.add(rightWheel);
-
+    const simple = robotBox(robotMaterial, noseMat);
+    robotGroup.add(simple);
+    footprintMaterial = new THREE.MeshBasicMaterial({ color: 0x007bff, transparent: true, opacity: 0.45 });
+    robotGroup.add(robotFootprint(footprintMaterial));
     scene.add(robotGroup);
 
-    // -------------------------------------------------------------------------
-    // CODE DE CHARGEMENT D'UN MODÈLE 3D EXTERNE (.GLTF / .GLB)
-    // -------------------------------------------------------------------------
-    /*
-    const loader = new THREE.GLTFLoader();
-    loader.load('/static/models/robot.glb', (gltf) => {
-        const model = gltf.scene;
-        model.scale.set(1, 1, 1);
-        model.traverse(child => {
-            if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-            }
-        });
-        
-        robotGroup.remove(bodyMesh);
-        robotGroup.remove(noseMesh);
-        robotGroup.remove(leftWheel);
-        robotGroup.remove(rightWheel);
-        robotGroup.add(model);
-        console.log("[MAP 3D] Modèle 3D GLTF chargé.");
-    });
-    */
+    // Modèle détaillé (31 Mo de maillages) : pas sur l'écran du robot (?mode=robot)
+    const robotScreen = new URLSearchParams(window.location.search).get('mode') === 'robot';
+    if (window.EirbotMujoco && !robotScreen) {
+        EirbotMujoco.load('/models/robot/robot.xml', { shadows: true }).then(model => {
+            model.scale.setScalar(1000);  // repère du modèle = repère robot (X avant), en mètres
+            robotGroup.add(model);
+            robotGroup.remove(simple);
+            console.log("[MAP 3D] Robot MuJoCo chargé");
+        }).catch(e => console.warn("[MAP 3D] Modèle du robot indisponible, robot simplifié :", e));
+    }
 
-    // --- ROBOT GHOST (VISION ZENITHALE) ---
-    // Représente la position détectée par la caméra zénithale en cyan semi-transparent
+    // --- ROBOT FANTÔME (VISION ZÉNITHALE) ---
+    // Position vue par la caméra zénithale, en cyan semi-transparent
     visionGroup = new THREE.Group();
-    visionMaterial = new THREE.MeshBasicMaterial({
-        color: 0x00d2ff, // Cyan zénithal
-        transparent: true,
-        opacity: 0.35
-    });
-
-    const vMesh = new THREE.Mesh(bodyGeo, visionMaterial);
-    vMesh.position.z = 125;
-    visionGroup.add(vMesh);
-
-    const vNose = new THREE.Mesh(noseGeo, new THREE.MeshBasicMaterial({
-        color: 0x00d2ff,
-        transparent: true,
-        opacity: 0.5
-    }));
-    vNose.rotation.z = -Math.PI / 2;
-    vNose.position.set(150, 0, 125);
-    visionGroup.add(vNose);
-
+    visionMaterial = new THREE.MeshBasicMaterial({ color: 0x00d2ff, transparent: true, opacity: 0.35 });
+    visionGroup.add(robotBox(visionMaterial, new THREE.MeshBasicMaterial({ color: 0x00d2ff, transparent: true, opacity: 0.5 })));
     visionGroup.visible = false;
     scene.add(visionGroup);
 }
@@ -459,6 +444,7 @@ function updateTeamColor() {
         const teamColor = (currentTeam === 'JAUNE') ? 0xffa600 : 0x007bff;
         robotMaterial.color.setHex(teamColor);
     }
+    if (footprintMaterial) footprintMaterial.color.setHex((currentTeam === 'JAUNE') ? 0xffa600 : 0x007bff);
 }
 
 function updateUI() {

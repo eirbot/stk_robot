@@ -10,11 +10,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // 0. CONFIGURATION
     // ============================================================
 
-    // Orientation Image Robot :
-    // 'RIGHT' (->), 'UP' (^), 'LEFT' (<), 'DOWN' (v)
-    // Réglé sur 'DOWN' car ton image nécessite une rotation de 180°
-    const ROBOT_IMAGE_ORIENTATION = 'DOWN';
-
     const TABLE_WIDTH = 3000;
     const TABLE_HEIGHT = 2000;
     const GRID_STEP = 200; // Quadrillage tous les 200mm
@@ -23,8 +18,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const DEFAULT_START_X = 250;
     const DEFAULT_START_Y = 0;
     const DEFAULT_START_THETA = 0;
-    const ROBOT_WIDTH_MM = 320;
-    const ROBOT_LENGTH_MM = 370;
+    // Encombrement réel du robot (modèle MuJoCo) : cf. EirbotFrames.ROBOT dans frames.js
+    const ROBOT = EirbotFrames.ROBOT;
+    const WHEEL_Y_MM = 157.2;   // roues à ±157,2 mm de l'axe (modèle MuJoCo)
+    const WHEEL_R_MM = 36;      // diamètre 72 mm
 
 
     // ============================================================
@@ -413,7 +410,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
     const imgTable = document.getElementById('imgTable');
-    const imgRobot = document.getElementById('imgRobot');
     const consoleDiv = document.getElementById('simConsole');
 
     // Création de l'infobulle (Tooltip) pour la souris
@@ -536,8 +532,8 @@ document.addEventListener("DOMContentLoaded", function () {
             if (dist > 0) {
                 let nx = dx / dist;
                 let ny = dy / dist;
-                let offsetX = -ny * (ROBOT_WIDTH_MM / 2);
-                let offsetY = nx * (ROBOT_WIDTH_MM / 2);
+                let offsetX = -ny * ROBOT.HALF_WIDTH_MM;
+                let offsetY = nx * ROBOT.HALF_WIDTH_MM;
 
                 // Points des bords
                 let p0L = worldToScreen(bz.p0.x + offsetX, bz.p0.y + offsetY);
@@ -565,21 +561,41 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    function drawRobotFootprint(x_mm, y_mm, theta, color) {
-        let screenPos = worldToScreen(x_mm, y_mm);
-        const scaleX = canvas.width / TABLE_WIDTH;
-        const w = ROBOT_WIDTH_MM * scaleX;
-        const l = ROBOT_LENGTH_MM * scaleX;
+    // Polygone en coordonnées table (mm) -> tracé à l'écran
+    function tracePolygon(points) {
+        ctx.beginPath();
+        points.forEach((p, i) => {
+            const sp = worldToScreen(p.x, p.y);
+            if (i === 0) ctx.moveTo(sp.x, sp.y); else ctx.lineTo(sp.x, sp.y);
+        });
+        ctx.closePath();
+    }
 
-        ctx.save();
-        ctx.translate(screenPos.x, screenPos.y);
-        let rotationRad = -theta * (Math.PI / 180) + Math.PI / 2;
-        ctx.fillStyle = color;
-        ctx.fillRect(-w / 2, -l / 2, w, l);
-        ctx.strokeStyle = "rgba(255, 0, 0, 0.3)";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(-w / 2, -l / 2, w, l);
-        ctx.restore();
+    // Point du repère robot (fx vers l'avant, fy vers la gauche) -> repère table
+    function robotPoint(fx, fy) {
+        const t = robot.theta * Math.PI / 180, c = Math.cos(t), s = Math.sin(t);
+        return { x: robot.x + fx * c - fy * s, y: robot.y + fx * s + fy * c };
+    }
+
+    // Robot à l'échelle : encombrement réel (l'axe des roues n'est pas au centre), roues, flèche avant
+    function drawRobot() {
+        tracePolygon(EirbotFrames.robotCorners(robot.x, robot.y, robot.theta));
+        ctx.fillStyle = "rgba(0, 123, 255, 0.55)";
+        ctx.fill();
+        ctx.strokeStyle = "#003d80";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = "#111";
+        for (const side of [1, -1]) {
+            tracePolygon([robotPoint(WHEEL_R_MM, side * (WHEEL_Y_MM + 12)), robotPoint(WHEEL_R_MM, side * (WHEEL_Y_MM - 12)),
+                          robotPoint(-WHEEL_R_MM, side * (WHEEL_Y_MM - 12)), robotPoint(-WHEEL_R_MM, side * (WHEEL_Y_MM + 12))]);
+            ctx.fill();
+        }
+
+        tracePolygon([robotPoint(ROBOT.FRONT_MM - 10, 0), robotPoint(ROBOT.FRONT_MM - 90, 60), robotPoint(ROBOT.FRONT_MM - 90, -60)]);
+        ctx.fillStyle = "#ff3333";
+        ctx.fill();
     }
 
     // BOUCLE DE RENDU PRINCIPALE
@@ -656,35 +672,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // 5. Robot
         let screenPos = worldToScreen(robot.x, robot.y);
-        const robotSizePx = (370 / TABLE_WIDTH) * canvas.width;
-
-        ctx.save();
-        ctx.translate(screenPos.x, screenPos.y);
-
-        // Gestion Rotation : Adaptation au nouveau repère
-        // Dans le repère map: MapTheta=0 -> X_map (vers le bas)
-        // MapTheta=90 -> Y_map (vers la droite sur l'écran)
-        let rotationRad = -robot.theta * (Math.PI / 180) + Math.PI / 2;
-
-        // Correction Orientation Image
-        if (ROBOT_IMAGE_ORIENTATION === 'UP') rotationRad += Math.PI / 2;
-        if (ROBOT_IMAGE_ORIENTATION === 'DOWN') rotationRad -= Math.PI / 2;
-        if (ROBOT_IMAGE_ORIENTATION === 'LEFT') rotationRad += Math.PI;
-
-        ctx.rotate(rotationRad);
-
-        if (imgRobot.complete && imgRobot.naturalHeight !== 0) {
-            ctx.drawImage(imgRobot, -robotSizePx / 2, -robotSizePx / 2, robotSizePx, robotSizePx);
-        } else {
-            // Dessin secours
-            ctx.fillStyle = "#007bff";
-            ctx.beginPath();
-            ctx.moveTo(robotSizePx / 2, 0);
-            ctx.lineTo(-robotSizePx / 2, -robotSizePx / 2);
-            ctx.lineTo(-robotSizePx / 2, robotSizePx / 2);
-            ctx.fill();
-        }
-        ctx.restore();
+        const robotSizePx = (2 * ROBOT.HALF_WIDTH_MM / TABLE_WIDTH) * canvas.width;
+        drawRobot();
 
         // 6. Icone Action
         if (robot.currentIcon) {

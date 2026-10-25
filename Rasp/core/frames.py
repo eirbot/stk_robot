@@ -76,6 +76,24 @@ def apply_camera_repere(x, y, theta, repere=None):
                        float(r.get("rotation_deg", 0.0)))
 
 
+# Encombrement du robot autour de son point de référence (milieu de l'axe des roues, celui de
+# l'odométrie), mesuré sur le modèle MuJoCo (tools/encombrement_robot.py) ; même valeurs dans frames.js.
+# L'axe des roues n'est PAS au centre du robot : 245,5 mm devant, 102 mm derrière.
+ROBOT_FRONT_MM = 245.5
+ROBOT_BACK_MM = 102.0
+ROBOT_HALF_WIDTH_MM = 188.2
+ROBOT_HEIGHT_MM = 450.0
+
+
+def robot_corners(x, y, theta):
+    """Coins de l'encombrement (repère table) : avant gauche, avant droit, arrière droit, arrière gauche."""
+    t = math.radians(theta)
+    c, s = math.cos(t), math.sin(t)
+    return [(x + fx * c - fy * s, y + fx * s + fy * c)
+            for fx, fy in ((ROBOT_FRONT_MM, ROBOT_HALF_WIDTH_MM), (ROBOT_FRONT_MM, -ROBOT_HALF_WIDTH_MM),
+                           (-ROBOT_BACK_MM, -ROBOT_HALF_WIDTH_MM), (-ROBOT_BACK_MM, ROBOT_HALF_WIDTH_MM))]
+
+
 def offset_along(x, y, theta, distance):
     """Point à `distance` mm devant (distance > 0) ou derrière (< 0) la pose (x, y, theta)."""
     t = math.radians(theta)

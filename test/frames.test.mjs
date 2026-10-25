@@ -40,3 +40,15 @@ test('rotation Three.js : theta=90 (vers +Y robot = droite) -> 0 rad', () => {
     close(F.thetaToThreeRad(90), 0);
     close(F.thetaToThreeRad(0), -Math.PI / 2);
 });
+
+test('encombrement du robot : mêmes coins que frames.py', () => {
+    // theta = 0 : l'avant est vers +X ; la gauche du robot vers +Y
+    const c0 = F.robotCorners(1000, 0, 0);
+    close(c0[0].x, 1000 + F.ROBOT.FRONT_MM);
+    close(c0[0].y, F.ROBOT.HALF_WIDTH_MM);
+    close(c0[2].x, 1000 - F.ROBOT.BACK_MM);
+    // theta = 90 : l'avant est vers +Y
+    const c90 = F.robotCorners(1000, 0, 90);
+    close(c90[0].y, F.ROBOT.FRONT_MM);
+    close(c90[0].x, 1000 - F.ROBOT.HALF_WIDTH_MM);
+});

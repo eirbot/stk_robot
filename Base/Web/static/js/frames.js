@@ -32,7 +32,21 @@
         return ((thetaDeg || 0) - 90) * Math.PI / 180;
     }
 
-    const api = { normalizeDeg, mirrorForTeam, robotToThree, threeToRobot, thetaToThreeRad };
+    // Encombrement du robot autour de son point de référence (milieu de l'axe des roues,
+    // celui de l'odométrie), mesuré sur le modèle MuJoCo : tools/encombrement_robot.py.
+    // L'axe des roues n'est PAS au centre du robot : 245,5 mm devant, 102 mm derrière.
+    const ROBOT = { FRONT_MM: 245.5, BACK_MM: 102.0, HALF_WIDTH_MM: 188.2, HEIGHT_MM: 450.0 };
+
+    // Coins de l'encombrement (repère table) pour la pose (x, y, theta) :
+    // avant gauche, avant droit, arrière droit, arrière gauche
+    function robotCorners(x, y, theta) {
+        const t = (theta || 0) * Math.PI / 180, c = Math.cos(t), s = Math.sin(t);
+        return [[ROBOT.FRONT_MM, ROBOT.HALF_WIDTH_MM], [ROBOT.FRONT_MM, -ROBOT.HALF_WIDTH_MM],
+                [-ROBOT.BACK_MM, -ROBOT.HALF_WIDTH_MM], [-ROBOT.BACK_MM, ROBOT.HALF_WIDTH_MM]]
+            .map(([fx, fy]) => ({ x: x + fx * c - fy * s, y: y + fx * s + fy * c }));
+    }
+
+    const api = { normalizeDeg, mirrorForTeam, robotToThree, threeToRobot, thetaToThreeRad, ROBOT, robotCorners };
     root.EirbotFrames = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

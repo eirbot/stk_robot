@@ -251,6 +251,19 @@ les refontes sont acceptées.
 - Tests e2e base + robot sautés sur ce PC : un `base_stk` de test (`/tmp/e2e_1g2nq6jw/base_stk`, lancé le
   2026-10-24) occupe leurs ports (18080, 15555, 15556) ; à tuer à la main. Le test ne l'a pas arrêté : à vérifier.
 
+### Carte 3D et Strat Studio aux vraies dimensions (2026-10-25)
+- Carte 3D (map.js) : table et robot = modèles MuJoCo de vision_deporte (servis par la base sous `/models/`,
+  `mujocoModelsDir()` dans vision.go), lus par `static/js/mujoco_model.js` (XML + STL binaires, sans
+  dépendance). Tapis de jeu texturé, bordures, pieds ; robot détaillé (31 Mo, pas chargé sur l'écran du robot).
+  Boîtes de secours aux vraies dimensions si les modèles manquent. Vérifié par capture Chromium headless.
+- Encombrement réel du robot (modèle MuJoCo, `tools/encombrement_robot.py`) : avant 245,5 mm, arrière 102 mm
+  (l'axe des roues n'est pas au centre), demi-largeur 188,2 mm, hauteur 450 mm. Dans `frames.py` / `frames.js`
+  (`ROBOT_*`, `robot_corners`), testé des deux côtés. Strat Studio : robot dessiné à l'échelle (avant 320 x 370
+  centré + image du robot 2025) ; tunnel de trajectoire à la vraie largeur.
+- À vérifier sur le robot : X du modèle MuJoCo = avant du robot (sens de marche quand theta augmente le X).
+- Routes appelées par le JS mais absentes de la base Go (restes de l'ancienne IHM Flask) : `/api/led_animations`,
+  `/api/list_audio_files`, `/api/play_animation`, `/api/play_test` -> menus Blockly vides, LED Studio et Sons cassés.
+
 ## À faire
 
 ### Sur le matériel (priorité, rien de tout ça n'a été essayé)

@@ -72,6 +72,11 @@ func setupRoutes(app *fiber.App) {
 		CacheDuration: 1 * time.Second,
 	})
 
+	// Modèles MuJoCo de vision_deporte (table, robot) : affichés tels quels par la carte 3D (map.js)
+	if dir := mujocoModelsDir(); dir != "" {
+		app.Static("/models", dir, fiber.Static{Compress: true, MaxAge: 3600})
+	}
+
 	// Pages HTML avec en-têtes anti-blocage et revalidation
 	sendPage := func(c *fiber.Ctx, relPath string) error {
 		c.Set("Cache-Control", "no-cache, must-revalidate")

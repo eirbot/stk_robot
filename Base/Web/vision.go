@@ -22,6 +22,19 @@ var (
 	visionMutex sync.Mutex
 )
 
+// Modèles MuJoCo (export Onshape) du sous-module vision_deporte ; "" s'il n'est pas récupéré
+func mujocoModelsDir() string {
+	dir := findVisionDir()
+	if dir == "" {
+		return ""
+	}
+	models := filepath.Join(dir, "vision_deporte", "src", "vision_deporte", "models")
+	if !fileExists(filepath.Join(models, "table", "table.xml")) {
+		return ""
+	}
+	return models
+}
+
 func findVisionDir() string {
 	candidates := []string{
 		"Vision",

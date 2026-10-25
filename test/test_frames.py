@@ -111,3 +111,23 @@ class TestConversions(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestEncombrement(unittest.TestCase):
+    def test_coins(self):
+        c0 = frames.robot_corners(1000, 0, 0)
+        self.assertAlmostEqual(c0[0][0], 1000 + frames.ROBOT_FRONT_MM)
+        self.assertAlmostEqual(c0[0][1], frames.ROBOT_HALF_WIDTH_MM)
+        self.assertAlmostEqual(c0[2][0], 1000 - frames.ROBOT_BACK_MM)
+        c90 = frames.robot_corners(1000, 0, 90)
+        self.assertAlmostEqual(c90[0][1], frames.ROBOT_FRONT_MM)
+        self.assertAlmostEqual(c90[0][0], 1000 - frames.ROBOT_HALF_WIDTH_MM)
+
+    def test_memes_valeurs_que_frames_js(self):
+        import re
+        js = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                               "Base", "Web", "static", "js", "frames.js"), encoding="utf-8").read()
+        m = re.search(r"FRONT_MM: ([\d.]+), BACK_MM: ([\d.]+), HALF_WIDTH_MM: ([\d.]+), HEIGHT_MM: ([\d.]+)", js)
+        self.assertEqual(tuple(map(float, m.groups())), (frames.ROBOT_FRONT_MM, frames.ROBOT_BACK_MM,
+                                                         frames.ROBOT_HALF_WIDTH_MM, frames.ROBOT_HEIGHT_MM))
+
