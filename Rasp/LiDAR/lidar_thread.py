@@ -1,6 +1,11 @@
 """Évitement LiDAR : reçoit les tours du driver C++ (lidar_udp.cpp, UDP 127.0.0.1:8080),
 en déduit l'état d'obstacle (core/obstacles.py) et l'envoie à l'ESP moteurs (« L etat »).
 
+Le LiDAR est dans la balise (~430 mm de haut) : il ne voit que les balises des autres robots (et les
+gens autour de la table), pas les pierres. Distances = de balise à balise, donc de centre à centre :
+`lidar.seuil_mm` (550 : notre avant 245 + corps adverse ~200 + marge) devant / derrière, `lidar.proche_mm`
+(420 : demi-largeur 188 + corps adverse + marge) tout autour.
+
 Config `lidar` : `montage` (cf. core/obstacles.py), `filtre_table` (True : points hors de la table
 ignorés quand la pose est fiable), `marge_table_mm`. Les points restants (repère table) sont
 publiés dans shared.lidar_points pour le planificateur et la boîte noire.
@@ -20,14 +25,14 @@ LOG_PERIOD_S = 2.0
 
 
 class LidarCollisionThread(threading.Thread):
-    def __init__(self, robot, seuil_mm=350.0):
+    def __init__(self, robot, seuil_mm=550.0, proche_mm=420.0):
         """
         :param robot: RobotActions (envoie « L etat » à l'ESP moteurs)
         :param seuil_mm: distance de déclenchement devant / derrière (mm)
         """
         super().__init__(daemon=True, name="LidarCollision")
         self.robot = robot
-        self.detector = obstacles.ObstacleDetector(seuil_mm=seuil_mm,
+        self.detector = obstacles.ObstacleDetector(seuil_mm=seuil_mm, near_mm=proche_mm,
                                                    montage=shared.cfg.get("lidar", {}).get("montage"))
         self.running = True
 

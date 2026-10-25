@@ -39,7 +39,7 @@ DEFAUTS = {
     "marge_adversaire_mm": 450.0,   # zone de surcoût autour de lui (plus large : il bouge)
     "poids_adversaire": 6.0,
     "prediction_s": 0.8,            # position prédite de l'adversaire (vitesse estimée) gonflée aussi
-    "rayon_point_lidar_mm": 40.0,
+    "rayon_point_lidar_mm": 200.0,  # le LiDAR (dans la balise) ne voit que des balises : un point = un robot
     "poids_chaleur": 2.0,
     "tolerance_arrivee_mm": 120.0,
     "obstacles": [],                # [{"rect": [x0, y0, x1, y1]} | {"cercle": [x, y, r]}], repère table

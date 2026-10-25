@@ -50,6 +50,8 @@
     },
     "lidar": {
         "baudrate": 460800,
+        "proche_mm": 420,
+        "seuil_mm": 550,
         "filtre_table": true,
         "marge_table_mm": 40,
         "montage": {"x": 0, "y": 0, "angle": 0, "sens": 1},

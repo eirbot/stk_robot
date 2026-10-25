@@ -118,7 +118,9 @@ if __name__ == "__main__":
         from LiDAR.lidar_thread import LidarCollisionThread
         robot_instance = RobotActions()
         shared.robot = robot_instance
-        collision_thread = LidarCollisionThread(robot=robot_instance, seuil_mm=350.0)
+        lidar_cfg = shared.cfg.get("lidar", {})
+        collision_thread = LidarCollisionThread(robot=robot_instance, seuil_mm=float(lidar_cfg.get("seuil_mm", 550.0)),
+                                                proche_mm=float(lidar_cfg.get("proche_mm", 420.0)))
         collision_thread.start()
 
         # 3b. Vidéo Streaming (MJPEG pour PC déporté et cam.py)

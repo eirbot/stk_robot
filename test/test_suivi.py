@@ -82,9 +82,11 @@ class TestSuivi(unittest.TestCase):
         self.assertGreater(c.w, 0.0)
 
     def test_obstacle_devant(self):
-        pts = [(800, 0), (800, 300), (300, 0)]
-        self.assertAlmostEqual(suivi.obstacle_devant(pts, (500, 0, 0)), 300)
-        self.assertEqual(suivi.obstacle_devant(pts, (500, 0, 90)), math.inf)
+        # balises : couloir de 2 x 400 mm (notre demi-largeur + corps adverse)
+        self.assertAlmostEqual(suivi.obstacle_devant([(800, 0), (300, 0)], (500, 0, 0)), 300)
+        self.assertAlmostEqual(suivi.obstacle_devant([(800, 350)], (500, 0, 0)), 300)     # dans le couloir
+        self.assertEqual(suivi.obstacle_devant([(800, 450)], (500, 0, 0)), math.inf)      # à côté
+        self.assertEqual(suivi.obstacle_devant([(800, 0)], (500, 0, 180)), math.inf)      # derrière
 
     def test_changer_chemin(self):
         s = suivi.Suivi([(0, 0), (1000, 0)])

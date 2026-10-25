@@ -27,8 +27,8 @@ DEFAUTS = {
     "angle_rotation_deg": 50.0,    # au-delà : rotation sur place d'abord
     "gain_rotation": 3.0,          # omega = gain x erreur (deg/s par degré), borné
     "tolerance_mm": 30.0,
-    "distance_securite_mm": 600.0, # obstacle LiDAR devant (depuis le point de référence ; l'avant du
-    "distance_arret_mm": 350.0,    #  robot est à 245 mm) : vitesse réduite, nulle à distance_arret (= seuil ESP)
+    "distance_securite_mm": 850.0, # balise LiDAR devant (centre d'un autre robot ; notre avant est à 245 mm,
+    "distance_arret_mm": 500.0,    #  son corps ~200 mm) : vitesse réduite, nulle à distance_arret (< seuil ESP)
     "adv_securite_mm": 150.0,      # marge à la zone de l'adversaire : pleine vitesse au-delà,
     "adv_arret_mm": -30.0,         #  25 % de la vitesse à 0, arrêt si on est dedans de plus de 30 mm
     "v_min_mm_s": 60.0,            # en dessous, l'ESP / les pas à pas avancent mal
@@ -159,9 +159,10 @@ class Suivi:
         return Commande(self.v, w, "suivi", seg, reste)
 
 
-def obstacle_devant(points, pose, demi_largeur_mm=200.0, portee_mm=800.0):
+def obstacle_devant(points, pose, demi_largeur_mm=400.0, portee_mm=1200.0):
     """Distance (mm, depuis le point de référence) du point LiDAR le plus proche dans le couloir
-    devant le robot (largeur 2 x demi_largeur), inf s'il n'y en a pas. points : repère table."""
+    devant le robot, inf s'il n'y en a pas. points : repère table. Les points sont des balises (centres
+    d'autres robots) : couloir = notre demi-largeur (188) + corps adverse (~200)."""
     x, y, th = pose
     c, s = math.cos(math.radians(th)), math.sin(math.radians(th))
     best = math.inf

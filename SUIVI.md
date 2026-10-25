@@ -382,6 +382,11 @@ les refontes sont acceptées.
   fixes (`Navigateur.points_inexpliques`) ; robot bloqué devant un obstacle -> il tourne vers le chemin au lieu de
   rester figé (`suivi.py`) ; adversaire gardé à sa dernière position prédite au-delà de l'horizon (sinon un chemin
   lointain passait à travers un robot arrêté).
+- **LiDAR dans la balise (~430 mm)** : il ne voit que les balises des autres robots (et les gens), jamais les
+  pierres (caméra seule). Mesures de centre à centre -> seuils recalés : `lidar.seuil_mm` 550 (avant / arrière ;
+  avant : 350, contact avant l'arrêt), `lidar.proche_mm` 420 (tout autour ; avant : 130) ; un point LiDAR = un robot
+  de 200 mm de rayon pour le planificateur ; le suivi s'arrête à 500 mm d'une balise (couloir 2 x 400 mm).
+  **À vérifier en premier demain** (évitement), à copier dans le config.json du robot.
 - Pierres empilées : `nb` = hauteur du tag / 110 mm (vision -> base -> carte 3D : pile de nb boîtes + nombre,
   dessinée depuis `vision_update`, même sans planificateur). **Vérifier le signe de z** sur la vraie caméra.
 

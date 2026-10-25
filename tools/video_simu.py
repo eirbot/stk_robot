@@ -8,7 +8,8 @@ Ce qui tourne est le code réel : planificateur de la base (Rasp/core/navigation
 l'adversaire, A* dans le temps, pierres, hystérésis), suivi de trajectoire du robot (core/suivi.py,
 consignes V à 20 Hz), puis rotation finale. Seul le monde est simulé : robot différentiel (rampe
 d'accélération, un pas de retard comme l'ESP), adversaire qui fait des allers-retours au milieu de la
-table, caméra zénithale (bruit 10 mm), piles de pierres, LiDAR (72 secteurs, points hors table retirés).
+table, caméra zénithale (bruit 10 mm), piles de pierres, LiDAR dans la balise (72 secteurs) : il ne voit
+que la balise adverse, les pierres ne sont vues que par la caméra.
 Vue de dessus dans le repère de la carte 3D : Y vers la droite, X vers le bas.
 """
 
@@ -87,8 +88,12 @@ def dans_pierre(px, py, p):
     return abs(u) <= 160 and abs(v) <= 55
 
 
-def lidar(pose, adv, portee=2000.0, pas=15.0):
-    """Points (repère table) du LiDAR simulé : 72 rayons, adversaire (cylindre) et pierres."""
+RAYON_BALISE = 40.0
+
+
+def lidar(pose, adv, portee=3000.0, pas=10.0):
+    """Points (repère table) du LiDAR simulé, à hauteur de balise : seule la balise adverse (au centre de
+    l'adversaire) est vue ; les pierres sont plus basses."""
     x, y, th = pose
     pts = []
     for i in range(72):
@@ -99,7 +104,7 @@ def lidar(pose, adv, portee=2000.0, pas=15.0):
             px, py = x + d * ca, y + d * sa
             if not frames.in_table(px, py, 40):
                 break
-            if math.hypot(px - adv.x, py - adv.y) < adv.r or any(dans_pierre(px, py, p) for p in PIERRES):
+            if math.hypot(px - adv.x, py - adv.y) < RAYON_BALISE:
                 pts.append((px, py))
                 break
             d += pas
