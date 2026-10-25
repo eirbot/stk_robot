@@ -221,6 +221,14 @@ les refontes sont acceptées.
   `approcheKapla`, `thermometre`, `prendreKapla`, `poseKapla`, `pousse_kapla` (actions.py) et `pose_*`
   (esp_actionneur.py). `Rasp/Vision/cam.py` (vision Kapla) n'est plus importé : à supprimer ou refaire.
 
+### Refactor LiDAR (2026-10-25)
+- `lidar_udp.cpp` envoie, à chaque tour, le minimum de chaque secteur de 5° (paquet « LDR2 », 300 octets) au
+  lieu du seul point le plus proche ; code des balises supprimé (pas de localisation LiDAR).
+- Décision dans `Rasp/core/obstacles.py` (pur, `test/test_obstacles.py`, 15 tests) : cônes avant / arrière,
+  côtés ignorés (sauf < 130 mm -> STOP), avant + arrière -> STOP ; le délai de 1 s avant CLEAR s'applique
+  maintenant aussi à l'ESP (avant : seulement à l'affichage). `lidar_thread.py` ne garde que UDP + driver.
+- À vérifier sur le robot : le binaire est recompilé par main_robot.py (.cpp plus récent) ; seuils à régler.
+
 ## À faire
 
 ### Sur le matériel (priorité, rien de tout ça n'a été essayé)

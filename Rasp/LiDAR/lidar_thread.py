@@ -1,181 +1,123 @@
-import threading
+"""Évitement LiDAR : reçoit les tours du driver C++ (lidar_udp.cpp, UDP 127.0.0.1:8080),
+en déduit l'état d'obstacle (core/obstacles.py) et l'envoie à l'ESP moteurs (« L etat »).
+
+Le thread lance / arrête aussi le driver C++ selon `lidar_mode` (OFF : capteur arrêté).
+"""
 import socket
-import struct
+import subprocess
+import threading
 import time
 
-# On importe ton shared pour accéder à robot_pos et state
 import ihm.shared as shared
+from core import obstacles
+
+ESP_REFRESH_S = 0.5     # « L » renvoyé au moins à cette période (sinon seulement sur changement)
+LOG_PERIOD_S = 2.0
+
 
 class LidarCollisionThread(threading.Thread):
-    def __init__(self, robot, seuil_mm=300.0):
+    def __init__(self, robot, seuil_mm=350.0):
         """
-        Initialise le thread d'écoute LiDAR.
-        :param robot: L'objet ESPMotors qui contrôle tes moteurs
-        :param seuil_mm: La distance de déclenchement (en mm)
+        :param robot: RobotActions (envoie « L etat » à l'ESP moteurs)
+        :param seuil_mm: distance de déclenchement devant / derrière (mm)
         """
-        super().__init__()
+        super().__init__(daemon=True, name="LidarCollision")
         self.robot = robot
-        self.seuil_mm = seuil_mm
+        self.detector = obstacles.ObstacleDetector(seuil_mm=seuil_mm)
         self.running = True
-        self.daemon = True
 
-        # Configuration UDP
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", 8080))
-        self.sock.settimeout(2.0) 
-        
-        # Init des états
-        shared.state['obstacle_detected'] = False
-        shared.state['obstacle_type'] = 0
+        self.sock.settimeout(2.0)
 
-    def _send_esp_state(self, new_state):
-        # N'envoie "L x" que sur changement (+ rafraîchissement 0,5 s) pour ne pas saturer la série
+        self._esp_state = None
+        self._esp_state_time = 0.0
+        self._last_log = 0.0
+        self._publish(obstacles.CLEAR)
+
+    # --- Sorties -------------------------------------------------------------------------
+    def _publish(self, state):
+        """État pour l'IHM (shared.state) et pour l'ESP (sur changement + rafraîchissement)."""
+        if state != shared.state.get("obstacle_type"):
+            if state != obstacles.CLEAR:
+                print(f"[🛑 OBSTACLE] Type {state} (mode {shared.state.get('lidar_mode')})")
+            elif shared.state.get("obstacle_type"):
+                print("[✅ LIBRE] Voie libre confirmée")
+        shared.state["obstacle_detected"] = state != obstacles.CLEAR
+        shared.state["obstacle_type"] = state
         now = time.time()
-        if new_state != getattr(self, "_esp_state", None) or now - getattr(self, "_esp_state_time", 0.0) > 0.5:
-            self.robot.set_lidar_state(new_state)
-            self._esp_state = new_state
+        if state != self._esp_state or now - self._esp_state_time > ESP_REFRESH_S:
+            self.robot.set_lidar_state(state)
+            self._esp_state = state
             self._esp_state_time = now
 
-    def run(self):
-        print(f"[LIDAR THREAD] Démarrage de la surveillance. Seuil = {self.seuil_mm} mm")
-        last_log_time = time.time()
+    def _send_frame(self, scan):
+        """Point le plus proche, pour la carte de l'IHM (map.js)."""
+        if shared.zmq_client_instance:
+            shared.zmq_client_instance.send_event("lidar_frame", {
+                "obstacle": {"angle": scan.closest_angle,
+                             "distance": scan.closest_dist if scan.closest_dist > 0 else 99999.0}
+            })
 
-        last_obstacle_time = 0.0
-        clear_delay = 1.0
-        
+    # --- Driver C++ ------------------------------------------------------------------------
+    def _manage_process(self, mode):
+        """Driver lancé si le mode n'est pas OFF, arrêté sinon. False si le lancement a échoué."""
+        if mode == "OFF":
+            if shared.lidar_process is not None:
+                print("[LIDAR THREAD] LiDAR sur OFF : arrêt du capteur")
+                shared.lidar_process.terminate()
+                try:
+                    shared.lidar_process.wait(timeout=1.0)
+                except subprocess.TimeoutExpired:
+                    shared.lidar_process.kill()
+                shared.lidar_process = None
+        elif shared.lidar_process is None and shared.lidar_bin:
+            print("[LIDAR THREAD] LiDAR activé : démarrage du capteur")
+            try:
+                shared.lidar_process = subprocess.Popen([shared.lidar_bin], preexec_fn=shared.die_with_parent)
+            except OSError as e:
+                # Binaire absent / corrompu : pas de relance en boucle (CPU à 100 %, journaux saturés)
+                print(f"[LIDAR THREAD] Impossible de lancer {shared.lidar_bin} : {e}. Nouvel essai dans 5 s.")
+                return False
+        return True
+
+    # --- Boucle ------------------------------------------------------------------------------
+    def run(self):
+        print(f"[LIDAR THREAD] Surveillance démarrée, seuil {self.detector.seuil_mm:.0f} mm")
         while self.running:
             try:
                 mode = shared.state.get("lidar_mode", "OFF")
-
-                # --- DÉMARRAGE / ARRÊT PHYSIQUE DU PROCESSUS LIDAR ---
-                import subprocess
+                if not self._manage_process(mode):
+                    time.sleep(5)
+                    continue
                 if mode == "OFF":
-                    if shared.lidar_process is not None:
-                        print("[LIDAR THREAD] LiDAR sur OFF : Arrêt physique du capteur...")
-                        shared.lidar_process.terminate()
-                        try:
-                            shared.lidar_process.wait(timeout=1.0)
-                        except:
-                            shared.lidar_process.kill()
-                        shared.lidar_process = None
-                        
-                        # Reset immédiat de l'état d'obstacle
-                        shared.state["obstacle_detected"] = False
-                        shared.state["obstacle_type"] = 0
-                        self.robot.set_lidar_state(0)
-                else:
-                    if shared.lidar_process is None and shared.lidar_bin:
-                        print("[LIDAR THREAD] LiDAR activé : Démarrage physique du capteur...")
-                        try:
-                            shared.lidar_process = subprocess.Popen([shared.lidar_bin], preexec_fn=shared.die_with_parent)
-                        except OSError as e:
-                            # Binaire absent/corrompu : on ne relance pas en boucle (CPU à 100 %, logs saturés)
-                            print(f"[LIDAR THREAD] Impossible de lancer {shared.lidar_bin} : {e}. Nouvel essai dans 5 s.")
-                            time.sleep(5)
-                            continue
-
-                # Si le LiDAR est désactivé, on évite de bloquer sur la socket
-                if mode == "OFF":
+                    self.detector.update(None, "OFF", time.time())
+                    self._publish(obstacles.CLEAR)
                     time.sleep(0.1)
                     continue
 
-                # Lecture des 64 octets (obstacle 3 floats + 1 int + 12 floats de balises, ignorés)
-                data, addr = self.sock.recvfrom(64)
-                
-                if len(data) == 64:
-                    unpacked = struct.unpack('<fff i ffffffffffff', data)
-                    
-                    angle, dist, intensity = unpacked[0:3]
+                data, _ = self.sock.recvfrom(1024)
+                scan = obstacles.parse_scan(data)
+                if scan is None:
+                    continue
+                now = time.time()
+                self._send_frame(scan)
+                if now - self._last_log > LOG_PERIOD_S and scan.closest_dist > 0:
+                    print(f"[LIDAR THREAD] Ping... (obstacle le plus proche à {scan.closest_dist:.0f} mm, "
+                          f"{scan.closest_angle:.1f}°)")
+                    self._last_log = now
+                # Le mode a pu changer pendant l'attente du paquet
+                self._publish(self.detector.update(scan, shared.state.get("lidar_mode", "OFF"), now))
 
-                    # Envoi de l'obstacle le plus proche au PC (affichage sur la carte)
-                    if shared.zmq_client_instance:
-                        shared.zmq_client_instance.send_event("lidar_frame", {
-                            "obstacle": {
-                                "angle": angle,
-                                "distance": dist
-                            }
-                        })
-                    
-                    if time.time() - last_log_time > 2.0:
-                        if dist < 90000:  
-                            print(f"[LIDAR THREAD] Ping... (Obstacle à {dist:.0f} mm, Angle: {angle:.1f}°)")
-                        last_log_time = time.time()
-                        
-                    mode = shared.state.get("lidar_mode", "OFF")
-
-                    if mode == "OFF":
-                        if shared.state.get("obstacle_detected", False):
-                            print("[LIDAR] Désactivation (Mode OFF)")
-                            shared.state["obstacle_detected"] = False
-                            shared.state["obstacle_type"] = 0
-                            self.robot.set_lidar_state(0)
-                        continue
-
-                    # ====================================================
-                    # --- 1. GESTION ANTI-COLLISION (Envoi vers ESP32) ---
-                    # ====================================================
-                    this_point_obs = False
-                    this_point_type = 0 # 0: Libre, 1: 360, 2: Front, 3: Back
-
-                    if mode == "HOMOLOGATION":
-                        if 0 < dist < 500:
-                            this_point_obs = True
-                            this_point_type = 1
-                    elif mode == "MATCH":
-                        if 0 < dist < self.seuil_mm:
-                            # Normalisation angle en [-180, 180]
-                            a = angle
-                            if a > 180: a -= 360
-                            
-                            if -22.5 <= a <= 22.5:
-                                this_point_obs = True
-                                this_point_type = 2 # FRONT
-                            elif a <= -157.5 or a >= 157.5:
-                                this_point_obs = True
-                                this_point_type = 3 # BACK
-                            elif -45 <= a <= 45:
-                                if dist < self.seuil_mm * 0.7:
-                                    this_point_obs = True
-                                    this_point_type = 2
-                            elif a <= -45 and a >= -135 or a >= 45 and a <= 135:
-                                if dist < self.seuil_mm * 0.7:
-                                    this_point_obs = True
-                                    this_point_type = 3
-                            if dist < 130: # on regarde autour du robot si jamais il y a un obstacle trop proche
-                                this_point_obs = True
-                                this_point_type = 1
-
-                    if this_point_obs:
-                        last_obstacle_time = time.time()
-                        
-                        # Si l'obstacle change de type ou qu'on ne l'avait pas encore vu
-                        if shared.state.get("obstacle_type", 0) != this_point_type:
-                            print(f"[🛑 OBSTACLE] Type {this_point_type} à {dist:.0f} mm (Mode: {mode})")
-                            shared.state["obstacle_detected"] = True
-                            shared.state["obstacle_type"] = this_point_type
-                        self._send_esp_state(this_point_type)
-
-                    else:
-                        # Délai de sécurité avant de relancer l'ESP32
-                        if shared.state.get("obstacle_detected", False):
-                            if time.time() - last_obstacle_time > clear_delay:
-                                print(f"[✅ LIBRE] Voie libre confirmée !")
-                                shared.state["obstacle_detected"] = False
-                                shared.state["obstacle_type"] = 0
-                        self._send_esp_state(0)
-                        
             except socket.timeout:
                 if shared.state.get("lidar_mode", "OFF") != "OFF":
                     print("[⚠️ ALERTE] Perte de com LiDAR. Arrêt par sécurité.")
-                    # Sans LiDAR on ne peut plus éviter : on bloque les moteurs jusqu'au retour des trames
-                    shared.state["obstacle_detected"] = True
-                    shared.state["obstacle_type"] = 1
-                    self._send_esp_state(1)
+                    self._publish(self.detector.on_timeout(time.time()))
             except Exception as e:
                 if self.running:
                     print(f"[LIDAR THREAD] Erreur : {e}")
-                    time.sleep(0.5)  # Pas de boucle d'erreurs à pleine vitesse
-                
+                    time.sleep(0.5)  # pas de boucle d'erreurs à pleine vitesse
+
     def stop(self):
         self.running = False
         self.sock.close()

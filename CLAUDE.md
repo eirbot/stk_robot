@@ -18,7 +18,7 @@ Répondre en français. Réponses courtes : le résultat, pas le récit des éta
 - `Base/Web/` : serveur Go (fiber + zmq4/cgo) -> binaire `Base/base_stk`, compilé par `Base/build.sh`, lancé depuis `Base/`. Pages `templates/*.html` + `static/js/*.js`.
 - `Base/Vision/` : `vision_deporte_worker.py` (caméra zénithale -> pose) + sous-module `vision_deporte/` (uv).
 - `docu/` : règles Eurobot (PDF), protocole LiDAR.
-- `Rasp/core/` : modules purs, testés sans robot : `match_state.py` (seul écrivain de l'état du match), `config_store.py` (config du robot), `frames.py` (repères), `localisation.py` (fusion odométrie + caméra).
+- `Rasp/core/` : modules purs, testés sans robot : `match_state.py` (seul écrivain de l'état du match), `config_store.py` (config du robot), `frames.py` (repères), `localisation.py` (fusion odométrie + caméra), `obstacles.py` (tours LiDAR -> état d'évitement L 0..3).
 - `tools/` : `deploy.sh`, `run_tests.sh`, `robot_sim.py` (robot simulé), `check_strategy.py`, `regler_fusion.py` (réglage de la fusion depuis un enregistrement), `win95_icons.py` (génère `static/icons/win95.svg`, ne pas éditer le SVG à la main), `calibrer_camera.py` (échelle/repère caméra). Tests Python/JS dans `test/`.
 
 ## Repère et conventions
