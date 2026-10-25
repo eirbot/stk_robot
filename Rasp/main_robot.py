@@ -117,6 +117,7 @@ if __name__ == "__main__":
         from strat.actions import RobotActions
         from LiDAR.lidar_thread import LidarCollisionThread
         robot_instance = RobotActions()
+        shared.robot = robot_instance
         collision_thread = LidarCollisionThread(robot=robot_instance, seuil_mm=350.0)
         collision_thread.start()
 

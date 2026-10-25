@@ -39,6 +39,7 @@ class ESPMotors:
         self.errors = []  # dernières trames « E » de l'ESP
         # Dernier instant où l'odométrie a bougé (sert à savoir si le robot est immobile)
         self.last_motion_time = time.time()
+        self.last_rx_time = None       # dernière trame reçue de l'ESP (check-list avant match)
         self._last_pose = None
 
         # Battement de cœur / watchdog liaison ESP
@@ -196,6 +197,7 @@ class ESPMotors:
     def _process_message(self, msg):
         """Déchiffre le message et met à jour l'état partagé du robot."""
         # print(f"[MOTORS] <- {msg}") # Décommenter pour le debug
+        self.last_rx_time = time.time()
         
         if msg.startswith("T "):
             try:

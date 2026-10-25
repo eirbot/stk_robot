@@ -52,10 +52,18 @@ func (t *RobotTelemetry) UnmarshalJSON(data []byte) error {
 
 // Pose détectée par la caméra zénithale (indépendante de l'odométrie roues)
 type VisionPose struct {
-	X        float64 `json:"x"`
-	Y        float64 `json:"y"`
-	Theta    float64 `json:"theta"` // En degrés
-	Detected bool    `json:"detected"`
+	X           float64      `json:"x"`
+	Y           float64      `json:"y"`
+	Theta       float64      `json:"theta"` // En degrés
+	Detected    bool         `json:"detected"`
+	Adversaires []Adversaire `json:"adversaires,omitempty"` // robots adverses vus sur la même image
+}
+
+// Robot adverse vu par la caméra zénithale (repère table, mm) : planificateur du robot
+type Adversaire struct {
+	ID int     `json:"id"`
+	X  float64 `json:"x"`
+	Y  float64 `json:"y"`
 }
 
 // État Global Unifié (fusion de l'IHM et du matériel)

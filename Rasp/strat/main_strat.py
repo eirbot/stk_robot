@@ -5,6 +5,7 @@ import os
 import glob
 import sys
 import ihm.shared as shared
+from strat.actions import RetourFin
 
 # Dossier des stratégies (relatif au main)
 STRAT_DIR = "strat/strategies"
@@ -86,8 +87,15 @@ def strat_loop(robot):
                 print(f"[STRAT] Erreur : stratégie '{strat_name}' inconnue ou fichier manquant !")
                 shared.send_log(f"Stratégie '{strat_name}' introuvable", "err")
             else:
-                mod.run(robot)
-                print("[STRAT] Stratégie terminée.")
+                robot.retour = None
+                try:
+                    mod.run(robot)
+                    print("[STRAT] Stratégie terminée.")
+                except RetourFin:
+                    print(f"[STRAT] Plus le temps ({robot.temps_restant():.1f} s) : retour de fin de match")
+                # Retour déclaré (robot.retour_fin) : on y va, que la stratégie ait fini ou non
+                if shared.match.running and robot.retour is not None:
+                    robot.executer_retour()
             shared.match.strategy_finished()  # en mode test : fin du match
 
             # Hors mode test, le match continue jusqu'aux 100 s (règlement).

@@ -6,11 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DEBUG & CONFIG</title>
     <script src="/static/js/theme.js?v=6"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=8.1">
-    <link rel="stylesheet" href="/static/css/debug.css?v=3.4">
+    <link rel="stylesheet" href="/static/css/common.css?v=8.2">
+    <link rel="stylesheet" href="/static/css/debug.css?v=3.5">
 
     <script src="/static/js/chart.js" defer></script>
     <script src="/static/js/common.js?v=3.0" defer></script>
+    <script src="/static/js/checklist.js?v=1" defer></script>
     <script src="/static/js/clippy.js?v=5" defer></script>
     <script src="/static/js/win95_apps.js?v=1" defer></script>
     <script src="/static/js/win95.js?v=15" defer></script>
@@ -18,10 +19,11 @@
     <!-- Page Debug : un fichier par sujet (static/js/debug/), portée globale partagée -->
     <script src="/static/js/debug/page.js?v=1" defer></script>
     <script src="/static/js/debug/reglages.js?v=1" defer></script>
-    <script src="/static/js/debug/journaux.js?v=1" defer></script>
+    <script src="/static/js/debug/journaux.js?v=2" defer></script>
     <script src="/static/js/debug/maintenance.js?v=1" defer></script>
     <script src="/static/js/debug/diagnostic.js?v=1" defer></script>
     <script src="/static/js/debug/vision.js?v=1" defer></script>
+    <script src="/static/js/debug/calibration.js?v=1" defer></script>
     <script src="/static/js/debug/plein_ecran.js?v=1" defer></script>
 </head>
 
@@ -45,6 +47,8 @@
                     <li class="dev-status"><span>ESP Bras</span><div id="status-esp_arms" class="status-dot"></div></li>
                     <li class="dev-status"><span>Caméra</span><div id="status-camera" class="status-dot"></div></li>
                 </ul>
+                <h2 class="card-title">Check-list match</h2>
+                <div class="checklist" data-mode="complet"></div>
             </div>
 
             <div class="card">
@@ -115,6 +119,25 @@
                         <button id="btn-copy-vision-pos" type="button" onclick="copyVisionToInputs()" class="btn btn-sm grow" title="Copier les coordonnées X, Y, θ vues par la caméra vers les entrées ci-dessus"><svg class="icon"><use href="/static/icons/sprite.svg#i-copy"></use></svg> Vision → entrées</button>
                         <button id="btn-calibrate-vision" class="btn btn-sm btn-primary grow"><svg class="icon"><use href="/static/icons/sprite.svg#i-crosshair"></use></svg> Calibrer la vision</button>
                     </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">Calibration automatique</h2>
+                <div class="stack">
+                    <p class="hint">Robot sur la table, caméra zénithale allumée, ~3 min : carrés, rotations,
+                        lignes droites, puis réglage de la fusion odométrie + caméra.</p>
+                    <div class="field">
+                        <label class="field-label" for="calib-cote">Côté du carré (mm)</label>
+                        <input type="number" id="calib-cote" value="500" min="200" max="1000" step="50">
+                    </div>
+                    <div class="row">
+                        <button class="btn btn-success grow" onclick="calibCommande('start')"><svg class="icon"><use href="/static/icons/sprite.svg#i-play"></use></svg> Lancer</button>
+                        <button class="btn btn-danger grow" onclick="calibCommande('stop')"><svg class="icon"><use href="/static/icons/sprite.svg#i-circle-stop"></use></svg> Arrêter</button>
+                    </div>
+                    <progress id="calib-progression" value="0" max="1" style="width:100%"></progress>
+                    <div id="calib-etat" class="hint">—</div>
+                    <div id="calib-resultat"></div>
                 </div>
             </div>
         </section>
@@ -191,6 +214,7 @@
                     <span id="embarquee-badge" class="badge-status-pill badge-offline">HORS LIGNE</span>
                 </div>
                 <div class="video-actions-group">
+                    <button id="btn-toggle-aruco-emb" onclick="toggleArucoEmbarquee()" class="btn-video-action" title="Détecter et dessiner les tags ArUco (détection active tant que le flux est regardé)"><svg class="icon"><use href="/static/icons/sprite.svg#i-scan"></use></svg> Tags : OFF</button>
                     <button id="btn-fullscreen-embarquee" onclick="toggleFullscreen('container-embarquee')" class="btn-video-action btn-fullscreen" title="Afficher en plein écran"><svg class="icon"><use href="/static/icons/sprite.svg#i-maximize"></use></svg> Plein écran</button>
                 </div>
 

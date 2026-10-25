@@ -44,6 +44,10 @@ CAMERA_ID = int(os.environ.get("VISION_CAMERA_ID", "0"))
 # Fenêtre MuJoCo (viewer d'Antony) sur l'écran local de la base (visible en VNC)
 VIEWER_ON = os.environ.get("VISION_VIEWER", "1") not in ("0", "false", "no", "off")
 TAG_ID_ROBOT = 2
+# Tags des robots (règlement Eurobot : 1-5 équipe bleue, 6-10 jaune) autres que le nôtre : adversaires.
+# Même taille que notre tag (arucoRobot) ; leur pose est calculée par computePosition (allPoses).
+ADVERSAIRE_TAG_IDS = tuple(i for i in range(1, 11) if i != TAG_ID_ROBOT)
+arucoDirectory.update({str(i): arucoDirectory[str(TAG_ID_ROBOT)] for i in ADVERSAIRE_TAG_IDS})
 TABLE_TAG_IDS = (20, 21, 22, 23)
 
 # Résolution de la calibration (cameraParams.npz) : les intrinsèques sont
@@ -60,6 +64,20 @@ CAMERA_PRESETS = {
 # Repères : définition unique dans Rasp/core/frames.py (même dépôt sur la base)
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "Rasp"))
 from core.frames import camera_to_table  # noqa: E402
+
+
+def adversaires_table(compute_pos):
+    """Robots adverses (tags ADVERSAIRE_TAG_IDS) dans le repère table/robot (mm), comme notre robot :
+    allPoses est en repère monde, ramené sur la table par posTable / R_world_table."""
+    out = []
+    for i in ADVERSAIRE_TAG_IDS:
+        p = getattr(compute_pos, "allPoses", {}).get(str(i))
+        if p is None:
+            continue
+        pos_table = compute_pos.R_world_table.inv().apply(np.asarray(p[0]) - compute_pos.posTable)
+        x, y, _ = table_to_base(pos_table, 0.0)
+        out.append({"id": i, "x": round(float(x), 1), "y": round(float(y), 1)})
+    return out
 
 
 def table_to_base(pos_m, theta_deg):
@@ -426,7 +444,8 @@ def main():
 
         if robot is not None:
             msg = {"type": "vision_update",
-                   "data": {"x": robot[0], "y": robot[1], "theta": robot[2], "detected": True}}
+                   "data": {"x": robot[0], "y": robot[1], "theta": robot[2], "detected": True,
+                            "adversaires": adversaires_table(compute_pos)}}
             try:
                 push.send_json(msg, flags=zmq.NOBLOCK)
             except zmq.Again:

@@ -562,3 +562,10 @@ html[data-theme="win95"] .status-text-good { color: #000080; }
     font-size: 0.8rem;
     word-break: break-word;
 }
+
+/* ---------- Calibration automatique (static/js/debug/calibration.js) ---------- */
+.calib-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+.calib-table td { padding: 2px 4px; border-bottom: 1px solid var(--border); }
+.calib-table td:last-child { text-align: right; font-weight: 600; }
+.calib-prop { font-size: 0.85em; margin: 6px 0; }
+.hint { color: var(--text-muted); font-size: 0.85em; margin: 0; }

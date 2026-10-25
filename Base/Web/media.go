@@ -21,7 +21,7 @@ import (
 
 var (
 	validAudioName = regexp.MustCompile(`^[A-Za-z0-9_\-. ]+\.mp3$`)
-	validLogName   = regexp.MustCompile(`^blackbox_[0-9_\-]+\.csv$`)
+	validLogName   = regexp.MustCompile(`^(blackbox_[0-9_\-]+\.csv|match_[0-9_\-]+\.jsonl)$`)
 	ledColorValue  = regexp.MustCompile(`^\d{1,3},\d{1,3},\d{1,3}$`)
 	ledPixelValue  = regexp.MustCompile(`^\d{1,4},\d{1,3},\d{1,3},\d{1,3}$`)
 )
@@ -207,7 +207,11 @@ func setupMediaRoutes(app *fiber.App) {
 		if err != nil {
 			return c.Status(502).SendString("journal illisible sur le robot (hors ligne ?)")
 		}
-		c.Set("Content-Type", "text/csv; charset=utf-8")
+		if strings.HasSuffix(name, ".jsonl") {
+			c.Set("Content-Type", "application/x-ndjson; charset=utf-8")
+		} else {
+			c.Set("Content-Type", "text/csv; charset=utf-8")
+		}
 		return c.Send(out)
 	})
 }

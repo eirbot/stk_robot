@@ -1,6 +1,10 @@
 """Évitement LiDAR : reçoit les tours du driver C++ (lidar_udp.cpp, UDP 127.0.0.1:8080),
 en déduit l'état d'obstacle (core/obstacles.py) et l'envoie à l'ESP moteurs (« L etat »).
 
+Config `lidar` : `montage` (cf. core/obstacles.py), `filtre_table` (True : points hors de la table
+ignorés quand la pose est fiable), `marge_table_mm`. Les points restants (repère table) sont
+publiés dans shared.lidar_points pour le planificateur et la boîte noire.
+
 Le thread lance / arrête aussi le driver C++ selon `lidar_mode` (OFF : capteur arrêté).
 """
 import socket
@@ -23,7 +27,8 @@ class LidarCollisionThread(threading.Thread):
         """
         super().__init__(daemon=True, name="LidarCollision")
         self.robot = robot
-        self.detector = obstacles.ObstacleDetector(seuil_mm=seuil_mm)
+        self.detector = obstacles.ObstacleDetector(seuil_mm=seuil_mm,
+                                                   montage=shared.cfg.get("lidar", {}).get("montage"))
         self.running = True
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -51,13 +56,29 @@ class LidarCollisionThread(threading.Thread):
             self._esp_state = state
             self._esp_state_time = now
 
+    def _filtrer(self, scan, now):
+        """Efface les points hors table (pose fiable seulement) et publie les points restants."""
+        cfg = shared.cfg.get("lidar", {})
+        montage = cfg.get("montage")
+        self.detector.montage = montage
+        pose = shared.pose_fiable()
+        if pose is not None and cfg.get("filtre_table", True):
+            scan = obstacles.filter_outside_table(scan, pose, float(cfg.get("marge_table_mm", 40.0)), montage)
+        shared.lidar_points = [(round(x), round(y)) for _, x, y in obstacles.sector_points(scan, pose, montage)] \
+            if pose is not None else []
+        shared.lidar_points_t = now
+        return scan
+
     def _send_frame(self, scan):
-        """Point le plus proche, pour la carte de l'IHM (map.js)."""
-        if shared.zmq_client_instance:
-            shared.zmq_client_instance.send_event("lidar_frame", {
-                "obstacle": {"angle": scan.closest_angle,
-                             "distance": scan.closest_dist if scan.closest_dist > 0 else 99999.0}
-            })
+        """Point le plus proche (et points du tour dans le repère table), pour la carte (map.js), à 5 Hz."""
+        if not shared.zmq_client_instance or time.time() - getattr(self, "_last_frame", 0.0) < 0.2:
+            return
+        self._last_frame = time.time()
+        shared.zmq_client_instance.send_event("lidar_frame", {
+            "obstacle": {"angle": scan.closest_angle,
+                         "distance": scan.closest_dist if scan.closest_dist > 0 else 99999.0},
+            "points": shared.lidar_points,
+        })
 
     # --- Driver C++ ------------------------------------------------------------------------
     def _manage_process(self, mode):
@@ -101,6 +122,7 @@ class LidarCollisionThread(threading.Thread):
                 if scan is None:
                     continue
                 now = time.time()
+                scan = self._filtrer(scan, now)
                 self._send_frame(scan)
                 if now - self._last_log > LOG_PERIOD_S and scan.closest_dist > 0:
                     print(f"[LIDAR THREAD] Ping... (obstacle le plus proche à {scan.closest_dist:.0f} mm, "

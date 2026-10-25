@@ -19,10 +19,19 @@ Mode HOMOLOGATION : un point à moins de HOMOLOGATION_MM dans n'importe quelle d
 
 L'état ne revient à CLEAR qu'après `clear_delay_s` sans obstacle (évite que le robot
 reparte et s'arrête en boucle quand l'obstacle est à la limite du seuil).
+
+Points hors de la table (gens au bord, mains, sacs) : `filter_outside_table` efface les secteurs
+dont le point, placé dans le repère table avec la pose du robot, est au-delà des bords
+(moins `marge_mm`, positive = vers l'intérieur). Sans pose fiable, on ne filtre pas.
+Montage du LiDAR (config lidar.montage) : position (x, y) dans le repère robot, `angle` = angle
+robot du 0 du LiDAR, `sens` = +1 si les angles LiDAR tournent en sens trigo, -1 sinon.
 """
 
+import math
 import struct
 from dataclasses import dataclass
+
+from core import frames
 
 CLEAR, STOP, FRONT, BACK = 0, 1, 2, 3
 
@@ -54,13 +63,49 @@ def parse_scan(data):
     return Scan(angle, dist, tuple(sectors))
 
 
-def _center_angle(i):
-    """Angle du milieu du secteur i, ramené dans ]-180, 180]."""
-    a = i * SECTOR_DEG + SECTOR_DEG / 2.0
-    return a - 360.0 if a > 180.0 else a
+def sector_points(scan, pose, montage=None):
+    """[(i, x, y)] : milieu de chaque secteur vu, dans le repère table, pose = (x, y, theta) du robot."""
+    m = montage or {}
+    lx, ly = float(m.get("x", 0.0)), float(m.get("y", 0.0))
+    offset, sens = float(m.get("angle", 0.0)), float(m.get("sens", 1.0))
+    rx, ry, rt = pose
+    c, s = math.cos(math.radians(rt)), math.sin(math.radians(rt))
+    out = []
+    for i, d in enumerate(scan.sectors):
+        if d <= 0.0:
+            continue
+        a = math.radians(offset + sens * (i * SECTOR_DEG + SECTOR_DEG / 2.0))
+        px, py = lx + d * math.cos(a), ly + d * math.sin(a)
+        out.append((i, rx + px * c - py * s, ry + px * s + py * c))
+    return out
 
 
-def classify(scan, mode, seuil_mm, near_mm=130.0):
+def filter_outside_table(scan, pose, marge_mm=40.0, montage=None):
+    """Scan sans les secteurs dont le point est hors de la table (cf. docstring du module)."""
+    if pose is None:
+        return scan
+    sectors = list(scan.sectors)
+    for i, x, y in sector_points(scan, pose, montage):
+        if not frames.in_table(x, y, marge_mm):
+            sectors[i] = 0.0
+    if sectors == list(scan.sectors):
+        return scan
+    # point le plus proche (affichage) : recalculé parmi les secteurs gardés
+    vus = [(d, i) for i, d in enumerate(sectors) if d > 0.0]
+    if not vus:
+        return Scan(0.0, 0.0, tuple(sectors))
+    d, i = min(vus)
+    return Scan(i * SECTOR_DEG + SECTOR_DEG / 2.0, d, tuple(sectors))
+
+
+def _center_angle(i, montage=None):
+    """Angle robot (0 = avant) du milieu du secteur i, ramené dans ]-180, 180]."""
+    m = montage or {}
+    a = float(m.get("angle", 0.0)) + float(m.get("sens", 1.0)) * (i * SECTOR_DEG + SECTOR_DEG / 2.0)
+    return frames.normalize_deg(a)
+
+
+def classify(scan, mode, seuil_mm, near_mm=130.0, montage=None):
     """État d'obstacle d'un tour, sans mémoire (cf. ObstacleDetector pour le délai de retour)."""
     if mode == "OFF":
         return CLEAR
@@ -74,7 +119,7 @@ def classify(scan, mode, seuil_mm, near_mm=130.0):
             continue
         if d < near_mm:
             return STOP
-        a = abs(_center_angle(i))
+        a = abs(_center_angle(i, montage))
         off_axis_front, off_axis_back = a, 180.0 - a
         limit_front = seuil_mm if off_axis_front <= CONE_FULL_DEG else seuil_mm * SIDE_FACTOR
         limit_back = seuil_mm if off_axis_back <= CONE_FULL_DEG else seuil_mm * SIDE_FACTOR
@@ -90,7 +135,8 @@ def classify(scan, mode, seuil_mm, near_mm=130.0):
 class ObstacleDetector:
     """État d'obstacle à envoyer à l'ESP, avec délai avant de revenir à CLEAR."""
 
-    def __init__(self, seuil_mm=350.0, near_mm=130.0, clear_delay_s=1.0):
+    def __init__(self, seuil_mm=350.0, near_mm=130.0, clear_delay_s=1.0, montage=None):
+        self.montage = montage
         self.seuil_mm = seuil_mm
         self.near_mm = near_mm
         self.clear_delay_s = clear_delay_s
@@ -98,7 +144,7 @@ class ObstacleDetector:
         self._last_obstacle_t = None
 
     def update(self, scan, mode, now):
-        raw = classify(scan, mode, self.seuil_mm, self.near_mm)
+        raw = classify(scan, mode, self.seuil_mm, self.near_mm, self.montage)
         if mode == "OFF":
             self.state, self._last_obstacle_t = CLEAR, None
         elif raw != CLEAR:

@@ -1,4 +1,4 @@
-// Carte 3D : obstacle LiDAR le plus proche.
+// Carte 3D : obstacle LiDAR le plus proche et points du tour (repère table, hors table retirés).
 // Fichiers de la carte chargés dans l'ordre par templates/map.html (portée globale partagée).
 
 // -----------------------------------------------------------------------------
@@ -55,5 +55,17 @@ function updateLidarFrame(data) {
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
         ringMesh.position.set(pt.x, pt.y, 2);
         lidarScanGroup.add(ringMesh);
+    }
+
+    // 2. Points du tour (Rasp/LiDAR/lidar_thread.py, déjà dans le repère table)
+    if (Array.isArray(data.points) && data.points.length) {
+        const pos = new Float32Array(data.points.length * 3);
+        data.points.forEach(([x, y], k) => {
+            const p = robotToThree(x, y);
+            pos[3 * k] = p.x; pos[3 * k + 1] = p.y; pos[3 * k + 2] = 20;
+        });
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        lidarScanGroup.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xff5252, size: 25 })));
     }
 }

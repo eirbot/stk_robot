@@ -47,7 +47,7 @@ window.socket.on('sys_info', (data) => {
         const embarqueeBadge = document.getElementById('embarquee-badge');
         if (img && placeholder) {
             if (data.devs.camera && data.ip) {
-                const streamUrl = 'http://' + data.ip + ':8081/stream';
+                const streamUrl = 'http://' + data.ip + ':8081/stream' + (window.arucoEmbarquee ? '?aruco=1' : '');
                 // Évite de réassigner inutilement l'URL pour ne pas interrompre le flux continu
                 if (img.src !== streamUrl) {
                     img.src = streamUrl;
@@ -70,3 +70,15 @@ window.socket.on('sys_info', (data) => {
         }
     }
 });
+
+// Tags ArUco sur la caméra embarquée (Rasp/Vision/aruco.py) : ?aruco=1 dessine les tags et active la
+// détection tant que le flux est ouvert ; l'URL change au prochain sys_info (1 s).
+window.arucoEmbarquee = false;
+function toggleArucoEmbarquee() {
+    window.arucoEmbarquee = !window.arucoEmbarquee;
+    const btn = document.getElementById('btn-toggle-aruco-emb');
+    if (btn) {
+        btn.innerHTML = icon('scan') + (window.arucoEmbarquee ? ' Tags : ON' : ' Tags : OFF');
+        btn.classList.toggle('btn-aruco-active', window.arucoEmbarquee);
+    }
+}

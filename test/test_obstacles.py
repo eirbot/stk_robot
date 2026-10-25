@@ -1,4 +1,5 @@
 """Tests de Rasp/core/obstacles.py (décision d'évitement à partir des tours LiDAR)."""
+import math
 import os
 import struct
 import sys
@@ -101,6 +102,53 @@ class TestDetector(unittest.TestCase):
         d = obstacles.ObstacleDetector()
         d.update(scan([(0.0, 300.0)]), "MATCH", 0.0)
         self.assertEqual(d.update(None, "OFF", 0.1), CLEAR)
+
+
+class TestHorsTable(unittest.TestCase):
+    """Points hors de la table effacés avant la décision (gens au bord de la table)."""
+
+    def test_point_hors_table_ignore(self):
+        # Robot à 300 mm du bord X = 0, tourné vers lui : un point à 340 mm devant est dehors
+        s = scan([(0.0, 340.0)])
+        self.assertEqual(obstacles.classify(s, "MATCH", 350.0), FRONT)
+        f = obstacles.filter_outside_table(s, (300.0, 0.0, 180.0))
+        self.assertEqual(obstacles.classify(f, "MATCH", 350.0), CLEAR)
+
+    def test_point_sur_table_garde(self):
+        s = scan([(0.0, 200.0)])
+        f = obstacles.filter_outside_table(s, (1000.0, 0.0, 0.0))
+        self.assertEqual(f.sectors, s.sectors)
+
+    def test_marge(self):
+        # Point à 20 mm à l'intérieur du bord : gardé sans marge, effacé avec 40 mm
+        s = scan([(90.0, 1480.0)])
+        pose = (1000.0, 0.0, 0.0)          # 90° LiDAR (sens trigo) = vers Y+
+        self.assertNotEqual(obstacles.filter_outside_table(s, pose, 0.0).sectors, (0.0,) * obstacles.SECTORS)
+        self.assertEqual(obstacles.filter_outside_table(s, pose, 40.0).sectors, (0.0,) * obstacles.SECTORS)
+
+    def test_montage_sens_horaire(self):
+        # LiDAR qui tourne en sens horaire : son angle 90° est à droite du robot (Y-)
+        s = scan([(90.0, 1000.0)])
+        (_, x, y), = obstacles.sector_points(s, (1000.0, 0.0, 0.0), {"sens": -1})
+        self.assertAlmostEqual(x, 1000.0 + 1000.0 * math.cos(math.radians(-92.5)), places=3)
+        self.assertLess(y, -990.0)
+
+    def test_montage_decale(self):
+        s = scan([(0.0, 100.0)])
+        (_, x, y), = obstacles.sector_points(s, (500.0, 200.0, 90.0), {"x": 50.0, "y": 0.0})
+        # repère robot : (50 + 100 cos 2,5°, 100 sin 2,5°), puis rotation de 90°
+        self.assertAlmostEqual(x, 500.0 - 100.0 * math.sin(math.radians(2.5)), places=3)
+        self.assertAlmostEqual(y, 200.0 + 50.0 + 100.0 * math.cos(math.radians(2.5)), places=3)
+
+    def test_decision_avec_montage_tourne(self):
+        # LiDAR monté avec son 0 vers la gauche du robot : un point à son angle -90° est devant
+        s = scan([(270.0, 300.0)])
+        self.assertEqual(obstacles.classify(s, "MATCH", 350.0), CLEAR)          # vu « à droite »
+        self.assertEqual(obstacles.classify(s, "MATCH", 350.0, montage={"angle": 90.0}), FRONT)
+
+    def test_sans_pose(self):
+        s = scan([(0.0, 100.0)])
+        self.assertIs(obstacles.filter_outside_table(s, None), s)
 
 
 if __name__ == "__main__":

@@ -1,13 +1,13 @@
 # Suivi du projet — à lire en début de session, à mettre à jour en fin de tâche
 
-Dernière mise à jour : 2026-10-25. Compétition dans plus de 200 jours (pas avant ~mai 2027) :
+Dernière mise à jour : 2026-10-25 (soir). Compétition dans plus de 200 jours (pas avant ~mai 2027) :
 les refontes sont acceptées.
 
 ## État du dépôt
 
 - Branche `base_deporte` poussée le 2026-10-25 (d498846) : échelle caméra (02b83a8), firmware moteurs réécrit
   (6bb0374), rangement (`ESP/`, d498846). Rien de tout ça n'est déployé ni testé sur le robot.
-- Tests : `tools/run_tests.sh` (tout passe : 67 Python, 4 JS, Go). `--rapide` saute test_strategies (~70 s).
+- Tests : `tools/run_tests.sh` (tout passe le 2026-10-25 : 177 Python, JS, Go, firmware natif). `--rapide` saute test_strategies.
 - Commit `4fbf9d8` (« le tux ») poussé et **déployé sur la base** le 2026-10-19 : service `base_stk` installé
   et actif. Anciennes modifs locales de la base : `git stash` + `~/sauvegarde_base_20261019.tgz` ; stratégie
   `carre.py/.xml` (faite sur la base) non suivie, à commiter si on la garde.
@@ -19,6 +19,9 @@ les refontes sont acceptées.
 - Env uv à la racine (`pyproject.toml` : numpy, OpenCV headless, pyzmq) : `tools/run_tests.sh` lance les tests
   Python avec `uv run python` si uv est là (le python3 de ce PC n'a pas numpy). 129 tests Python OK le 2026-10-25.
 - Caméra embarquée refaite (2026-10-25) : commit b3afb38 poussé sur `base_deporte`, **non essayée sur le robot**.
+- Préparation des essais (2026-10-25, voir « Essais robot prévus ») : check-list, calibration auto, LiDAR hors table,
+  aller() + planificateur, temps de match, boîte noire / Replay, stratégie dynamique. Commité et poussé sur
+  `base_deporte`, rien d'essayé sur le robot ; un changement Go (types.go, media.go) : `./Base/build.sh` sur la base.
 
 ## Fait (récent, du plus ancien au plus récent)
 
@@ -308,6 +311,54 @@ les refontes sont acceptées.
   final était a priori correct. Avec YUV420 la question disparaît ; si c'est encore rosé, ce n'est pas une
   inversion mais un module NoIR / mauvais réglage -> `camera.tuning` (ex. `imx219_noir.json`).
 
+### Préparation des essais : évitement, check-list, calibration, temps, replay, stratégie dynamique (2026-10-25)
+- **LiDAR hors table** (`core/obstacles.py`) : avec une pose fiable (`shared.pose_fiable` : set_pos fait ou
+  caméra acceptée, incertitude < 150 mm), les secteurs dont le point tombe hors table (moins `lidar.marge_table_mm`)
+  sont ignorés : plus d'arrêt pour les gens au bord. `lidar.montage` (x, y, angle, sens) sert aussi à la décision
+  avant/arrière (défaut = comportement d'avant ; l'ancien `lidar.angle_offset_deg: -90`, lu nulle part, a été
+  retiré). Points restants publiés (`shared.lidar_points`, repère table) : carte, planificateur, boîte noire.
+- **Commandes manuelles pendant un match** : déjà refusées par `zmq_client.MANUAL_COMMANDS` (la ligne « À faire »
+  était périmée) ; `calibration` ajoutée.
+- **Check-list avant match** (`core/preflight.py`, 1 Hz dans `sys_info.checks`, `static/js/checklist.js`) : ESP
+  moteurs (trames), actionneurs, LiDAR (mode, tours), caméra zénithale, batterie, stratégie, **position de départ**
+  (caméra vs premier `set_pos` de la stratégie, symétrie comprise), tirette, mode test, caméra embarquée, temp.
+  Accueil / écran 7" : résumé + problèmes ; Debug > Robot : tout.
+- **Calibration automatique** (`strat/calibration.py`, carte dans Debug > Robot) : recalage, 2 carrés, rotations,
+  lignes droites, puis analyse sur le robot (`core/reglage_fusion.py`, extrait de `tools/regler_fusion.py` qui
+  l'importe) ; résultat dans Debug avec « Appliquer » (vision_odom.*) et facteurs diamètre / entraxe firmware.
+- **aller(x, y, θ)** (`strat/actions.py`, bloc « Aller (évitement) ») : `core/planif.py` = grille 30 mm, obstacles
+  gonflés du demi-encombrement (215 mm), surcoût autour (heat map), adversaires de la caméra zénithale + position
+  prédite, points LiDAR, `planif.obstacles` (fixes, à remplir pour 2027), A* + lissage. Un GoTo par segment,
+  replanifié à chaque point de passage et quand l'ESP s'arrête. Chemin + carte de coûts envoyés à la carte 3D
+  (`map/plan.js`). ~6 ms par plan sur PC. Adversaires : `vision_deporte_worker.py` publie les tags 1-10 (sauf 2)
+  dans `vision_update.adversaires` (base : `VisionPose.Adversaires`), seulement quand notre robot est vu.
+- **Temps de match** (`core/temps_match.py`) : durée d'un GoTo = t0 + d/v + rotation/w, appris sur les vrais GoTo
+  (`logs/durees_goto.jsonl`). `retour_fin(x, y, θ, marge)` : avant chaque déplacement, s'il ne reste plus que le
+  temps de rentrer, `RetourFin` interrompt la stratégie et `main_strat` fait rentrer le robot (aussi quand la
+  stratégie finit plus tôt). `si_temps(s)` : bloc « S'il reste le temps de faire N s ».
+- **Caméra embarquée** : `aligner_tag(ids, distance_mm)` (bloc « S'aligner sur le tag »), mesure à l'arrêt, recule
+  si le décalage latéral est grand, `approche_reussie` ; bouton « Tags » sur le flux embarqué de Debug.
+- **Boîte noire** (`utils/telemetry_logger.py`) : `match_*.jsonl` (trames 10 Hz : pose, caméra, adversaires, LiDAR,
+  évitement, incertitude ; événements goto / plan / retour / tag / objectif). Page Replay réécrite : bon repère
+  (l'ancienne dessinait X sur 3000 mm), robot à ses vraies dimensions, fantôme caméra, adversaires, LiDAR, chemin,
+  liste d'événements cliquable ; lit encore les anciens `blackbox_*.csv`.
+- **Stratégie dynamique** (`core/decision.py`, `robot.jouer(objectifs)`, exemple `strategies/demo_dynamique.py`) :
+  objectifs écrits à la main (pose, points, durée, proba, prérequis, action), ordre décidé en match : points espérés
+  par seconde sur une suite de 2 objectifs (actualisée), temps restant et retour compris, proba baissée près de
+  l'adversaire et après un échec.
+- `strat/__init__.py` ne réexporte plus rien (importer `strat.calibration` chargeait tout le robot).
+
+## Essais robot prévus (dans l'ordre)
+1. Déployer base (`./Base/build.sh` sur la base : Go modifié) et robot ; **copier dans le config.json du robot** les
+   sections `camera`, `lidar` (montage, filtre_table, marge_table_mm), `planif`.
+2. Check-list : accueil et Debug ; débrancher un ESP / la tirette / la caméra zénithale -> l'item passe au rouge.
+3. LiDAR : objet posé à gauche du robot -> vérifier sur la carte 3D que les points rouges sont à gauche (sinon
+   `lidar.montage.sens: -1` ou `angle`) ; quelqu'un le long de la bordure pendant un GoTo -> pas d'arrêt.
+4. Calibration auto (Debug > Robot, carré 500) -> appliquer, noter les facteurs firmware.
+5. `aller()` avec un obstacle / l'autre robot (tag 1-10) : chemin et heat map sur la carte 3D, replanification.
+6. Caméra embarquée : tag 13 imprimé sur une boîte, bouton Tags, `aligner_tag` (mesurer au réglet).
+7. Match `demo_dynamique` avec chrono court (mode test off) : retour à temps, puis Replay du match.
+
 ## À faire
 
 ### Sur le matériel (priorité, rien de tout ça n'a été essayé)
@@ -324,8 +375,12 @@ les refontes sont acceptées.
       couleur (rosé ?), `ms/image` affiché par `http://<robot>:8081/stream?aruco=1`.
 - [ ] Caméra : calibrer (`tools/calibrer_camera_robot.py`), mesurer `camera.montage` (position, tangage) et la
       **taille réelle du tag 13** des pierres (50 mm mis par défaut, le règlement ne la donne pas).
-- [ ] Primitive de stratégie « s'aligner sur une pierre » (mesurer -> petit GoTo relatif -> avancer) dans
-      `strat/actions.py`, + bouton `?aruco=1` dans Debug pour la caméra embarquée.
+- [ ] Robot simulé (`tools/robot_sim.py`) : pas de LiDAR ni d'adversaire simulés -> le planificateur n'y voit
+      que les obstacles fixes. Ajouter un adversaire qui bouge pour tester `aller()` / `jouer()` en simulation.
+- [ ] `planif.obstacles` : saisir les éléments fixes de la table 2027 (château, remparts, douves...) ; les pierres
+      vues par le LiDAR deviennent des obstacles : approcher avec `aller()` à distance, puis `aligner_tag`.
+- [ ] Rotation sur place aux points de passage : le planificateur garantit le passage du robot de profil
+      (215 mm), pas sa rotation (rayon ~310 mm autour du point de référence) près d'un obstacle.
 
 ### Code
 ### Revue de code firmware -> Rasp -> base (2026-10-24, rien de corrigé)
@@ -339,19 +394,18 @@ les refontes sont acceptées.
       seul le point le plus proche par tour est envoyé (un mur latéral masque un robot devant) ; secteurs
       latéraux classés « arrière ».
 - [ ] ESP moteurs absent : `esp` existe avec `ser=None`, les GoTo attendent jusqu'à la fin du match.
-- [ ] Commandes manuelles (goto, cmd_vel, set_robot_pos) acceptées pendant un match ; un « A » en retard
-      après un `H` peut terminer le GoTo suivant.
+- [ ] Un « A » en retard après un `H` peut terminer le GoTo suivant (les commandes manuelles pendant un match,
+      elles, sont bien refusées : `zmq_client.MANUAL_COMMANDS`).
 - [ ] `approcheKapla` sans caméra : symétrie appliquée à une pose réelle puis `goto(0, 0, 0)` (bord de table).
 - [ ] Fermer la fenêtre webview de l'écran robot arrête tout le programme (`main_robot.py`, `sys.exit`).
 - [ ] Vision : pas de `CAP_PROP_BUFFERSIZE=1` (images en retard) ni d'âge de l'image envoyé.
 - [ ] Ménage : `EndOfMatchException` / `GoBase` auto jamais déclenchés, code 2025 (Kapla, thermomètre),
       actionneurs sans accusé de réception.
 
-- [ ] Régler la fusion sur le vrai robot : rouler 2-3 min caméra allumée (déplacements, rotations,
-      arrêts de quelques secondes), récupérer `Documents/robot_stk/logs/localisation/loc_*.csv` et lancer
-      `tools/regler_fusion.py <fichier> --appliquer <config.json du robot>` (config.json n'est pas déployé).
-      L'outil donne aussi l'erreur de diamètre de roue / d'entraxe à corriger dans le firmware.
-      Vérifier que les rattrapages de fin de goto ne font pas de demi-tours inutiles.
+- [ ] Régler la fusion sur le vrai robot : Debug > Robot > Calibration automatique (ou, à la main, rouler 2-3 min
+      puis `tools/regler_fusion.py logs/localisation/loc_*.csv --appliquer <config.json du robot>`).
+      Corriger diamètre / entraxe dans le firmware si l'erreur dépasse 1 %. Vérifier que les rattrapages de fin
+      de goto ne font pas de demi-tours inutiles.
 - [ ] Afficher l'état de la fusion (écart-type, mesures acceptées/rejetées) dans Debug ou sur la carte.
 - [ ] IP en dur restantes côté Python : `Rasp/main_robot.py` et `Rasp/ihm/__init__.py`
       (`server_ip` par défaut), `Rasp/utils/system_info.py` (cible de ping).

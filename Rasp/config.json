@@ -19,6 +19,7 @@
         "champ_horizontal_deg": 62.2,
         "intrinseques": null,
         "montage": {"x": 0, "y": 0, "z": 300, "lacet": 0, "tangage": 20, "roulis": 0},
+        "prise": {"distance_mm": 300},
         "aruco": {
             "dictionnaire": "DICT_4X4_50",
             "echelle": 0.5,
@@ -48,11 +49,23 @@
         "pin_pwm": 18
     },
     "lidar": {
-        "angle_offset_deg": -90,
         "baudrate": 460800,
+        "filtre_table": true,
+        "marge_table_mm": 40,
+        "montage": {"x": 0, "y": 0, "angle": 0, "sens": 1},
         "port": "/dev/lidar"
     },
     "lidar_mode": "MATCH",
+    "planif": {
+        "res_mm": 30,
+        "rayon_robot_mm": 215,
+        "marge_douce_mm": 250,
+        "rayon_adversaire_mm": 200,
+        "marge_adversaire_mm": 450,
+        "prediction_s": 0.8,
+        "poids_chaleur": 2.0,
+        "obstacles": []
+    },
     "lidar_simu": false,
     "server_ip": "192.168.10.2",
     "skip_homologation": false,

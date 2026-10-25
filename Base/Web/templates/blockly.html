@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Studio Stratégie - Robot 2026</title>
     <script src="/static/js/theme.js?v=6"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=8.1">
+    <link rel="stylesheet" href="/static/css/common.css?v=8.2">
     <link rel="stylesheet" href="/static/css/blockly.css?v=2.8">
     <link rel="stylesheet" href="/static/css/win95-icons.css?v=6">
 
@@ -122,14 +122,20 @@
         </category>
         <category name="Mouvements" css-icon="blocklyToolboxCategoryIcon w95i w95i-map" colour="#5C81A6">
             <block type="robot_goto"></block>
+            <block type="robot_aller"></block>
             <block type="robot_stop"></block>
             <block type="robot_gobase_at"></block>
             <block type="robot_attendre"></block>
             <block type="robot_recalage_camera"></block>
         </category>
+        <category name="Temps de match" css-icon="blocklyToolboxCategoryIcon w95i w95i-gear" colour="#a5a55b">
+            <block type="robot_retour_fin"></block>
+            <block type="robot_si_temps"></block>
+        </category>
         <category name="Actionneurs" css-icon="blocklyToolboxCategoryIcon w95i w95i-robot" colour="#5CA65C">
             <block type="prendre_kapla"></block>
             <block type="robot_approche_kapla"></block>
+            <block type="robot_aligner_tag"></block>
             <block type="robot_si_approche_reussie"></block>
             <block type="poser_kapla"></block>
             <block type="retourner_kapla"></block>
@@ -156,11 +162,11 @@
     <script src="/static/js/frames.js?v=2"></script>
     <!-- Strat Studio : un fichier par sujet (static/js/blockly/), en defer pour passer après Blockly -->
     <script src="/static/js/blockly/config.js?v=1" defer></script>
-    <script src="/static/js/blockly/blocs.js?v=1" defer></script>
+    <script src="/static/js/blockly/blocs.js?v=2" defer></script>
     <script src="/static/js/blockly/espace.js?v=1" defer></script>
     <script src="/static/js/blockly/simulation.js?v=2" defer></script>
     <script src="/static/js/blockly/interaction.js?v=1" defer></script>
-    <script src="/static/js/blockly/sequence.js?v=1" defer></script>
+    <script src="/static/js/blockly/sequence.js?v=2" defer></script>
     <script src="/static/js/blockly/fichiers.js?v=1" defer></script>
     <script src="/static/js/blockly/interface_win95.js?v=1" defer></script>
 </body>

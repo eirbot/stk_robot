@@ -25,6 +25,7 @@ class LocRecorder:
         self.enabled = enabled
         self._lock = threading.Lock()
         self._file = None
+        self.chemin = None   # fichier en cours (calibration automatique : strat/calibration.py)
         self._last_flush = 0.0
 
     def _open(self):
@@ -36,6 +37,7 @@ class LocRecorder:
             except OSError:
                 pass
         name = os.path.join(self.log_dir, f"loc_{datetime.now():%Y-%m-%d_%H-%M-%S}.csv")
+        self.chemin = name
         self._file = open(name, "w")
         self._file.write("type,t,x,y,theta\n")
 
@@ -53,3 +55,11 @@ class LocRecorder:
                     self._last_flush = now
             except OSError:
                 self.enabled = False  # disque plein / lecture seule : on n'insiste pas
+
+    def flush(self):
+        with self._lock:
+            if self._file is not None:
+                try:
+                    self._file.flush()
+                except OSError:
+                    pass

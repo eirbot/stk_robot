@@ -195,6 +195,60 @@ Blockly.Blocks['play_sound'] = {
     }
 };
 
+// --- DÉPLACEMENT AVEC ÉVITEMENT, CAMÉRA EMBARQUÉE, TEMPS DE MATCH (Rasp/strat/actions.py) ---
+Blockly.Blocks['robot_aller'] = {
+    init: function () {
+        this.appendDummyInput()
+            .appendField("Aller (évitement) à X").appendField(new Blockly.FieldNumber(1000), "X")
+            .appendField("Y").appendField(new Blockly.FieldNumber(0), "Y")
+            .appendField("θ").appendField(new Blockly.FieldNumber(0), "THETA");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(200);
+        this.setTooltip("Chemin calculé par le robot (A*) autour des obstacles, de l'adversaire et des points LiDAR ; replanifié en route.");
+    }
+};
+
+Blockly.Blocks['robot_aligner_tag'] = {
+    init: function () {
+        this.appendDummyInput()
+            .appendField("S'aligner sur le tag").appendField(new Blockly.FieldNumber(13, 0, 999, 1), "ID")
+            .appendField("à").appendField(new Blockly.FieldNumber(300, 50, 1000, 10), "DIST")
+            .appendField("mm");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(160);
+        this.setTooltip("Caméra embarquée : se met face au tag le plus proche (distance du point de référence à la face). Résultat : « Si l'approche a réussi ».");
+    }
+};
+
+Blockly.Blocks['robot_si_temps'] = {
+    init: function () {
+        this.appendDummyInput()
+            .appendField("S'il reste le temps de faire").appendField(new Blockly.FieldNumber(10, 0, 100, 0.5), "SECONDES")
+            .appendField("s (puis rentrer)");
+        this.appendStatementInput("DO").setCheck(null);
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("Exécute le contenu seulement s'il reste ce temps + le trajet de retour (durées apprises sur les vrais GoTo).");
+    }
+};
+
+Blockly.Blocks['robot_retour_fin'] = {
+    init: function () {
+        this.appendDummyInput()
+            .appendField("Fin de match : rentrer à X").appendField(new Blockly.FieldNumber(250), "X")
+            .appendField("Y").appendField(new Blockly.FieldNumber(0), "Y")
+            .appendField("θ").appendField(new Blockly.FieldNumber(0), "THETA")
+            .appendField("marge").appendField(new Blockly.FieldNumber(3, 0, 30, 0.5), "MARGE").appendField("s");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(290);
+        this.setTooltip("À mettre au début : la stratégie est interrompue à temps pour que le robot soit rentré avant 100 s (et il rentre aussi si elle finit plus tôt).");
+    }
+};
+
 // --- GÉNÉRATEURS PYTHON ---
 Blockly.Python.forBlock['robot_start'] = function (block) { return `robot.set_pos(${block.getFieldValue('X')}, ${block.getFieldValue('Y')}, ${block.getFieldValue('THETA')})\n`; };
 Blockly.Python.forBlock['robot_goto'] = function (block) { return `robot.goto(${block.getFieldValue('X')}, ${block.getFieldValue('Y')}, ${block.getFieldValue('THETA')})\n`; };
@@ -234,3 +288,17 @@ Blockly.Python.forBlock['prendre_tous_kaplas'] = function (block) {
 
 Blockly.Python.forBlock['play_animation'] = function (block) { return `robot.play_animation("${block.getFieldValue('ANIM_NAME')}")\n`; };
 Blockly.Python.forBlock['play_sound'] = function (block) { return `robot.play_sound("${block.getFieldValue('SOUND_NAME')}")\n`; };
+
+Blockly.Python.forBlock['robot_aller'] = function (block) {
+    return `robot.aller(${block.getFieldValue('X')}, ${block.getFieldValue('Y')}, ${block.getFieldValue('THETA')})\n`;
+};
+Blockly.Python.forBlock['robot_aligner_tag'] = function (block) {
+    return `robot.aligner_tag(ids=[${block.getFieldValue('ID')}], distance_mm=${block.getFieldValue('DIST')})\n`;
+};
+Blockly.Python.forBlock['robot_si_temps'] = function (block) {
+    const corps = Blockly.Python.statementToCode(block, 'DO') || '  pass\n';
+    return `if robot.si_temps(${block.getFieldValue('SECONDES')}):\n` + corps;
+};
+Blockly.Python.forBlock['robot_retour_fin'] = function (block) {
+    return `robot.retour_fin(${block.getFieldValue('X')}, ${block.getFieldValue('Y')}, ${block.getFieldValue('THETA')}, marge_s=${block.getFieldValue('MARGE')})\n`;
+};

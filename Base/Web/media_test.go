@@ -32,7 +32,8 @@ func TestNomsDeFichiers(t *testing.T) {
 			t.Errorf("%q accepté", n)
 		}
 	}
-	if !validLogName.MatchString("blackbox_2026-10-25_14-03-12.csv") || validLogName.MatchString("../../etc/passwd") {
+	if !validLogName.MatchString("blackbox_2026-10-25_14-03-12.csv") || !validLogName.MatchString("match_2026-10-26_09-00-00.jsonl") ||
+		validLogName.MatchString("../../etc/passwd") || validLogName.MatchString("match_x.jsonl;rm") {
 		t.Error("filtre des noms de journaux")
 	}
 }

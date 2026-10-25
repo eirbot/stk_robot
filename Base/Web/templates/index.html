@@ -7,10 +7,11 @@
     <title>EIRBOT 2026</title>
     <link rel="preload" href="/static/fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
     <script src="/static/js/theme.js?v=6"></script>
-    <link rel="stylesheet" href="/static/css/common.css?v=8.1">
-    <link rel="stylesheet" href="/static/css/index.css?v=6.5">
+    <link rel="stylesheet" href="/static/css/common.css?v=8.2">
+    <link rel="stylesheet" href="/static/css/index.css?v=6.6">
 
     <script src="/static/js/common.js?v=3.0" defer></script>
+    <script src="/static/js/checklist.js?v=1" defer></script>
     <script src="/static/js/clippy.js?v=5" defer></script>
     <script src="/static/js/win95_apps.js?v=1" defer></script>
     <script src="/static/js/win95.js?v=15" defer></script>
@@ -40,6 +41,9 @@
                 <span class="pos-item"><span class="pos-label">Y</span><span id="pos-y" class="pos-val">0</span><span class="pos-unit">mm</span></span>
                 <span class="pos-item"><span class="pos-label">θ</span><span id="pos-theta" class="pos-val">0.0</span><span class="pos-unit">°</span></span>
             </div>
+
+            <!-- Check-list avant match (calculée par le robot), visible aussi sur l'écran 7" -->
+            <div class="checklist checklist-home" data-mode="problemes"></div>
         </section>
 
         <!-- Pilotage (PC / téléphone uniquement, masqué sur l'écran robot) -->

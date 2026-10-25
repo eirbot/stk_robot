@@ -678,3 +678,7 @@ html[data-theme="win95"] .explorer-status span {
     border: 1px solid;
     border-color: #808080 #fff #fff #808080;
 }
+
+/* Check-list avant match (static/js/checklist.js) */
+.checklist-home { width: 100%; max-width: 520px; align-self: center; }
+body.robot-screen .checklist-home { width: 92vw; max-width: none; font-size: 2.8vh; }

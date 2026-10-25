@@ -30,7 +30,7 @@ function parseSequence(firstBlock, currentX, currentY, currentTheta) {
 
             queue.push({ type: 'start', x: simX, y: simY, theta: simTheta, blockId: blockId });
         }
-        else if (currentBlock.type === 'robot_goto') {
+        else if (currentBlock.type === 'robot_goto' || currentBlock.type === 'robot_aller') {
             let rawX = parseInt(currentBlock.getFieldValue('X'));
             let rawY = parseInt(currentBlock.getFieldValue('Y'));
             let rawTheta = parseInt(currentBlock.getFieldValue('THETA'));
@@ -59,6 +59,19 @@ function parseSequence(firstBlock, currentX, currentY, currentTheta) {
                 pPath = pPath.concat(subResult.path);
                 simX = subResult.endX; simY = subResult.endY; simTheta = subResult.endTheta;
             }
+        }
+        else if (currentBlock.type === 'robot_si_temps') {
+            // Aperçu : le contenu est supposé exécuté (le robot décidera selon le temps restant)
+            const corps = currentBlock.getInputTargetBlock('DO');
+            if (corps) {
+                const sub = parseSequence(corps, simX, simY, simTheta);
+                queue.push(...sub.queue); pPath.push(...sub.path);
+                simX = sub.endX; simY = sub.endY; simTheta = sub.endTheta;
+            }
+        }
+        else if (currentBlock.type === 'robot_aligner_tag' || currentBlock.type === 'robot_retour_fin') {
+            queue.push({ type: 'action', msg: currentBlock.type === 'robot_aligner_tag'
+                ? `Alignement tag ${currentBlock.getFieldValue('ID')}` : 'Retour de fin déclaré', blockId: blockId });
         }
         else if (currentBlock.type === 'robot_gobase_at') {
             let targetX = DEFAULT_START_X;
