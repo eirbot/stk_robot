@@ -160,7 +160,8 @@ class TestTemps(unittest.TestCase):
         interdit, sur = dyn.evaluer(1000, 800, 0.5)
         self.assertFalse(interdit)
         self.assertGreater(sur, 0)
-        self.assertEqual(dyn.evaluer(1000, 300, 10.0), (False, 0.0))   # au-delà de l'horizon
+        self.assertTrue(dyn.evaluer(1000, 300, 10.0)[0])          # au-delà de l'horizon : toujours là
+        self.assertEqual(dyn.evaluer(1000, 800, 10.0), (False, 0.0))  # mais plus de surcoût
 
     def test_passe_derriere_un_adversaire_qui_traverse(self):
         # adversaire qui traverse vers X+ ; le robot monte vers Y+ et doit passer derrière (X plus petit)

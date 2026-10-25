@@ -46,7 +46,7 @@ class TestNavigateur(unittest.TestCase):
     def test_adversaire_et_pierres(self):
         nav = Navigateur()
         adversaire_qui_traverse(nav)
-        nav.observer_vision({"pierres": [{"x": 1000, "y": 600, "theta": 0}]}, 0.5)
+        nav.observer_vision({"pierres": [{"x": 1000, "y": 600, "theta": 0, "nb": 3}]}, 0.5)
         nav.observer_pose(1000, -1100, 90, 0.5)
         nav.demander(1, (1000, 1100, 90))
         plan, _ = nav.planifier(0.5)
@@ -54,7 +54,7 @@ class TestNavigateur(unittest.TestCase):
         self.assertFalse(nav.carte.libre(1000, 600))                 # la pierre est un obstacle
         carte = nav.message_carte(0.5)
         self.assertEqual(len(carte["predictions"]), 1)
-        self.assertEqual(carte["pierres"], [[1000, 600, 0.0]])
+        self.assertEqual(carte["pierres"], [[1000, 600, 0.0, 3]])
 
     def test_pierre_cible_ignoree(self):
         nav = Navigateur({"ignorer_pres_cible_mm": 300})
@@ -75,6 +75,16 @@ class TestNavigateur(unittest.TestCase):
         self.assertTrue(c1)
         self.assertFalse(c2)                                       # presque rien n'a bougé : même chemin
         self.assertEqual(p1.points[1:], p2.points[1:])
+
+    def test_points_lidar_expliques(self):
+        """Points LiDAR sur un adversaire suivi ou une pierre connue : pas d'obstacle fixe en plus."""
+        nav = Navigateur()
+        nav.observer_vision({"adversaires": [{"id": 5, "x": 1000, "y": 0}],
+                             "pierres": [{"x": 500, "y": 800, "theta": 0, "nb": 1}]}, 0.0)
+        nav.observer_lidar([(1000, 190), (500 + 170, 800), (1500, -700)], 0.0)
+        self.assertEqual(nav.points_inexpliques(0.0, nav.pierres), [(1500, -700)])
+        nav.observer_lidar([(1000, 190)], 0.0)
+        self.assertEqual(nav.points_inexpliques(5.0, nav.pierres), [])     # trop vieux
 
     def test_terminer(self):
         nav = Navigateur()

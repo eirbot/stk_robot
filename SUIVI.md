@@ -374,6 +374,17 @@ les refontes sont acceptées.
 - Essai de bout en bout fait sur PC (binaire base + worker + messages caméra / robot simulés) : 29 plans en 3 s
   reçus sur le canal du robot, contournant adversaire et pierre.
 
+### Vidéo de simulation, piles de pierres (2026-10-25, nuit)
+- `tools/video_simu.py` (`uv run tools/video_simu.py -o simu.mp4`) : vidéo de dessus avec le vrai planificateur et le
+  vrai suivi (monde simulé : robot, adversaire en allers-retours, caméra, LiDAR, piles de pierres). Le décor est
+  vérifié avec le planificateur (pas de couloir trop étroit).
+- Corrigé grâce à elle : points LiDAR déjà expliqués (adversaire suivi, pierre connue) ignorés comme obstacles
+  fixes (`Navigateur.points_inexpliques`) ; robot bloqué devant un obstacle -> il tourne vers le chemin au lieu de
+  rester figé (`suivi.py`) ; adversaire gardé à sa dernière position prédite au-delà de l'horizon (sinon un chemin
+  lointain passait à travers un robot arrêté).
+- Pierres empilées : `nb` = hauteur du tag / 110 mm (vision -> base -> carte 3D : pile de nb boîtes + nombre,
+  dessinée depuis `vision_update`, même sans planificateur). **Vérifier le signe de z** sur la vraie caméra.
+
 ## Essais robot prévus (dans l'ordre)
 1. Déployer base (`./Base/build.sh` sur la base : Go modifié ; **`uv sync` à la racine du dépôt sur la base**, avec
    internet, pour l'env du planificateur) et robot ; **copier dans le config.json du robot** les sections `camera`,

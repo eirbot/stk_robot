@@ -17,6 +17,8 @@ from core.suivi_adversaire import SuiviAdversaires
 AGE_MAX_LIDAR_S = 0.5
 AGE_MAX_PIERRES_S = 5.0        # les pierres bougent peu ; une image ratée ne les efface pas
 AGE_MAX_POSE_S = 1.0
+TOLERANCE_ADVERSAIRE_MM = 80.0   # point LiDAR à moins de rayon + ça d'un adversaire suivi : c'est lui
+TOLERANCE_PIERRE_MM = 60.0       # point LiDAR à moins de ça d'une pierre connue : c'est elle
 
 
 class Navigateur:
@@ -34,7 +36,8 @@ class Navigateur:
 
     # --- observations ---------------------------------------------------------------------
     def observer_vision(self, data, t):
-        """Message de la caméra zénithale : {"adversaires": [{id, x, y}], "pierres": [{x, y, theta}]}."""
+        """Message de la caméra zénithale : {"adversaires": [{id, x, y}], "pierres": [{x, y, theta, nb}]}
+        (nb : pierres empilées, déduit de la hauteur du tag)."""
         for a in data.get("adversaires") or []:
             try:
                 i, x, y = int(a["id"]), float(a["x"]), float(a["y"])
@@ -48,7 +51,7 @@ class Navigateur:
             pierres = []
             for p in data.get("pierres") or []:
                 try:
-                    pierres.append((float(p["x"]), float(p["y"]), float(p.get("theta", 0.0))))
+                    pierres.append((float(p["x"]), float(p["y"]), float(p.get("theta", 0.0)), int(p.get("nb", 1))))
                 except (KeyError, TypeError, ValueError):
                     continue
             self.pierres, self.t_pierres = pierres, t
@@ -73,10 +76,29 @@ class Navigateur:
     def _cfg(self):
         return {**self.cfg, **(self.nav["cfg"] if self.nav else {})}
 
+    def points_inexpliques(self, t, pierres):
+        """Points LiDAR qui ne sont ni un adversaire suivi (couche dynamique, avec sa prédiction) ni une
+        pierre connue (rectangle exact) : seuls ceux-là deviennent des obstacles fixes. Sinon chaque tour
+        LiDAR redessine ces objets un peu ailleurs, gonflés de la taille du robot, et invalide le chemin."""
+        if t - self.t_lidar > AGE_MAX_LIDAR_S:
+            return []
+        cfg = {**planif.DEFAUTS, **self._cfg()}
+        r_adv = cfg["rayon_adversaire_mm"] + TOLERANCE_ADVERSAIRE_MM
+        advs = [p.position(t)[:2] for p in self.suivi.actives(t)]
+        lg, la = cfg["dimensions_pierre_mm"]
+        out = []
+        for x, y in self.lidar:
+            if any(math.hypot(x - ax, y - ay) < r_adv for ax, ay in advs):
+                continue
+            if any(_dist_rect(x, y, p, lg, la) < TOLERANCE_PIERRE_MM for p in pierres):
+                continue
+            out.append((x, y))
+        return out
+
     def construire_carte(self, t, cible=None):
         cfg = self._cfg()
-        lidar = self.lidar if t - self.t_lidar <= AGE_MAX_LIDAR_S else []
         pierres = self.pierres if t - self.t_pierres <= AGE_MAX_PIERRES_S else []
+        lidar = self.points_inexpliques(t, pierres)
         robot = self.pose[:2] if self.pose else None
         self.carte = planif.construire(cfg, (), lidar, self.chaleur, t, pierres, cible, robot)
         return self.carte
@@ -121,5 +143,13 @@ class Navigateur:
         carte = self.carte if self.carte is not None else self.construire_carte(t)
         k = max(1, round(pas_mm / carte.res))
         return {"grille": carte.resume(pas_mm), "pas_mm": carte.res * k, "predictions": self.predictions(t),
-                "pierres": [[round(x), round(y), round(th, 1)] for x, y, th in
+                "pierres": [[round(x), round(y), round(th, 1), nb] for x, y, th, nb in
                             (self.pierres if t - self.t_pierres <= AGE_MAX_PIERRES_S else [])]}
+
+
+def _dist_rect(x, y, pierre, longueur, largeur):
+    """Distance d'un point au rectangle d'une pierre (x, y, theta[, nb]), 0 dedans."""
+    c, s = math.cos(math.radians(pierre[2])), math.sin(math.radians(pierre[2]))
+    u = (x - pierre[0]) * c + (y - pierre[1]) * s
+    v = -(x - pierre[0]) * s + (y - pierre[1]) * c
+    return math.hypot(max(abs(u) - longueur / 2, 0.0), max(abs(v) - largeur / 2, 0.0))

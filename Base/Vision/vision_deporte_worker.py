@@ -52,6 +52,7 @@ arucoDirectory.update({str(i): arucoDirectory[str(TAG_ID_ROBOT)] for i in ADVERS
 TAG_ID_PIERRE = 13
 TAILLE_TAG_PIERRE_MM = float(os.environ.get("VISION_TAG_PIERRE_MM", "50"))   # à mesurer sur une vraie pierre
 PIERRE_AXE_TAG_DEG = float(os.environ.get("VISION_PIERRE_AXE_TAG_DEG", "0"))  # axe long de la pierre / axe x du tag
+HAUTEUR_PIERRE_MM = 110.0   # pierres posées à plat : la face du haut d'une pile de n pierres est à ~n x 110 mm
 _c = TAILLE_TAG_PIERRE_MM / 2
 arucoDirectory[str(TAG_ID_PIERRE)] = np.array([[-_c, _c, 0.0], [_c, _c, 0.0], [_c, -_c, 0.0], [-_c, -_c, 0.0]])
 TABLE_TAG_IDS = (20, 21, 22, 23)
@@ -99,7 +100,8 @@ def adversaires_table(compute_pos):
 def pierres_table(compute_pos, detections, ids):
     """Pierres (tag 13 face vers le haut), une par détection : computePosition ne garde qu'une pose
     par numéro de tag, or toutes les pierres portent le 13. detections[k] (solvePnP) va avec ids[k].
-    [{x, y, z, theta}] repère table/robot ; theta = axe long de la boîte ; doublons (piles) fusionnés."""
+    [{x, y, z, theta, nb}] repère table/robot ; theta = axe long de la boîte ; nb = pierres dans la pile
+    (hauteur du tag / 110 mm : seule la face du haut de la pile est vue)."""
     cam = getattr(compute_pos, "allPoses", {}).get("cam")
     if cam is None:
         return []
@@ -116,8 +118,9 @@ def pierres_table(compute_pos, detections, ids):
             continue
         if any(math.hypot(x - p["x"], y - p["y"]) < 80 for p in out):
             continue
+        nb = int(max(1, min(6, round(z / HAUTEUR_PIERRE_MM)))) if z > 0 else 1
         out.append({"x": round(float(x), 1), "y": round(float(y), 1), "z": round(z, 1),
-                    "theta": round(float(cap + PIERRE_AXE_TAG_DEG), 1)})
+                    "theta": round(float(cap + PIERRE_AXE_TAG_DEG), 1), "nb": nb})
     return out
 
 

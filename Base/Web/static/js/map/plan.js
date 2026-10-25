@@ -1,19 +1,24 @@
 // Carte 3D : ce que voit le planificateur de trajectoire.
 //   « plan » (base : Base/Planif, ou robot en secours) : chemin suivi ;
 //   « carte_planif » (base, 2 Hz) : carte de coûts (orange = surcoût, rouge = interdit), trajectoires
-//   prédites des adversaires (points de plus en plus pâles, anneau = incertitude), pierres ;
-//   vision_update.adversaires : robots adverses vus par la caméra zénithale.
+//   prédites des adversaires (points de plus en plus pâles, anneau = incertitude) ;
+//   vision_update (caméra zénithale, 10 Hz) : robots adverses et pierres, empilées selon la hauteur du
+//   tag (nb), avec le nombre au-dessus de la pile.
 // Fichiers de la carte chargés dans l'ordre par templates/map.html (portée globale partagée).
 
 let planGroup = null;
 let advGroup = null;
 let carteGroup = null;
+let pierresGroup = null;
+let dernieresPierres = '';
 
 function initPlanGroups() {
     if (planGroup || typeof scene === 'undefined' || !scene) return;
     planGroup = new THREE.Group();
     advGroup = new THREE.Group();
     carteGroup = new THREE.Group();
+    pierresGroup = new THREE.Group();
+    scene.add(pierresGroup);
     scene.add(planGroup);
     scene.add(advGroup);
     scene.add(carteGroup);
@@ -113,17 +118,53 @@ function updateCartePlanif(data) {
             }
         });
     });
-    // Pierres (boîtes 320 x 110 mm, vues d'en haut ; theta = axe long)
-    (data.pierres || []).forEach(([x, y, th]) => {
-        const q = robotToThree(x, y);
-        const m = new THREE.Mesh(new THREE.BoxGeometry(320, 110, 110),
-            new THREE.MeshLambertMaterial({ color: 0xc8a165 }));
-        m.position.set(q.x, q.y, 55);
-        m.rotation.z = (th - 90) * Math.PI / 180;   // même convention que thetaToThreeRad (frames.js)
-        carteGroup.add(m);
+}
+
+// Pierres : boîtes 320 x 110 x 110 mm posées à plat, theta = axe long ; nb = pierres dans la pile
+const HAUTEUR_PIERRE = 110;
+const pierreGeo = () => new THREE.BoxGeometry(320, 110, HAUTEUR_PIERRE);
+const PIERRE_COULEURS = [0xc8a165, 0xb08850, 0xd9b37a];
+
+function etiquette(texte) {
+    const cv = document.createElement('canvas');
+    cv.width = 64; cv.height = 64;
+    const c = cv.getContext('2d');
+    c.fillStyle = 'rgba(0,0,0,0.65)';
+    c.beginPath(); c.arc(32, 32, 30, 0, 2 * Math.PI); c.fill();
+    c.fillStyle = '#ffffff';
+    c.font = 'bold 38px sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(texte, 32, 34);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthTest: false }));
+    sp.scale.set(90, 90, 1);
+    return sp;
+}
+
+function updatePierres(liste) {
+    initPlanGroups();
+    if (!pierresGroup) return;
+    const cle = JSON.stringify(liste || []);
+    if (cle === dernieresPierres) return;          // 10 Hz : on ne reconstruit que si ça change
+    dernieresPierres = cle;
+    viderGroupe(pierresGroup);
+    (liste || []).forEach(p => {
+        const q = robotToThree(p.x, p.y);
+        const nb = Math.max(1, Math.min(6, p.nb || 1));
+        for (let k = 0; k < nb; k++) {
+            const m = new THREE.Mesh(pierreGeo(), new THREE.MeshLambertMaterial({ color: PIERRE_COULEURS[k % 3] }));
+            m.position.set(q.x, q.y, HAUTEUR_PIERRE * (k + 0.5));
+            m.rotation.z = ((p.theta || 0) - 90) * Math.PI / 180;   // même convention que thetaToThreeRad (frames.js)
+            pierresGroup.add(m);
+        }
+        const e = etiquette(String(nb));
+        e.position.set(q.x, q.y, HAUTEUR_PIERRE * nb + 70);
+        pierresGroup.add(e);
     });
 }
 
 window.socket.on('plan', updatePlan);
 window.socket.on('carte_planif', updateCartePlanif);
-window.socket.on('vision_update', (d) => updateAdversaires(d && d.detected ? d.adversaires : []));
+window.socket.on('vision_update', (d) => {
+    updateAdversaires(d && d.detected ? d.adversaires : []);
+    if (d && d.detected && Array.isArray(d.pierres)) updatePierres(d.pierres);
+});

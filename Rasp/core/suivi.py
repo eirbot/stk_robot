@@ -121,6 +121,13 @@ class Suivi:
             w = max(-w_max, min(w_max, c["gain_rotation"] * alpha))
             return Commande(self.v, w if self.v == 0.0 else 0.0, "rotation", seg, reste)
 
+        if obstacle_devant_mm <= c["distance_arret_mm"]:
+            # bloqué devant : on ne peut pas avancer, mais on peut se tourner vers le chemin (l'ESP
+            # autorise la rotation en état « avant bloqué ») ; sinon v = 0 donne aussi omega = v k = 0
+            self.v = max(0.0, self.v - 2.0 * c["a_max_mm_s2"] * dt)
+            w = max(-w_max, min(w_max, c["gain_rotation"] * alpha)) if abs(alpha) > 3.0 else 0.0
+            return Commande(self.v, w if self.v == 0.0 else 0.0, "rotation", seg, reste)
+
         kappa = 2.0 * math.sin(math.radians(alpha)) / L_reel          # 1/mm
         v_cible = c["v_max_mm_s"]
         if abs(kappa) > 1e-9:

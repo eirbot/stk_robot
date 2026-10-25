@@ -46,7 +46,7 @@ DEFAUTS = {
     # Planification dans le temps (planifier_temps) : adversaires prédits (core/suivi_adversaire.py)
     "v_nominale_mm_s": 700.0,       # vitesse de croisière du suivi de trajectoire
     "w_nominale_deg_s": 180.0,      # vitesse de rotation (coût des virages)
-    "horizon_s": 4.0,               # au-delà : plus rien (trop incertain)
+    "horizon_s": 4.0,               # au-delà : adversaire figé à sa position prédite, sans surcoût
     "k_sigma": 0.5,                 # zone interdite autour de la position prédite = rayon + k_sigma x
     "sigma_dur_max_mm": 100.0,      #  incertitude, plafonnée : le reste de l'incertitude = surcoût
     "tampon_mm": 50.0,              # en plus pour CRÉER un chemin ; pour GARDER le chemin courant, sans
@@ -159,10 +159,11 @@ class Carte:
         self._appliquer(dist, cx - r, cy - r, cx + r, cy + r, 0.0, m, p)
 
     def ajouter_pierres(self, pierres):
-        """Pierres vues par la caméra zénithale : [(x, y, theta)], théta = axe long de la boîte."""
+        """Pierres vues par la caméra zénithale : [(x, y, theta[, nb])], théta = axe long de la boîte
+        (une pile = un obstacle, quelle que soit sa hauteur)."""
         lg, la = self.cfg["dimensions_pierre_mm"]
-        for x, y, th in pierres:
-            self.ajouter_rect_oriente(x, y, lg, la, th)
+        for p in pierres:
+            self.ajouter_rect_oriente(p[0], p[1], lg, la, p[2])
 
     def ajouter_adversaire(self, x, y, vx=0.0, vy=0.0):
         c = self.cfg
@@ -463,17 +464,19 @@ class Dynamique:
 
     def evaluer(self, x, y, t_rel, tampon=True):
         """(interdit, surcoût) pour le robot en (x, y) à t_rel secondes d'ici."""
-        if not self.pistes or t_rel > self.h:
+        if not self.pistes:
             return False, 0.0
+        # au-delà de l'horizon : l'adversaire reste à sa dernière position prédite (l'ignorer ferait
+        # passer un chemin lointain à travers un robot arrêté) ; le surcoût, lui, s'éteint
         sur = 0.0
-        decroit = 1.0 - t_rel / self.h
+        decroit = max(0.0, 1.0 - t_rel / self.h)
         r_dur = self.r_dur + (self.tampon if tampon else 0.0)
         for px, py, sig in self._positions(t_rel):
             d = math.hypot(x - px, y - py)
             if d < r_dur + self.k * min(sig, self.sig_dur):
                 return True, 0.0
             portee = self.r_dur + self.marge + sig
-            if d < portee:
+            if d < portee and decroit > 0:
                 sur += self.w * decroit * (1.0 - max(0.0, d - self.r_dur) / (portee - self.r_dur))
         return False, sur
 
@@ -487,8 +490,6 @@ class Dynamique:
             for k in range(n + 1):
                 f = k / n
                 t = ta + (tb - ta) * f
-                if t > self.h:
-                    return best
                 x, y = a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f
                 for px, py, _ in self._positions(t):
                     best = min(best, math.hypot(x - px, y - py) - self.r_dur)

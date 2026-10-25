@@ -73,6 +73,14 @@ class TestSuivi(unittest.TestCase):
         self.assertLess(max(p[1] for p in trace), -suivi.DEFAUTS["distance_arret_mm"] + 60)
         self.assertNotEqual(cmds[-1].etat, "arrive")
 
+    def test_bloque_devant_tourne_vers_le_chemin(self):
+        # obstacle juste devant, chemin qui part à 30° : le robot ne reste pas figé, il tourne
+        s = suivi.Suivi([(0, 0), (1000, 577)])
+        c = s.commande((0, 0, 0), DT, obstacle_devant_mm=200.0)
+        self.assertEqual(c.etat, "rotation")
+        self.assertEqual(c.v, 0.0)
+        self.assertGreater(c.w, 0.0)
+
     def test_obstacle_devant(self):
         pts = [(800, 0), (800, 300), (300, 0)]
         self.assertAlmostEqual(suivi.obstacle_devant(pts, (500, 0, 0)), 300)

@@ -1,12 +1,13 @@
 [project]
 name = "stk-robot-outils"
 version = "0.1.0"
-description = "Environnement PC des tests et outils (numpy, OpenCV pour la vision embarquée, pyzmq)"
+description = "Environnement PC des tests et outils (numpy, OpenCV pour la vision embarquée, pyzmq, Pillow pour tools/video_simu.py)"
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.26",
     "opencv-python-headless>=4.8",
     "pyzmq>=25",
+    "pillow>=10",
 ]
 
 [tool.uv]

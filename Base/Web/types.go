@@ -66,6 +66,7 @@ type Pierre struct {
 	Y     float64 `json:"y"`
 	Z     float64 `json:"z"`
 	Theta float64 `json:"theta"`
+	Nb    int     `json:"nb"` // pierres dans la pile (hauteur du tag / 110 mm)
 }
 
 // Robot adverse vu par la caméra zénithale (repère table, mm) : planificateur du robot
