@@ -439,6 +439,16 @@ les refontes sont acceptées.
   13°/m. Réglages vision_odom de cette calibration appliqués sur le robot (seulement là, pas dans le dépôt).
   Dérive de cap : 4,5° sur 1 m = ~2,7 % d'écart entre roues gauche / droite -> vérifier les roues (diamètre,
   bandages, parallélisme) ; sinon diamètre par roue dans le firmware.
+- **Mécanique (diagnostic de l'équipe)** : roues de même diamètre ; moyeux et supports moteur qui plient légèrement ->
+  glissement énorme (35° de rotation pendant une ligne droite de 1 m). Pièces à refaire en alu. **Plus d'essai de
+  calibration avant** : aucune mesure odo / caméra n'est exploitable avec ce glissement.
+- **Échelle de la vision corrigée** : tags de table de 96 mm (vision_deporte les déclare à 100) ->
+  `TAILLE_TAG_TABLE_MM` dans `vision_deporte_worker.py` (env `VISION_TAG_TABLE_MM`), explique les +4 %.
+  Caméra à 1 550 mm au-dessus de la table (mesuré) ; la vision en calcule ~1 507 (`hauteur_camera_mm` dans
+  `/api/status` du port 8082) : écart -2,8 % = focale de la calibration caméra et/ou point de référence (centre
+  optique sous le haut du boîtier) ; n'affecte pas les distances sur la table. Taille du tag robot (70 mm) non vérifiée.
+- Script d'essai : un GoTo interrompu par le LiDAR a été pris pour une arrivée -> le robot est sorti du tiers du
+  milieu. Toujours vérifier l'arrivée (position) avant l'étape suivante.
 - GoTo hors match bloqué par un obstacle : abandonné après 20 s (`MANUEL_RELANCES_S`, avant : sans fin).
 - Watchdog ESP déclenché si un match démarre pendant l'ouverture de l'écran local (Python bloqué > 300 ms).
 - Debug > Robot : bouton **« Odométrie = caméra »** (commande zmq `recalage_camera`, refusée en match).
@@ -464,7 +474,8 @@ les refontes sont acceptées.
 - [ ] Calibration auto (sur une surface qui accroche) (Debug > Robot), essai LiDAR gauche/droite (point 3 des
       essais), évitement réel, `aller()` avec adversaire / pierre, `aligner_tag`, match complet avec tirette.
 - [ ] Rotation sur place : déplacement de ~40 mm du point suivi (voir Intégration 2026-10-27), sans doute le glissement.
-- [ ] Corriger l'échelle de la vision (+4-5 %), puis refaire la calibration.
+- [ ] Après les pièces en alu : refaire l'essai 1 m (odo vs caméra, échelle corrigée) puis la calibration lente.
+- [ ] Vérifier la taille réelle du tag du robot (70 mm déclarés) ; hauteur caméra calculée 1 507 vs 1 550 mesurés.
 - [ ] Dérive de cap ~13°/m (robot qui tire à gauche) : roues à vérifier, ou diamètre par roue dans le firmware.
 - [ ] Glissement des roues : la calibration auto mesure odo vs caméra, un glissement fausse diamètre / entraxe ;
       refaire sur une surface qui accroche, accélérations plus douces (`ACCEL` firmware) si ça glisse en match.
