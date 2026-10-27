@@ -70,6 +70,7 @@ class MotionController {
 
   // GoTo
   uint32_t goto_id_ = 0;
+  float speed_factor_ = 1.0f;       // facteur de vitesse du GoTo (champ optionnel de G)
   Segment segment_;                 // segment en cours (type None : aucun, le suivant est à lancer)
   int32_t target_left_ = 0;         // compteurs de pas visés par le segment
   int32_t target_right_ = 0;

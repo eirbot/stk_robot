@@ -10,7 +10,7 @@ namespace protocol {
 
 namespace {
 
-constexpr int MAX_FIELDS = 4;
+constexpr int MAX_FIELDS = 5;
 
 // Découpe les champs numériques qui suivent la lettre de commande. Renvoie le nombre
 // de champs lus, ou -1 si l'un d'eux n'est pas un nombre fini ou s'il y en a trop.
@@ -58,12 +58,16 @@ Command parse(const char* line) {
   Command c;
   switch (letter) {
     case 'G':
-      if (n != 4) return invalid("G attend : id x y theta");
+      if (n != 4 && n != 5) return invalid("G attend : id x y theta [facteur]");
       // L'id doit être un entier positif (strtof lit aussi « 3.5 » ou « -1 »)
       if (f[0] < 0.0f || f[0] > 16777216.0f || f[0] != std::floor(f[0])) return invalid("id de GoTo invalide");
       c.type = Command::Type::GoTo;
       c.id = static_cast<uint32_t>(f[0]);
       c.pose = {f[1], f[2], normalizeDeg(f[3])};
+      if (n == 5) {
+        if (!(f[4] > 0.0f && f[4] <= 1.0f)) return invalid("facteur de vitesse hors ]0, 1]");
+        c.speed_factor = f[4];
+      }
       return c;
     case 'V':
       if (n != 2) return invalid("V attend : vx omega");

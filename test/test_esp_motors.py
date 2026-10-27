@@ -251,6 +251,27 @@ def test_goto_annule():
         esp.stop()
 
 
+def test_goto_facteur_vitesse():
+    """vitesse < 1 : 5e champ du G ; pleine vitesse : G à 4 champs (comme avant)."""
+    mod, _ = load_module()
+    esp = mod.ESPMotors()
+    esp.start()
+    try:
+        th, result = start_goto(esp, 100, 0, 0, vitesse=0.3)
+        assert wait_for(lambda: any(l.startswith("G ") for l in sent_lines(esp)))
+        g = [l for l in sent_lines(esp) if l.startswith("G ")][-1]
+        assert g.endswith(" 0.30"), g
+        esp.ser.rx.put(f"D {g.split()[1]}")
+        th.join(2)
+        th, result = start_goto(esp, 200, 0, 0)
+        goto_id, *_ = wait_goto(esp)
+        esp.ser.rx.put(f"D {goto_id}")
+        th.join(2)
+        assert result.get("ok") is True
+    finally:
+        esp.stop()
+
+
 def test_reponse_d_un_ancien_goto_ignoree():
     """Le « A » en retard d'un GoTo précédent ne termine pas le GoTo en cours."""
     mod, _ = load_module()

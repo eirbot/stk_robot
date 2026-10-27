@@ -102,8 +102,9 @@ class ESPMotors:
     def connected(self):
         return self.ser is not None and self.ser.is_open
 
-    def goto(self, x, y, theta, manual=False):
+    def goto(self, x, y, theta, manual=False, vitesse=1.0):
         """GoTo en repère table : converti dans le repère odométrie de l'ESP (fusion caméra).
+        vitesse : facteur ]0, 1] sur les vitesses et accélérations de l'ESP (champ optionnel de G).
         Renvoie True si l'ESP a répondu « D », False s'il a été annulé (A, arrêt du match,
         délai dépassé). Lève ESPError si l'ESP n'est pas branché."""
         if not self.connected:
@@ -114,7 +115,8 @@ class ESPMotors:
             waiter = {"event": threading.Event(), "ok": False}
             self._goto_waiters[goto_id] = waiter
         ox, oy, otheta = shared.loc.to_odom(x, y, theta)
-        self.send(f"G {goto_id} {ox:.1f} {oy:.1f} {otheta:.2f}")
+        facteur = f" {vitesse:.2f}" if vitesse < 1.0 else ""
+        self.send(f"G {goto_id} {ox:.1f} {oy:.1f} {otheta:.2f}{facteur}")
 
         try:
             t_end = time.monotonic() + GOTO_TIMEOUT_S

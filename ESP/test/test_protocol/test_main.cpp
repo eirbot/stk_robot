@@ -33,6 +33,17 @@ void test_goto_cap_normalise() {
   TEST_ASSERT_FLOAT_WITHIN(1e-3f, -90.0f, protocol::parse("G 1 0 0 270").pose.theta_deg);
 }
 
+void test_goto_facteur_vitesse() {
+  TEST_ASSERT_FLOAT_WITHIN(1e-6f, 1.0f, protocol::parse("G 1 0 0 0").speed_factor);  // absent : pleine vitesse
+  const Command c = protocol::parse("G 2 100 0 0 0.3");
+  assertType(Type::GoTo, c);
+  TEST_ASSERT_FLOAT_WITHIN(1e-6f, 0.3f, c.speed_factor);
+  TEST_ASSERT_FLOAT_WITHIN(1e-6f, 1.0f, protocol::parse("G 3 0 0 0 1").speed_factor);
+  assertInvalid("G 4 0 0 0 0");
+  assertInvalid("G 5 0 0 0 1.5");
+  assertInvalid("G 6 0 0 0 -0.5");
+}
+
 void test_goto_id_invalide() {
   assertInvalid("G -1 0 0 0");
   assertInvalid("G 3.5 0 0 0");
@@ -76,7 +87,7 @@ void test_espaces_multiples() {
 
 void test_mauvais_nombre_de_champs() {
   assertInvalid("G 1 2 3");      // ancien format sans id
-  assertInvalid("G 1 2 3 4 5");
+  assertInvalid("G 1 2 3 4 0.5 6");
   assertInvalid("V 100");
   assertInvalid("S 1 2");
 }
@@ -172,6 +183,7 @@ int main() {
   UNITY_BEGIN();
   RUN_TEST(test_goto);
   RUN_TEST(test_goto_cap_normalise);
+  RUN_TEST(test_goto_facteur_vitesse);
   RUN_TEST(test_goto_id_invalide);
   RUN_TEST(test_vitesse);
   RUN_TEST(test_set_pose);

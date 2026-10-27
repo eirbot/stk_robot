@@ -31,7 +31,7 @@ class FakeESPMotors:
     def start(self):
         pass
 
-    def goto(self, x, y, theta, manual=False):
+    def goto(self, x, y, theta, manual=False, vitesse=1.0):
         self.calls.append(("goto", round(x, 3), round(y, 3), round(theta, 3)))
         time.sleep(0.01)
         return True

@@ -21,6 +21,7 @@ import time
 from core import frames, reglage_fusion
 
 PAUSE_S = 2.0
+VITESSE = 0.3           # facteur de vitesse / accélération des GoTo : lent, les roues ne glissent pas
 MARGE_BORD_MM = 350.0   # le robot fait ~310 mm de rayon autour de son point de référence
 
 
@@ -132,7 +133,7 @@ class Calibration:
                     while time.time() < fin and not self._stop.is_set():
                         time.sleep(0.05)
                 else:
-                    self.robot.goto(*args, manual=True, real=True)
+                    self.robot.goto(*args, manual=True, real=True, vitesse=VITESSE)
             t1 = time.time()
             sh.loc_log.flush()
             events = [e for e in reglage_fusion.load_log(sh.loc_log.chemin) if t0 - 1.0 <= e[1] <= t1]

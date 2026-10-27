@@ -17,6 +17,7 @@ _angle_diff = frames.angle_diff_deg
 DUREES_PATH = os.path.join(os.environ.get("ROBOT_TELEMETRY_DIR") or os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs"), "durees_goto.jsonl")
 DUREES_MAX = 400
+MANUEL_RELANCES_S = 20.0  # GoTo hors match bloqué par un obstacle : abandon après ce délai
 
 
 class RetourFin(Exception):
@@ -69,10 +70,12 @@ class RobotActions:
             print("[SIMU] SET_POS virtuel (Pas de com)")
 
 
-    def goto(self, x, y, theta, manual=False, real=False, retry=True, rattrapage=True):
+    def goto(self, x, y, theta, manual=False, real=False, retry=True, rattrapage=True, vitesse=1.0):
         """Déplacement en ligne droite (rotation, avance, rotation) : un GoTo de l'ESP.
 
         retry : relance tant que l'ESP l'annule (obstacle) ; sinon renvoie False au premier refus.
+        Hors match (manual), abandon après MANUEL_RELANCES_S de refus (avant : relancé sans fin).
+        vitesse : facteur ]0, 1] sur vitesses et accélérations (calibration : lent, sans glissement).
         Pendant un match, vérifie d'abord qu'il reste le temps de rentrer (retour_fin)."""
         self._check_abort(manual=manual)
         if not manual:
@@ -92,9 +95,13 @@ class RobotActions:
             return True
         shared.evenement("goto", x=round(real_x), y=round(real_y), theta=round(real_theta, 1))
         depart, t0 = shared.loc.pose(), time.time()
-        success = hardware.esp.goto(real_x, real_y, real_theta, manual=manual)
+        success = hardware.esp.goto(real_x, real_y, real_theta, manual=manual, vitesse=vitesse)
+        premier_refus = time.time()
         while not success and retry:
             if manual and shared.state.get("fsm_state") == "STOPPED":
+                break
+            if manual and time.time() - premier_refus > MANUEL_RELANCES_S:
+                print(f"[ACTION] GOTO abandonné : bloqué depuis plus de {MANUEL_RELANCES_S:.0f} s")
                 break
             if not manual and not shared.state.get("match_running", False):
                 break
@@ -102,11 +109,12 @@ class RobotActions:
             self._check_abort(manual=manual)
             time.sleep(0.5)
             depart, t0 = shared.loc.pose(), time.time()
-            success = hardware.esp.goto(real_x, real_y, real_theta, manual=manual)
+            success = hardware.esp.goto(real_x, real_y, real_theta, manual=manual, vitesse=vitesse)
         if success:
-            self._noter_duree(depart, (real_x, real_y, real_theta), time.time() - t0)
+            if vitesse >= 1.0:  # le modèle de temps de match apprend les GoTo à pleine vitesse
+                self._noter_duree(depart, (real_x, real_y, real_theta), time.time() - t0)
             if rattrapage:
-                self._rattrapage(real_x, real_y, real_theta, manual)
+                self._rattrapage(real_x, real_y, real_theta, manual, vitesse)
         else:
             shared.evenement("goto_annule", x=round(real_x), y=round(real_y))
         return success
@@ -443,7 +451,7 @@ class RobotActions:
             self.approche_reussie = abs(ey) < 2 * tolerance_mm and abs(tag.ecart_angle) < 2 * tolerance_deg
         return tag if self.approche_reussie else None
 
-    def _rattrapage(self, x, y, theta, manual):
+    def _rattrapage(self, x, y, theta, manual, vitesse=1.0):
         """Fin de GoTo : l'ESP a visé la cible dans SON repère, calculé au départ. Si la caméra
         a corrigé la pose pendant le trajet, le robot n'est pas où on voulait : petit GoTo
         de rattrapage (l'ESP ignore une nouvelle consigne pendant un mouvement)."""
@@ -462,7 +470,7 @@ class RobotActions:
                 return
             self._check_abort(manual=manual)
             print(f"[ACTION] Rattrapage caméra : {ecart:.0f} mm, {ecart_theta:+.1f}° de la cible")
-            if not hardware.esp.goto(x, y, theta, manual=manual):
+            if not hardware.esp.goto(x, y, theta, manual=manual, vitesse=vitesse):
                 return
 
     def set_speed(self, vx, vtheta):

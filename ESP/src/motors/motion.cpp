@@ -107,6 +107,7 @@ void MotionController::update(uint32_t now_ms) {
 
 void MotionController::startGoto(const Command& cmd) {
   goto_id_ = cmd.id;
+  speed_factor_ = cmd.speed_factor;
   planner_.start(cmd.pose);
   segment_ = {};
   state_ = State::Goto;  // le premier segment part au prochain update(), roues arrêtées
@@ -144,6 +145,8 @@ bool MotionController::launch(const Segment& seg) {
     speed = config::DRIVE_SPEED_MM_S;
     accel = config::DRIVE_ACCEL_MM_S2;
   }
+  speed *= speed_factor_;
+  accel *= speed_factor_;
   segment_ = seg;
   target_left_ = wheels_.leftSteps() + left;
   target_right_ = wheels_.rightSteps() + right;

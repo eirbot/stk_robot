@@ -2,8 +2,9 @@
 // des espaces, nombres décimaux avec un point. Fonctions pures, testées sur PC.
 //
 // Rasp -> ESP
-//   G id x y theta   GoTo vers (x, y) en mm puis cap theta en degrés, repère odométrie.
-//                    id : entier choisi par la Rasp, renvoyé dans D / A.
+//   G id x y theta [f]  GoTo vers (x, y) en mm puis cap theta en degrés, repère odométrie.
+//                    id : entier choisi par la Rasp, renvoyé dans D / A. f (optionnel, ]0, 1]) :
+//                    facteur sur les vitesses et accélérations du GoTo (calibration lente sans glissement).
 //   V vx omega       Vitesse (joystick) : vx en mm/s, omega en deg/s. Arrêt si aucune
 //                    nouvelle consigne pendant VELOCITY_TIMEOUT_MS.
 //   S x y theta      Pose connue : remet l'odométrie à cette pose.
@@ -33,6 +34,7 @@ struct Command {
   Type type = Type::Invalid;
   uint32_t id = 0;              // GoTo
   Pose pose;                    // GoTo (cible), SetPose
+  float speed_factor = 1.0f;    // GoTo : facteur ]0, 1] sur vitesses et accélérations
   float v_mm_s = 0.0f;          // Velocity
   float omega_deg_s = 0.0f;     // Velocity
   Obstacle obstacle = Obstacle::Clear;  // Lidar

@@ -64,7 +64,7 @@ class FakeESPMotors:
         self._shared().set_known_pose(x, y, theta)
         self._publish(x, y, theta)
 
-    def goto(self, x, y, theta, manual=False):
+    def goto(self, x, y, theta, manual=False, vitesse=1.0):
         self.calls.append(("goto", round(x, 3), round(y, 3), round(theta, 3)))
         en_vitesse = getattr(self, "_v_thread", None)
         if en_vitesse:                      # un G annule la vitesse : on attend l'arrêt

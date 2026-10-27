@@ -425,6 +425,17 @@ les refontes sont acceptées.
 - Luminosité des LED enregistrée : `leds.luminosite` (config du robot, 0..1 ; curseur Debug 100 % = 0,5), relue
   par `led_service.py` au démarrage ; avant, toujours 0,1 (20 %) au redémarrage. Anciennes clés `leds.*` (ws281x) retirées.
 - Alias ssh du robot : `ssh robot` (192.168.10.89).
+- **LiDAR compte en sens horaire** : `lidar.montage.sens: -1` (objet en (1000, 900) retrouvé à ~80 mm, sa face avant).
+- Essai 1 m au mètre (odométrie seule) : **1 000 mm réels pour 1 000 d'odométrie** -> diamètre des roues juste ;
+  la caméra zénithale annonçait ~1 053 mm : **échelle de la vision ~5 % trop grande** (à corriger côté vision,
+  `tools/calibrer_camera.py`). Ne PAS appliquer le facteur diamètre ×1,057 proposé par la calibration auto.
+  Le robot dévie vers la gauche (~9 cm et 4,5° sur 1 m) : dérive de cap ~15°/m mesurée par la calibration.
+- Calibration auto (tiers du milieu, 400 mm) : réglages vision_odom appliqués sur le robot (latence 0,068 s,
+  cam_sigma 29 mm / 1,05°, odo_sigma...), `dispersion_max_mm` 60. Firmware : `G id x y theta [facteur]` (vitesse
+  et accélération × facteur), calibration à 30 % ; modèle de temps de match : seuls les GoTo pleine vitesse.
+  Deuxième calibration (lente) faussée : le robot a roulé sur un câble -> à refaire.
+- GoTo hors match bloqué par un obstacle : abandonné après 20 s (`MANUEL_RELANCES_S`, avant : sans fin).
+- Watchdog ESP déclenché si un match démarre pendant l'ouverture de l'écran local (Python bloqué > 300 ms).
 - Debug > Robot : bouton **« Odométrie = caméra »** (commande zmq `recalage_camera`, refusée en match).
 
 ## Essais robot prévus (dans l'ordre)
@@ -448,9 +459,9 @@ les refontes sont acceptées.
 - [ ] Calibration auto (sur une surface qui accroche) (Debug > Robot), essai LiDAR gauche/droite (point 3 des
       essais), évitement réel, `aller()` avec adversaire / pierre, `aligner_tag`, match complet avec tirette.
 - [ ] Rotation sur place : déplacement de ~40 mm du point suivi (voir Intégration 2026-10-27), sans doute le glissement.
+- [ ] Refaire la calibration lente (tiers du milieu, câbles retirés) puis corriger l'échelle de la vision.
 - [ ] Glissement des roues : la calibration auto mesure odo vs caméra, un glissement fausse diamètre / entraxe ;
       refaire sur une surface qui accroche, accélérations plus douces (`ACCEL` firmware) si ça glisse en match.
-- [ ] GoTo hors match annulé par obstacle : relancé sans fin (`actions.goto`) ; limiter ou abandonner après N s.
 - [ ] ESP moteurs flashé le 2026-10-19 (entraxe) ; reste à vérifier : pas de faux déclenchement du
       watchdog en match (`watchdog_count` dans esp_motors), arrêt si on débranche l'USB, pas de reprise
       au rebranchement. Si faux déclenchements : passer `RASP_TIMEOUT_MS` à 400-500.

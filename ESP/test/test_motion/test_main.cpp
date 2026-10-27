@@ -35,11 +35,14 @@ struct FakeWheels : WheelDriver {
   int moves = 0, runs = 0, stops = 0;
   int32_t last_left = 0, last_right = 0;
   float last_run_left = 0, last_run_right = 0;
+  float last_speed = 0, last_accel = 0;
 
   int32_t leftSteps() const override { return static_cast<int32_t>(std::lround(l.pos)); }
   int32_t rightSteps() const override { return static_cast<int32_t>(std::lround(r.pos)); }
-  bool move(int32_t left, int32_t right, float speed, float) override {
+  bool move(int32_t left, int32_t right, float speed, float accel) override {
     moves++;
+    last_speed = speed;
+    last_accel = accel;
     last_left = left;
     last_right = right;
     const int32_t longest = std::max(std::abs(left), std::abs(right));
@@ -173,6 +176,23 @@ void test_rotation_sens_des_roues() {
   b.tick();
   TEST_ASSERT_TRUE(b.wheels.last_right > 0);
   TEST_ASSERT_EQUAL_INT32(-b.wheels.last_right, b.wheels.last_left);
+}
+
+// Facteur de vitesse du G : vitesse et accélération des segments réduites d'autant
+void test_goto_facteur_vitesse() {
+  Bench b;
+  b.send(gotoCmd(1, 500, 0, 0));
+  b.tick();
+  const float pleine_v = b.wheels.last_speed, pleine_a = b.wheels.last_accel;
+  b.runUntilIdle();
+  Command lent = gotoCmd(2, 1000, 0, 0);
+  lent.speed_factor = 0.3f;
+  b.send(lent);
+  b.tick();
+  TEST_ASSERT_FLOAT_WITHIN(1e-3f, 0.3f * pleine_v, b.wheels.last_speed);
+  TEST_ASSERT_FLOAT_WITHIN(1e-3f, 0.3f * pleine_a, b.wheels.last_accel);
+  b.runUntilIdle();
+  assertPose(1000, 0, 0, b.mc.pose());
 }
 
 void test_goto_deja_sur_place() {
@@ -334,6 +354,7 @@ int main() {
   UNITY_BEGIN();
   RUN_TEST(test_goto_complet);
   RUN_TEST(test_rotation_sens_des_roues);
+  RUN_TEST(test_goto_facteur_vitesse);
   RUN_TEST(test_goto_deja_sur_place);
   RUN_TEST(test_nouveau_goto_remplace_le_precedent);
   RUN_TEST(test_halt_annule_le_goto);
