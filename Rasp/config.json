@@ -15,7 +15,7 @@
         "fps": 10,
         "affichage": [820, 616],
         "rotation_180": true,
-        "tuning": null,
+        "tuning": "imx219_noir.json",
         "champ_horizontal_deg": 62.2,
         "intrinseques": null,
         "montage": {"x": 0, "y": 0, "z": 300, "lacet": 0, "tangage": 20, "roulis": 0},

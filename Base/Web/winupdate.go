@@ -444,6 +444,7 @@ func deployRaspCode(ctx context.Context, pull, forceRestart bool, log *updateJob
 	sshOpts := "ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5"
 	rsyncCmd := exec.CommandContext(ctx, "rsync", "-rc", "--out-format=%n",
 		"--exclude=.venv", "--exclude=__pycache__", "--exclude=*.pyc", "--exclude=*.log", "--exclude=config.json",
+		"--exclude=/logs/",          // journaux et durées apprises (temps_match) du robot
 		"--exclude=LiDAR/lidar_udp", // binaire compilé sur la Rasp (aarch64) par main_robot.py
 		"-e", sshOpts, projectRoot+"/Rasp/", robotTarget(raspIP)+":"+robotDir+"/")
 	rsyncOut, err := rsyncCmd.CombinedOutput()

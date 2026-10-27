@@ -83,8 +83,8 @@ def background_loop():
             
             volts = get_voltage_float()
 
-            # --- Détection Batterie Faible (Seuil 18V pour batterie 20V) ---
-            if 3.0 <= volts < 18.0:
+            # --- Détection Batterie Faible (seuils dans core/preflight.py) ---
+            if 3.0 <= volts < preflight.TENSION_ERR_V:
                  last_alert = state.get("last_bat_alert", 0)
                  
                  # On renvoie la commande toutes les 2 secondes pour être PRIORITAIRE sur les autres anims
@@ -97,7 +97,7 @@ def background_loop():
                      send_led_cmd("ANIM:BLINK:255,0,0,300") # Clignotement rapide rouge
             
             # Hystérésis pour le rétablissement
-            elif volts > 19.5:
+            elif volts > preflight.TENSION_WARN_V:
                  if state.get("bat_low", False):
                      print(f"[TASKS] Batterie rétablie ({volts}V).")
                      # Fin d'alerte : MatchState remet la couleur d'équipe

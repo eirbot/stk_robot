@@ -117,7 +117,7 @@ class Calibration:
                 raise RuntimeError("enregistrement désactivé (vision_odom.enregistrer)")
             self._envoyer(etat="en_cours", etape="Recalage caméra", progression=0.0,
                           message=f"Calibration : carré de {cote:.0f} mm")
-            if not self.robot.recalage_camera(attente_max=3.0, manual=True):
+            if not self.robot.recalage_camera(attente_max=3.0, manual=True, force=True):
                 raise RuntimeError("robot non vu par la caméra zénithale (recalage impossible)")
             etapes = sequence(sh.loc.pose(), cote)
             t0 = time.time()

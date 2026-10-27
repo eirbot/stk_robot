@@ -66,7 +66,7 @@ class ZmqClient(threading.Thread):
     # --- Ordres de la base -------------------------------------------------------------
     # Commandes manuelles refusées pendant un match : le robot doit être autonome (règlement),
     # et un joystick oublié annulerait les GoTo de la stratégie.
-    MANUAL_COMMANDS = ("cmd_vel", "goto", "set_robot_pos", "cmd_actuator", "calibration")
+    MANUAL_COMMANDS = ("cmd_vel", "goto", "set_robot_pos", "recalage_camera", "cmd_actuator", "calibration")
     # Messages fréquents, non affichés (chaque print repart en new_log vers l'IHM)
     QUIET_COMMANDS = ("ping", "cmd_vel", "vision_pose", "plan")
 
@@ -81,6 +81,7 @@ class ZmqClient(threading.Thread):
             "goto": self._on_goto,
             "vision_pose": self._on_vision_pose,
             "set_robot_pos": self._on_set_robot_pos,
+            "recalage_camera": self._on_recalage_camera,
             "calibration": self._on_calibration,
             "plan": self._on_plan,
             "play_audio": lambda p: shared.audio.play(p.get("filename") if isinstance(p, dict) else p),
@@ -251,6 +252,14 @@ class ZmqClient(threading.Thread):
             hardware.esp.set_pos(x, y, theta)  # remet aussi la fusion à zéro
         else:
             shared.set_known_pose(x, y, theta)
+
+    def _on_recalage_camera(self, payload):
+        """Bouton « Odométrie = caméra » (Debug) : médiane de la caméra zénithale robot immobile,
+        appliquée comme pose connue. Thread : l'attente des images ne bloque pas la réception ZMQ."""
+        def recaler():
+            if shared.robot is None or not shared.robot.recalage_camera(attente_max=3.0, manual=True, force=True):
+                shared.send_log("Odométrie = caméra : échec (robot vu par la caméra et immobile ?)", "err")
+        threading.Thread(target=recaler, daemon=True, name="recalage_camera").start()
 
     def _fuse_camera(self, mesure):
         """Pose caméra zénithale -> correction continue de la pose (core/localisation.py)."""

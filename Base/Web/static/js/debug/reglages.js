@@ -133,4 +133,15 @@ async function setRobotPosition() {
     }
 }
 
+// Odométrie = caméra : le robot prend la médiane de quelques images de la caméra zénithale
+// (robot immobile) comme pose connue (actions.py : recalage_camera(force=True))
+async function recalageCamera() {
+    await fetch('/api/robot/hardware', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'recalage_camera', data: {} })
+    });
+    toast('Odométrie recalée sur la caméra (robot immobile)');
+}
+
 // Le flux caméra MJPEG est chargé directement par le navigateur via l'URL HTTP de la Raspberry Pi

@@ -1,12 +1,19 @@
 # Suivi du projet — à lire en début de session, à mettre à jour en fin de tâche
 
-Dernière mise à jour : 2026-10-25 (soir). Compétition dans plus de 200 jours (pas avant ~mai 2027) :
+Dernière mise à jour : 2026-10-27. Compétition dans plus de 200 jours (pas avant ~mai 2027) :
 les refontes sont acceptées.
 
 ## État du dépôt
 
+- **2026-10-27 : tout déployé sur le robot** (commit 499e237 : base, code Rasp, ESP moteurs NOUVEAU firmware flashé,
+  config.json du robot fusionnée avec celle du dépôt ; ancienne sauvegardée en `config.json.bak_20261027` sur le robot).
+  ESP actionneurs non reflashé (code inchangé, seulement déplacé). Robot = 192.168.10.89 (`rasp3a`) : l'alias
+  `ssh eirbot` pointe encore sur .173 (à corriger dans ~/.ssh/config). Commité et poussé le 2026-10-27 : seuils batterie, bouton
+  « Odométrie = caméra », recalage forcé, `--exclude=/logs/` du déploiement (deploy.sh, winupdate.go), config NoIR,
+  `essai_aller`. Base mise à jour et recompilée. Le déploiement copiait `Rasp/logs/` du PC sur le robot : durées de
+  GoTo apprises écrasées le 2026-10-27 (fichier supprimé, réapprentissage).
 - Branche `base_deporte` poussée le 2026-10-25 (d498846) : échelle caméra (02b83a8), firmware moteurs réécrit
-  (6bb0374), rangement (`ESP/`, d498846). Rien de tout ça n'est déployé ni testé sur le robot.
+  (6bb0374), rangement (`ESP/`, d498846) : déployés et essayés le 2026-10-27 (voir ci-dessus).
 - Tests : `tools/run_tests.sh` (tout passe le 2026-10-25 : 177 Python, JS, Go, firmware natif). `--rapide` saute test_strategies.
 - Commit `4fbf9d8` (« le tux ») poussé et **déployé sur la base** le 2026-10-19 : service `base_stk` installé
   et actif. Anciennes modifs locales de la base : `git stash` + `~/sauvegarde_base_20261019.tgz` ; stratégie
@@ -390,6 +397,31 @@ les refontes sont acceptées.
 - Pierres empilées : `nb` = hauteur du tag / 110 mm (vision -> base -> carte 3D : pile de nb boîtes + nombre,
   dessinée depuis `vision_update`, même sans planificateur). **Vérifier le signe de z** sur la vraie caméra.
 
+### Intégration sur le robot (2026-10-27)
+- Firmware moteurs : T à 10 Hz, S, E, watchdog W OK. Mouvement réel : avance dans le sens de theta, +90° tourne
+  vers +theta (caméra d'accord à ~10 mm) -> brochage 16/4 = roue droite et sens des roues **validés**.
+- Check-list : ESP x2, LiDAR, caméra zénithale OK ; batterie / tirette / départ en avertissement comme attendu.
+- Fusion : sans `set_pos`, la caméra est rejetée (odo de démarrage (200, -1200), 2 m d'écart) ; après `set_pos`
+  proche, elle suit la caméra. Points LiDAR publiés en repère table seulement après `set_pos` (pose fiable).
+- Match à blanc `demo_dynamique` (moteurs sans puissance) : 4 objectifs, plans de la base, retour de fin,
+  boîte noire lue par la base (Replay). Chaque nouvel objectif démarre sur le plan embarqué puis bascule sur
+  celui de la base (plan de la base pas encore arrivé) : normal mais visible dans les journaux.
+- `aller()` réel (stratégie `essai_aller`, depuis la pose actuelle) : `goto` OK (écart final 10-20 mm, 6° au
+  retour, rattrapages caméra de 59-79 mm en route -> odométrie pas calibrée) ; `suivi` à 300 mm/s OK (un arrêt
+  LiDAR « tout près » puis reprise). Robot : `planif.v_max_mm_s` et `v_nominale_mm_s` 300 (dépôt : 700).
+- Caméra embarquée : 10 images/s avec ArUco, image rosée = module **NoIR** -> `camera.tuning: imx219_noir.json`
+  (couleurs correctes).
+- Watchdog ESP : 2 déclenchements au démarrage du programme (init caméra / écran), aucun ensuite ni en match.
+- Pendant une rotation sur place, le point suivi (odo et caméra) s'est déplacé de ~40 mm : à revoir (patinage ?
+  tag décentré ? centre de rotation).
+- Batterie : **pleine vers 18,8 V** -> seuils baissés : alerte < 16 V, avertissement / rétablissement > 17,5 V
+  (`core/preflight.py`, utilisés aussi par `ihm/tasks.py`).
+- Calibration auto : le recalage de départ refusait l'écart (odo remise à (200, -1200) au redémarrage) ->
+  `recalage_camera(force=True)` (médiane caméra = pose connue). Essai ensuite bloqué : un GoTo annulé par l'ESP
+  (obstacle LiDAR) est relancé **sans fin** hors match (78 fois) ; calibration arrêtée. **Le robot glisse
+  beaucoup** sur cette table : résultats de calibration / facteurs firmware à prendre avec prudence.
+- Debug > Robot : bouton **« Odométrie = caméra »** (commande zmq `recalage_camera`, refusée en match).
+
 ## Essais robot prévus (dans l'ordre)
 1. Déployer base (`./Base/build.sh` sur la base : Go modifié ; **`uv sync` à la racine du dépôt sur la base**, avec
    internet, pour l'env du planificateur) et robot ; **copier dans le config.json du robot** les sections `camera`,
@@ -407,17 +439,20 @@ les refontes sont acceptées.
 ## À faire
 
 ### Sur le matériel (priorité, rien de tout ça n'a été essayé)
-- [ ] Déployer le **robot** (la base est faite ; le protocole d'état a changé, les deux doivent suivre).
+- [x] Déployer le robot + flasher l'ESP moteurs (2026-10-27).
+- [ ] Calibration auto (sur une surface qui accroche) (Debug > Robot), essai LiDAR gauche/droite (point 3 des
+      essais), évitement réel, `aller()` avec adversaire / pierre, `aligner_tag`, match complet avec tirette.
+- [ ] Rotation sur place : déplacement de ~40 mm du point suivi (voir Intégration 2026-10-27), sans doute le glissement.
+- [ ] Glissement des roues : la calibration auto mesure odo vs caméra, un glissement fausse diamètre / entraxe ;
+      refaire sur une surface qui accroche, accélérations plus douces (`ACCEL` firmware) si ça glisse en match.
+- [ ] GoTo hors match annulé par obstacle : relancé sans fin (`actions.goto`) ; limiter ou abandonner après N s.
 - [ ] ESP moteurs flashé le 2026-10-19 (entraxe) ; reste à vérifier : pas de faux déclenchement du
       watchdog en match (`watchdog_count` dans esp_motors), arrêt si on débranche l'USB, pas de reprise
       au rebranchement. Si faux déclenchements : passer `RASP_TIMEOUT_MS` à 400-500.
 - [ ] Définir le PIN dans `Base/pin.txt` sur la base.
 - [ ] Vérifier un match complet : tirette, fin à 100 s, réarmement par la tirette après un match,
       équipe/LEDs, mode test, écran 7" du robot.
-- [ ] Recharger / vérifier la batterie (alerte < 18 V, rétablie > 19,5 V : seuils peut-être à revoir).
-- [ ] Caméra embarquée : `config.json` n'est pas déployé -> recopier la section `camera` (resolution, montage,
-      aruco.tags...) dans celui du robot. Vérifier sur la Pi : version d'OpenCV, démarrage YUV420 + lores,
-      couleur (rosé ?), `ms/image` affiché par `http://<robot>:8081/stream?aruco=1`.
+- [ ] Recharger / vérifier la batterie (alerte < 16 V, avertissement et rétablissement > 17,5 V depuis le 2026-10-27 ; seuils dans `core/preflight.py`).
 - [ ] Caméra : calibrer (`tools/calibrer_camera_robot.py`), mesurer `camera.montage` (position, tangage) et la
       **taille réelle du tag 13** des pierres (50 mm mis par défaut, le règlement ne la donne pas).
 - [ ] Robot simulé (`tools/robot_sim.py`) : pas de LiDAR ni d'adversaire simulés -> le planificateur n'y voit

@@ -132,7 +132,7 @@ cmd_robot() {
     # Mêmes exclusions que /api/update_rasp (config.json porte les réglages runtime du robot,
     # LiDAR/lidar_udp est compilé sur la Rasp en aarch64)
     run rsync -rc --out-format=%n \
-        --exclude=.venv --exclude=__pycache__ --exclude='*.pyc' --exclude='*.log' --exclude=config.json \
+        --exclude=.venv --exclude=__pycache__ --exclude='*.pyc' --exclude='*.log' --exclude=config.json --exclude=/logs/ \
         --exclude=LiDAR/lidar_udp \
         -e "ssh $(printf '%q ' "${ROBOT_SSH_OPTS[@]}")" \
         "$ROOT/Rasp/" "$ROBOT:$ROBOT_DIR/"

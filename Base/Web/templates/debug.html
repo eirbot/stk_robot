@@ -18,7 +18,7 @@
     <script src="/static/js/tux.js?v=1" defer></script>
     <!-- Page Debug : un fichier par sujet (static/js/debug/), portée globale partagée -->
     <script src="/static/js/debug/page.js?v=1" defer></script>
-    <script src="/static/js/debug/reglages.js?v=1" defer></script>
+    <script src="/static/js/debug/reglages.js?v=2" defer></script>
     <script src="/static/js/debug/journaux.js?v=2" defer></script>
     <script src="/static/js/debug/maintenance.js?v=1" defer></script>
     <script src="/static/js/debug/diagnostic.js?v=1" defer></script>
@@ -115,6 +115,7 @@
                     </div>
 
                     <button onclick="setRobotPosition()" class="btn btn-success"><svg class="icon"><use href="/static/icons/sprite.svg#i-check"></use></svg> Appliquer la position</button>
+                    <button onclick="recalageCamera()" class="btn btn-primary" title="Le robot prend comme position la médiane de quelques images de la caméra zénithale (robot immobile)"><svg class="icon"><use href="/static/icons/sprite.svg#i-crosshair"></use></svg> Odométrie = caméra</button>
                     <div class="row">
                         <button id="btn-copy-vision-pos" type="button" onclick="copyVisionToInputs()" class="btn btn-sm grow" title="Copier les coordonnées X, Y, θ vues par la caméra vers les entrées ci-dessus"><svg class="icon"><use href="/static/icons/sprite.svg#i-copy"></use></svg> Vision → entrées</button>
                         <button id="btn-calibrate-vision" class="btn btn-sm btn-primary grow"><svg class="icon"><use href="/static/icons/sprite.svg#i-crosshair"></use></svg> Calibrer la vision</button>

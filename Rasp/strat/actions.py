@@ -511,10 +511,12 @@ class RobotActions:
             self._check_abort()
             time.sleep(0.05)
 
-    def recalage_camera(self, attente_max=1.0, manual=False):
+    def recalage_camera(self, attente_max=1.0, manual=False, force=False):
         """
         Recalage franc sur la caméra zénithale, robot immobile (médiane de plusieurs images).
         En plus de la fusion continue (vision_odom.fusion), utile après un choc ou au départ.
+        force : la pose caméra devient la pose connue (set_pos), sans garde-fou d'écart
+        (pose de départ inconnue, ex. odométrie remise à zéro au redémarrage de l'ESP).
         Retourne True si la pose a été corrigée.
         """
         self._check_abort(manual=manual)
@@ -564,6 +566,10 @@ class RobotActions:
         # 4. Application via la fusion (gain forcé, robot immobile) : garde-fou écart_max_mm /
         #    ecart_max_deg ; l'ESP garde son repère, plus de « S » arrondi au degré
         avant = shared.loc.pose()
+        if force:
+            hardware.esp.set_pos(x_cam, y_cam, theta_cam)
+            print(f"[VISION] Recalage forcé : ({x_cam:.0f}, {y_cam:.0f}, {theta_cam:.1f}°)")
+            return True
         res = shared.loc.on_camera(time.time(), x_cam, y_cam, theta_cam, gain=cfg.get("gain", 1.0))
         if not res["ok"]:
             print(f"[VISION] Recalage refusé : {res['raison']}")

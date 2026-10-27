@@ -37,8 +37,8 @@ class TestPreflight(unittest.TestCase):
         self.assertEqual(niveaux({**PRET, "lidar_mode": "HOMOLOGATION"})["lidar"], WARN)
 
     def test_batterie(self):
-        self.assertEqual(niveaux({**PRET, "tension_v": 17.5})["batterie"], ERR)
-        self.assertEqual(niveaux({**PRET, "tension_v": 19.0})["batterie"], WARN)
+        self.assertEqual(niveaux({**PRET, "tension_v": 15.5})["batterie"], ERR)
+        self.assertEqual(niveaux({**PRET, "tension_v": 17.0})["batterie"], WARN)
         self.assertEqual(niveaux({**PRET, "tension_v": 0.0})["batterie"], WARN)
 
     def test_strategie(self):
