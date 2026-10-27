@@ -226,6 +226,20 @@ class TestIntegrationRobot(unittest.TestCase):
             self.shared.send_led_cmd = original
         self.assertEqual(sent, ["COLOR:255,0,0", "PLAY:match_start"])
 
+    def test_8_luminosite_enregistree(self):
+        """BRIGHTNESS : envoyée au service LED ET gardée dans la config (relue au redémarrage)."""
+        sent = []
+        original = self.shared.send_led_cmd
+        self.shared.send_led_cmd = sent.append
+        try:
+            self.send("led_cmd", "BRIGHTNESS:0.350")
+            self.send("led_cmd", "BRIGHTNESS:abc")    # illisible : ignorée
+            self.send("led_cmd", "BRIGHTNESS:3")      # hors 0..1 : refusée par config_store
+        finally:
+            self.shared.send_led_cmd = original
+        self.assertEqual(sent, ["BRIGHTNESS:0.350"])
+        self.assertAlmostEqual(self.shared.cfg["leds"]["luminosite"], 0.35)
+
 
 if __name__ == "__main__":
     unittest.main()

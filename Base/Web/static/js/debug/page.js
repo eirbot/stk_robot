@@ -81,6 +81,17 @@ window.socket.on('state_update', (state) => {
         }
         window.currentCameraEnabled = !!camEnabled;
 
+        // Luminosité LED enregistrée par le robot (curseur 0-100 % = 0-0,5), sauf pendant un réglage
+        const slider = document.getElementById('bright-slider');
+        const lum = c.leds && typeof c.leds.luminosite === 'number' ? c.leds.luminosite : null;
+        if (slider && lum !== null && document.activeElement !== slider) {
+            const pct = String(Math.round(lum / 0.5 * 100));
+            if (slider.value !== pct) {
+                slider.value = pct;
+                document.getElementById('bright-val').innerText = pct;
+            }
+        }
+
         // 2. État LiDAR
         const btnLidar = document.getElementById('btn-toggle-lidar');
         const selectLidarMode = document.getElementById('lidar-mode');

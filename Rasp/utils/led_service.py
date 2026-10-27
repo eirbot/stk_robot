@@ -14,9 +14,20 @@ import threading
 # === CONFIG ===
 LED_COUNT = 288
 # Pins are implicitly board.SCK (GPIO 11) and board.MOSI (GPIO 10) for RPi 4 SPI
-LED_BRIGHTNESS = 0.1 # 0.0 to 1.0 for DotStar
+LED_BRIGHTNESS = 0.1 # 0.0 to 1.0 for DotStar, défaut si config.json n'a pas leds.luminosite
 SOCKET_PATH = "/tmp/ledsock"
 ANIMATIONS_FILE = os.path.join(os.path.dirname(__file__), '..', 'config_led_animations.json')
+CONFIG_FILE = os.path.join(os.path.dirname(__file__), '..', 'config.json')
+
+
+def luminosite_enregistree():
+    """leds.luminosite de config.json (réglée depuis Debug, enregistrée par le robot)."""
+    try:
+        with open(CONFIG_FILE, encoding="utf-8") as f:
+            val = float(json.load(f).get("leds", {}).get("luminosite", LED_BRIGHTNESS))
+        return max(0.0, min(1.0, val))
+    except (OSError, ValueError, TypeError, AttributeError):
+        return LED_BRIGHTNESS
 
 class LedServer:
     def __init__(self):
@@ -25,7 +36,7 @@ class LedServer:
                 board.SCK, 
                 board.MOSI, 
                 LED_COUNT, 
-                brightness=LED_BRIGHTNESS, 
+                brightness=luminosite_enregistree(), 
                 auto_write=False,
                 baudrate=1000000
             )

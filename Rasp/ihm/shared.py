@@ -195,9 +195,11 @@ def update_config_from_server(new_cfg):
     if "music_enabled" in new_cfg:
         state["music_enabled"] = new_cfg["music_enabled"]
         
-    # 5. LEDs activées
+    # 5. LEDs activées, luminosité (enregistrée : relue par led_service.py au démarrage)
     if "leds_enabled" in new_cfg:
         state["leds_enabled"] = new_cfg["leds_enabled"]
+    if "luminosite" in new_cfg.get("leds", {}):
+        send_led_cmd(f"BRIGHTNESS:{new_cfg['leds']['luminosite']:.3f}")
         
         
     # (équipe, stratégie, mode test : gérés par match.apply_config)

@@ -68,6 +68,7 @@ SCHEMA = {
     "server_ip":      ("192.168.10.2", _str),
     "camera.enabled": (True, _bool),
     "audio.volume":   (0.8, _number(0, 1)),
+    "leds.luminosite": (0.1, _number(0, 1)),  # luminosité du bandeau DotStar (curseur Debug : 100 % = 0,5)
 }
 
 

@@ -7,8 +7,7 @@ les refontes sont acceptées.
 
 - **2026-10-27 : tout déployé sur le robot** (commit 499e237 : base, code Rasp, ESP moteurs NOUVEAU firmware flashé,
   config.json du robot fusionnée avec celle du dépôt ; ancienne sauvegardée en `config.json.bak_20261027` sur le robot).
-  ESP actionneurs non reflashé (code inchangé, seulement déplacé). Robot = 192.168.10.89 (`rasp3a`) : l'alias
-  `ssh eirbot` pointe encore sur .173 (à corriger dans ~/.ssh/config). Commité et poussé le 2026-10-27 : seuils batterie, bouton
+  ESP actionneurs non reflashé (code inchangé, seulement déplacé). Robot = 192.168.10.89 (`rasp3a`, `ssh robot`). Commité et poussé le 2026-10-27 : seuils batterie, bouton
   « Odométrie = caméra », recalage forcé, `--exclude=/logs/` du déploiement (deploy.sh, winupdate.go), config NoIR,
   `essai_aller`. Base mise à jour et recompilée. Le déploiement copiait `Rasp/logs/` du PC sur le robot : durées de
   GoTo apprises écrasées le 2026-10-27 (fichier supprimé, réapprentissage).
@@ -423,6 +422,9 @@ les refontes sont acceptées.
 - Caméra zénithale perdue quand l'écran de la base est éteint / capot fermé : la fenêtre MuJoCo faisait avorter le
   worker vision (assertion GLFW, aucun écran). `vision_deporte_worker.py` : viewer ouvert seulement si un écran
   DRM est « connected » (`ecran_branche`) ; pour revoir la fenêtre, brancher l'écran puis redémarrer base_stk.
+- Luminosité des LED enregistrée : `leds.luminosite` (config du robot, 0..1 ; curseur Debug 100 % = 0,5), relue
+  par `led_service.py` au démarrage ; avant, toujours 0,1 (20 %) au redémarrage. Anciennes clés `leds.*` (ws281x) retirées.
+- Alias ssh du robot : `ssh robot` (192.168.10.89).
 - Debug > Robot : bouton **« Odométrie = caméra »** (commande zmq `recalage_camera`, refusée en match).
 
 ## Essais robot prévus (dans l'ordre)

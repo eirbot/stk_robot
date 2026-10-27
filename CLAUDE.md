@@ -33,7 +33,7 @@ Répondre en français. Réponses courtes : le résultat, pas le récit des éta
 
 ## Machines
 - `ssh base` (192.168.10.2, repo `~/Documents/stk_robot`) : fait tourner `base_stk` et est le serveur DHCP (dnsmasq) du LAN robot.
-- `ssh eirbot` : la Raspberry du robot.
+- `ssh robot` (192.168.10.89) : la Raspberry du robot.
 - Un changement de Go impose `./Base/build.sh` SUR la base (glibc), jamais commiter un binaire compilé sur un autre PC.
 
 ## Économie de tokens

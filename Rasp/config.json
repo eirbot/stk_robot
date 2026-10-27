@@ -40,13 +40,7 @@
         "use_buttons": true
     },
     "leds": {
-        "brightness": 128,
-        "dma": 10,
-        "enabled": true,
-        "freq_hz": 800000,
-        "invert": false,
-        "num_leds": 60,
-        "pin_pwm": 18
+        "luminosite": 0.1
     },
     "lidar": {
         "baudrate": 460800,

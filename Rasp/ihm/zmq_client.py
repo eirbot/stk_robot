@@ -194,7 +194,13 @@ class ZmqClient(threading.Thread):
     LED_COMMANDS = ("OFF", "RELOAD", "COLOR:", "PIXEL:", "PLAY:", "BRIGHTNESS:")
 
     def _on_led_cmd(self, cmd):
-        if isinstance(cmd, str) and "\n" not in cmd and cmd.startswith(self.LED_COMMANDS):
+        if isinstance(cmd, str) and cmd.startswith("BRIGHTNESS:"):
+            # Enregistrée dans la config (sinon perdue au redémarrage), qui l'envoie au service LED
+            try:
+                shared.update_config_from_server({"leds.luminosite": float(cmd.split(":", 1)[1])})
+            except ValueError:
+                print(f"[ZMQ CLIENT] Luminosité illisible : {cmd!r}")
+        elif isinstance(cmd, str) and "\n" not in cmd and cmd.startswith(self.LED_COMMANDS):
             shared.send_led_cmd(cmd)
         else:
             print(f"[ZMQ CLIENT] Commande LED refusée : {cmd!r}")
