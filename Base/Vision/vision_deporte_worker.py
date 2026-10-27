@@ -56,6 +56,12 @@ HAUTEUR_PIERRE_MM = 110.0   # pierres posées à plat : la face du haut d'une pi
 _c = TAILLE_TAG_PIERRE_MM / 2
 arucoDirectory[str(TAG_ID_PIERRE)] = np.array([[-_c, _c, 0.0], [_c, _c, 0.0], [_c, -_c, 0.0], [-_c, -_c, 0.0]])
 TABLE_TAG_IDS = (20, 21, 22, 23)
+# Tags de la table : 96 mm mesurés (vision_deporte les déclare à 100 mm -> distances +4 %, vérifié le 2026-10-27 :
+# 1 000 mm au mètre lus ~1 040 par la caméra)
+TAILLE_TAG_TABLE_MM = float(os.environ.get("VISION_TAG_TABLE_MM", "96"))
+_t = TAILLE_TAG_TABLE_MM / 2
+for _id in TABLE_TAG_IDS:
+    arucoDirectory[str(_id)] = np.array([[-_t, _t, 0.0], [_t, _t, 0.0], [_t, -_t, 0.0], [-_t, -_t, 0.0]])
 
 # Résolution de la calibration (cameraParams.npz) : les intrinsèques sont
 # remises à l'échelle si on bascule sur un autre preset.
@@ -122,6 +128,16 @@ def pierres_table(compute_pos, detections, ids):
         out.append({"x": round(float(x), 1), "y": round(float(y), 1), "z": round(z, 1),
                     "theta": round(float(cap + PIERRE_AXE_TAG_DEG), 1), "nb": nb})
     return out
+
+
+def hauteur_camera_mm(compute_pos):
+    """Hauteur de la caméra au-dessus du plan des tags de table vus (contrôle d'échelle : 1 550 mm mesurés
+    le 2026-10-27), None si la caméra ou aucun tag de table n'est placé."""
+    poses = compute_pos.allPoses
+    tables = [poses[str(i)][0][2] for i in TABLE_TAG_IDS if str(i) in poses]
+    if "cam" not in poses or not tables:
+        return None
+    return round(float(poses["cam"][0][2] - np.mean(tables)) * 1000.0)
 
 
 def table_to_base(pos_m, theta_deg):
@@ -528,6 +544,7 @@ def main():
             "width": w,
             "height": h,
             "detected_ids": raw_ids,
+            "hauteur_camera_mm": hauteur_camera_mm(compute_pos) if robot else None,
         })
 
 
