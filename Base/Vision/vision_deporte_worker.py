@@ -407,8 +407,19 @@ def ensure_display():
             os.environ["XAUTHORITY"] = str(max(candidates, key=lambda p: p.stat().st_mtime))
 
 
+def ecran_branche():
+    """Un écran est-il branché (DRM) ? Sans écran, GLFW avorte le processus (assertion C dans
+    glfwGetVideoMode, impossible à rattraper en Python) : base capot fermé / écran éteint."""
+    statuts = list(Path("/sys/class/drm").glob("card*-*/status"))
+    if not statuts:
+        return True  # pas de DRM lisible (VM, autre OS) : on tente
+    return any(p.read_text().strip() == "connected" for p in statuts)
+
+
 def make_compute_position():
-    if VIEWER_ON:
+    if VIEWER_ON and not ecran_branche():
+        print("[MUJOCO] Aucun écran branché : poursuite sans affichage.", flush=True)
+    elif VIEWER_ON:
         ensure_display()
         try:
             cp = computePosition(mujocoOn=True)

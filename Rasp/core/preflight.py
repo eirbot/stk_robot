@@ -20,7 +20,7 @@ from core.frames import angle_diff_deg
 
 OK, WARN, ERR = "ok", "warn", "err"
 
-TENSION_ERR_V = 16.0  # alerte batterie faible (aussi ihm/tasks.py)
+TENSION_ERR_V = 17.0  # alerte batterie faible (aussi ihm/tasks.py)
 TENSION_WARN_V = 17.5  # avertissement, et rétablissement de l'alerte
 DEPART_TOL_MM = 50.0
 DEPART_TOL_DEG = 10.0

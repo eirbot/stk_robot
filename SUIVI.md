@@ -414,12 +414,15 @@ les refontes sont acceptées.
 - Watchdog ESP : 2 déclenchements au démarrage du programme (init caméra / écran), aucun ensuite ni en match.
 - Pendant une rotation sur place, le point suivi (odo et caméra) s'est déplacé de ~40 mm : à revoir (patinage ?
   tag décentré ? centre de rotation).
-- Batterie : **pleine vers 18,8 V** -> seuils baissés : alerte < 16 V, avertissement / rétablissement > 17,5 V
+- Batterie : **pleine vers 18,8 V** -> seuils baissés : alerte < 17 V, avertissement / rétablissement > 17,5 V
   (`core/preflight.py`, utilisés aussi par `ihm/tasks.py`).
 - Calibration auto : le recalage de départ refusait l'écart (odo remise à (200, -1200) au redémarrage) ->
   `recalage_camera(force=True)` (médiane caméra = pose connue). Essai ensuite bloqué : un GoTo annulé par l'ESP
   (obstacle LiDAR) est relancé **sans fin** hors match (78 fois) ; calibration arrêtée. **Le robot glisse
   beaucoup** sur cette table : résultats de calibration / facteurs firmware à prendre avec prudence.
+- Caméra zénithale perdue quand l'écran de la base est éteint / capot fermé : la fenêtre MuJoCo faisait avorter le
+  worker vision (assertion GLFW, aucun écran). `vision_deporte_worker.py` : viewer ouvert seulement si un écran
+  DRM est « connected » (`ecran_branche`) ; pour revoir la fenêtre, brancher l'écran puis redémarrer base_stk.
 - Debug > Robot : bouton **« Odométrie = caméra »** (commande zmq `recalage_camera`, refusée en match).
 
 ## Essais robot prévus (dans l'ordre)
@@ -452,7 +455,7 @@ les refontes sont acceptées.
 - [ ] Définir le PIN dans `Base/pin.txt` sur la base.
 - [ ] Vérifier un match complet : tirette, fin à 100 s, réarmement par la tirette après un match,
       équipe/LEDs, mode test, écran 7" du robot.
-- [ ] Recharger / vérifier la batterie (alerte < 16 V, avertissement et rétablissement > 17,5 V depuis le 2026-10-27 ; seuils dans `core/preflight.py`).
+- [ ] Recharger / vérifier la batterie (alerte < 17 V, avertissement et rétablissement > 17,5 V depuis le 2026-10-27 ; seuils dans `core/preflight.py`).
 - [ ] Caméra : calibrer (`tools/calibrer_camera_robot.py`), mesurer `camera.montage` (position, tangage) et la
       **taille réelle du tag 13** des pierres (50 mm mis par défaut, le règlement ne la donne pas).
 - [ ] Robot simulé (`tools/robot_sim.py`) : pas de LiDAR ni d'adversaire simulés -> le planificateur n'y voit
