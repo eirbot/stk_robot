@@ -433,7 +433,12 @@ les refontes sont acceptées.
 - Calibration auto (tiers du milieu, 400 mm) : réglages vision_odom appliqués sur le robot (latence 0,068 s,
   cam_sigma 29 mm / 1,05°, odo_sigma...), `dispersion_max_mm` 60. Firmware : `G id x y theta [facteur]` (vitesse
   et accélération × facteur), calibration à 30 % ; modèle de temps de match : seuls les GoTo pleine vitesse.
-  Deuxième calibration (lente) faussée : le robot a roulé sur un câble -> à refaire.
+  Deuxième calibration (lente) faussée : le robot a roulé sur un câble. **Troisième (lente, propre, 22:16)** :
+  latence 0,064 s, bruit caméra 14,4 mm / 0,37°, rotations odo +0,9 % (entraxe 339,3 -> ~342,5 possible, la
+  rotation caméra ne dépend pas de l'échelle), distances caméra +3,9 % (échelle de la vision), dérive de cap
+  13°/m. Réglages vision_odom de cette calibration appliqués sur le robot (seulement là, pas dans le dépôt).
+  Dérive de cap : 4,5° sur 1 m = ~2,7 % d'écart entre roues gauche / droite -> vérifier les roues (diamètre,
+  bandages, parallélisme) ; sinon diamètre par roue dans le firmware.
 - GoTo hors match bloqué par un obstacle : abandonné après 20 s (`MANUEL_RELANCES_S`, avant : sans fin).
 - Watchdog ESP déclenché si un match démarre pendant l'ouverture de l'écran local (Python bloqué > 300 ms).
 - Debug > Robot : bouton **« Odométrie = caméra »** (commande zmq `recalage_camera`, refusée en match).
@@ -459,7 +464,8 @@ les refontes sont acceptées.
 - [ ] Calibration auto (sur une surface qui accroche) (Debug > Robot), essai LiDAR gauche/droite (point 3 des
       essais), évitement réel, `aller()` avec adversaire / pierre, `aligner_tag`, match complet avec tirette.
 - [ ] Rotation sur place : déplacement de ~40 mm du point suivi (voir Intégration 2026-10-27), sans doute le glissement.
-- [ ] Refaire la calibration lente (tiers du milieu, câbles retirés) puis corriger l'échelle de la vision.
+- [ ] Corriger l'échelle de la vision (+4-5 %), puis refaire la calibration.
+- [ ] Dérive de cap ~13°/m (robot qui tire à gauche) : roues à vérifier, ou diamètre par roue dans le firmware.
 - [ ] Glissement des roues : la calibration auto mesure odo vs caméra, un glissement fausse diamètre / entraxe ;
       refaire sur une surface qui accroche, accélérations plus douces (`ACCEL` firmware) si ça glisse en match.
 - [ ] ESP moteurs flashé le 2026-10-19 (entraxe) ; reste à vérifier : pas de faux déclenchement du
